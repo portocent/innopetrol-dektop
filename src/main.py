@@ -7,21 +7,23 @@ from lasProcesor import Well
 from PySide2.QtCore import (QDate, QDateTime, QMetaObject,
                             QObject, QPoint, QRect, QSize, QTime, Qt,
                             Slot)
-from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette)
+from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen)
 from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
-                               QGridLayout, QSplitter)
+                               QGridLayout, QSplitter, QPushButton)
 import os
 
 
 def paintSub(self, event):
     painter = QtGui.QPainter(self)
-#   brush = QtGui.QBrush()
-#   brush.setColor(QtGui.QColor('black'))
-#   brush.setStyle(Qt.SolidPattern)
-#   rect = QtCore.QRect(0, 0, painter.device().width(), painter.device().height())
-#    painter.fillRect(rect, brush)
+    brush = QBrush()
+    brush.setColor(QtGui.QColor('black'))
+    brush.setStyle(Qt.SolidPattern)
+    # rect = QRect(0, 0, self.width()-2, self.height()-2)
+    # painter.drawRect()
     # currentSize = self.frameGeometry()
+    painter.setPen(QPen(Qt.black, 3, Qt.SolidLine))
     painter.drawRect(1, 1, self.width()-2, self.height()-2)
+    painter.drawRect(1, 1, self.width()-2, 25)
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -30,6 +32,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         self.wells = []
+        self.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
         # self.subwindow.paintEvent = types.MethodType(paintSub,self.subwindow)
         self.menuOptions()
         self.statusBar().showMessage('Ready')
@@ -155,9 +158,9 @@ class subWindowWell(QWidget):
 
     @Slot()
     def addTrack(self):
-        # frameCount = self.splitter.count()
+        frameCount = self.splitter.count()
         frame = QFrame(self.splitter)
-        # frame.setObjectName(u"frame_"+frameCount)
+        frame.setObjectName(u"Track_"+frameCount)
         palette1 = QPalette()
         palette1.setBrush(QPalette.Active, QPalette.Base, self.brush)
         palette1.setBrush(QPalette.Active, QPalette.Window, self.brush)

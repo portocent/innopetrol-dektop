@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 import lasio
-import copy
-from PySide2.QtWidgets import *
+# import copy
+# from PySide2.QtWidgets import *
 
 
 class Well():
