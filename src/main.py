@@ -6,7 +6,7 @@ import types
 from lasProcesor import Well
 from PySide2.QtCore import (QDate, QDateTime, QMetaObject,
                             QObject, QPoint, QRect, QSize, QTime, Qt,
-                            Slot)
+                            Slot, SIGNAL)
 from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen)
 from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
                                QGridLayout, QSplitter, QPushButton)
@@ -71,6 +71,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def show_about_dialog(self, title, msg):
         msg_box = QtWidgets.QMessageBox()
         msg_box.setIcon(QtWidgets.QMessageBox.Information)
+        msg_box.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
         msg_box.setText(msg)
         msg_box.setWindowTitle(title)
         msg_box.setStandardButtons(QtWidgets.QMessageBox.Close)
@@ -83,20 +84,53 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         subwindow.show()
 
 
+# class subSplitter(QSplitter):
+#     def __init__(self):
+#         super().__init__()
+
+#     @Slot
+#     def moveSplitter(pos,index):
+#         if index >= len(self.sizes()):
+#             return
+#         oldState = self.blockSignals(True)
+#         super.moveSplitter(pos,index)
+#         self.blockSignals(oldState)
+       
+
 class subWindowWell(QWidget):
     def __init__(self):
         # Sub Windows start here
         super().__init__()
         self.lTracks = []
+        self.lSplit = []
         self.setObjectName(u"subwindow")
         self.setMinimumSize(QSize(200, 475))
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName(u"gridLayout")
         self.splitter = QSplitter(self)
-        self.splitter.setObjectName(u"splitter")
+        # self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
-        frame = QFrame(self.splitter)
-        frame.setObjectName(u"frame")
+        
+        # Internal Splitter
+        vSplitter = QSplitter()
+        vSplitter.setOrientation(Qt.Vertical)
+        vSplitter2 = QSplitter()
+        vSplitter2.setOrientation(Qt.Vertical)
+
+        # Adding a buttons
+        button = QPushButton(vSplitter)
+        button2 = QPushButton(vSplitter2)
+        # button.clicked.connect(lambda:self.whichbtn(self.b2))
+        
+        frame = QFrame(vSplitter)
+        vSplitter.addWidget(button)
+        vSplitter.addWidget(frame)
+        self.lSplit.append(vSplitter)
+        self.lSplit.append(vSplitter2)
+        # frame.setObjectName(u"frame")
+        # Set frame and button names
+        frame.setObjectName(u"Track_"+str(self.splitter.count()))
+        button.setObjectName(u"button"+str(self.splitter.count()))
         palette = QPalette()
         self.brush = QBrush(QColor(255, 255, 255, 255))
         self.brush.setStyle(Qt.SolidPattern)
@@ -110,9 +144,15 @@ class subWindowWell(QWidget):
         frame.setAutoFillBackground(True)
         frame.setFrameShape(QFrame.NoFrame)
         frame.setFrameShadow(QFrame.Raised)
-        self.splitter.addWidget(frame)
-        frame_2 = QFrame(self.splitter)
-        frame_2.setObjectName(u"frame_2")
+        # Adding the splitter instead of the Frame
+        # self.splitter.addWidget(frame)
+        self.splitter.addWidget(vSplitter)
+        frame_2 = QFrame(vSplitter2)
+        vSplitter2.addWidget(button2)
+        vSplitter2.addWidget(frame_2)
+        # frame_2.setObjectName(u"frame_2")
+        frame_2.setObjectName(u"Track_"+str(self.splitter.count()))
+        button2.setObjectName(u"Track_"+str(self.splitter.count()))
         palette1 = QPalette()
         palette1.setBrush(QPalette.Active, QPalette.Base, self.brush)
         palette1.setBrush(QPalette.Active, QPalette.Window, self.brush)
@@ -124,7 +164,7 @@ class subWindowWell(QWidget):
         frame_2.setAutoFillBackground(True)
         frame_2.setFrameShape(QFrame.NoFrame)
         frame_2.setFrameShadow(QFrame.Raised)
-        self.splitter.addWidget(frame_2)
+        self.splitter.addWidget(vSplitter2)
         self.gridLayout.addWidget(self.splitter, 0, 0, 1, 1)
         # Saving frame name
         frame.mouseReleaseEvent = lambda event: self.setOverFrame(frame)
@@ -133,6 +173,10 @@ class subWindowWell(QWidget):
         frame.paintEvent = types.MethodType(paintSub, frame)
         self.lTracks.append(frame)
         self.lTracks.append(frame_2)
+
+        # Adding vertical splitter events conection
+        self.connect(vSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter))
+        self.connect(vSplitter2, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter2))        
 
         # create actions
         self.addTrackAction = QAction(self)
@@ -149,6 +193,15 @@ class subWindowWell(QWidget):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showPopup)
 
+        # Buttons options
+        # button.setText(str(button.objectName))
+        # button2.setText(str(button.objectName))
+
+        # set init sizes
+        initSize = [50, self.height() - 50]
+        vSplitter.setSizes(initSize)
+        vSplitter2.setSizes(initSize)
+
     #   S H O W   P O P U P   M E N U
     def setOverFrame(self, frame):
         self.onFrame = frame
@@ -159,8 +212,24 @@ class subWindowWell(QWidget):
     @Slot()
     def addTrack(self):
         frameCount = self.splitter.count()
-        frame = QFrame(self.splitter)
-        frame.setObjectName(u"Track_"+frameCount)
+
+        # Internal Splitter
+        vSplitter = QSplitter()
+        vSplitter.setOrientation(Qt.Vertical)        
+        # Adding a button
+        button = QPushButton(vSplitter)
+        frame = QFrame(vSplitter)
+
+        # Adding widgets to splitter
+        vSplitter.addWidget(button)
+        vSplitter.addWidget(frame)
+        vSplitter.setSizes(self.lSplit[0].sizes())
+        self.connect(vSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter))
+        self.lSplit.append(vSplitter)
+
+        frame.setObjectName(u"Track_"+str(frameCount))
+        button.setObjectName(u"Track_"+str(frameCount))
+        # button.setText(str(button.objectName))
         palette1 = QPalette()
         palette1.setBrush(QPalette.Active, QPalette.Base, self.brush)
         palette1.setBrush(QPalette.Active, QPalette.Window, self.brush)
@@ -173,7 +242,7 @@ class subWindowWell(QWidget):
         frame.setFrameShape(QFrame.NoFrame)
         frame.setFrameShadow(QFrame.Raised)
         self.lTracks.append(frame)
-        self.splitter.addWidget(frame)
+        self.splitter.addWidget(vSplitter)
         # self.splitter.update()
         # Saving over frame
         frame.mouseReleaseEvent = lambda event: self.setOverFrame(frame)
@@ -190,7 +259,34 @@ class subWindowWell(QWidget):
         # Remove over click track
         # self.onFrame.deleteLater()
         # Remove last track
+        self.lSplit.pop()
+        self.lTracks.pop()
         self.splitter.widget(self.splitter.count()-1).deleteLater()
+
+    def splitterMoved(self, sender):
+        # Resize all the another Splitters
+        for r in self.lSplit:
+            if sender is not r:
+                r.blockSignals(True)
+                r.setSizes(sender.sizes())
+                r.blockSignals(False)
+
+    def closeEvent(self, event):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
+        msg.setText("Está seguro de querer cerrar el pozo" + self.well.name + "?")
+        # msg.setInformativeText("This is additional information")
+        msg.setWindowTitle("Cerrar pozo")
+        # msg.setDetailedText("The details are as follows:")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+        # msg.buttonClicked.connect(msgbtn)    
+        retval = msg.exec_()
+        # print ("value of pressed message box button:", retval)
+        if retval == 1024: #write your required condition/check 
+            event.accept()
+        else:
+            event.ignore()                   
 
         # self.frame.paintEvent = types.MethodType(paintSub, self.frame)
     # def mousePressEvent(self, QMouseEvent):

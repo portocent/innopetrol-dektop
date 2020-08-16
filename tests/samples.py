@@ -1,77 +1,59 @@
-from PySide2.QtWidgets import (QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, 
-QWidget,QGridLayout, QSplitter,QFrame)
-from PySide2.QtCore import (QCoreApplication, QDate, QDateTime, QMetaObject,
-    QObject, QPoint, QRect, QSize, QTime, QUrl, Qt)
-from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
-    QFontDatabase, QIcon, QKeySequence, QLinearGradient, QPalette, QPainter,
-    QPixmap, QRadialGradient)    
 import sys
+from PySide2 import QtGui, QtCore, QtWidgets
 
-from random import randint
-
-
-class AnotherWindow(QWidget):
-    """
-    This "window" is a QWidget. If it has no parent, it 
-    will appear as a free-floating window as we want.
-    """
+class ApplicationWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        super().__init__()
-        self.setObjectName(u"subwindow")
-        self.setMinimumSize(QSize(200, 475))
-        gridLayout = QGridLayout(self)
-        gridLayout.setObjectName(u"gridLayout")
-        self.splitter = QSplitter(self)
-        self.splitter.setObjectName(u"splitter")
-        self.splitter.setOrientation(Qt.Horizontal)
-        self.frame = QFrame(self.splitter)
-        self.frame.setObjectName(u"frame")
-        
-        palette = QPalette()
-        brush = QBrush(QColor(255, 255, 255, 255))
-        brush.setStyle(Qt.SolidPattern)
-        palette.setBrush(QPalette.Active, QPalette.Base, brush)
-        palette.setBrush(QPalette.Active, QPalette.Window, brush)
-        palette.setBrush(QPalette.Inactive, QPalette.Base, brush)
-        palette.setBrush(QPalette.Inactive, QPalette.Window, brush)
-        palette.setBrush(QPalette.Disabled, QPalette.Base, brush)
-        palette.setBrush(QPalette.Disabled, QPalette.Window, brush)
-        self.frame.setPalette(palette)
-        self.frame.setAutoFillBackground(True)
-        self.frame.setFrameShape(QFrame.NoFrame)
-        self.frame.setFrameShadow(QFrame.Raised)
-        self.splitter.addWidget(self.frame)
-        self.frame_2 = QFrame(self.splitter)
-        self.frame_2.setObjectName(u"frame_2")
-        palette1 = QPalette()
-        palette1.setBrush(QPalette.Active, QPalette.Base, brush)
-        palette1.setBrush(QPalette.Active, QPalette.Window, brush)
-        palette1.setBrush(QPalette.Inactive, QPalette.Base, brush)
-        palette1.setBrush(QPalette.Inactive, QPalette.Window, brush)
-        palette1.setBrush(QPalette.Disabled, QPalette.Base, brush)
-        palette1.setBrush(QPalette.Disabled, QPalette.Window, brush)
-        self.frame_2.setPalette(palette1)
-        self.frame_2.setAutoFillBackground(True)
-        self.frame_2.setFrameShape(QFrame.NoFrame)
-        self.frame_2.setFrameShadow(QFrame.Raised)
-        self.splitter.addWidget(self.frame_2)
-        gridLayout.addWidget(self.splitter, 0, 0, 1, 1)    
+        QtWidgets.QMainWindow.__init__(self)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.setWindowTitle("Cluster View")
+        self.initUI()
 
+        self.window.setFocus()
+        self.setCentralWidget(self.window)
+        self.showMaximized()
 
-class MainWindow(QMainWindow):
-    
-    def __init__(self):
-        super().__init__()
-        self.w = AnotherWindow()
-        self.button = QPushButton("Push for Window")
-        self.button.clicked.connect(self.show_new_window)
-        self.setCentralWidget(self.button)
-        
-    def show_new_window(self, checked):
-        self.w.show()
+    def splitterMoved(self, sender) :
+        print ("ok", sender)
+        receiver = self.split2 if sender is self.split3 else self.split3
+        receiver.blockSignals(True)
+        receiver.setSizes(sender.sizes())
+        receiver.blockSignals(False)
 
+    def initUI(self) :
+        self.window = QtWidgets.QWidget()
 
-app = QApplication(sys.argv)
-w = MainWindow()
-w.show()
-app.exec_()
+        self.editor1 = QtWidgets.QTextEdit()
+        self.editor2 = QtWidgets.QTextEdit()
+        self.editor3 = QtWidgets.QTextEdit()
+        self.editor4 = QtWidgets.QTextEdit()
+
+        self.split1 = QtWidgets.QSplitter()
+        self.split2 = QtWidgets.QSplitter()
+        self.split3 = QtWidgets.QSplitter()
+        self.split2.setOrientation(QtCore.Qt.Vertical)
+        self.split3.setOrientation(QtCore.Qt.Vertical)
+
+        self.split2.addWidget(self.editor1)
+        self.split2.addWidget(self.editor2)
+        self.split3.addWidget(self.editor3)
+        self.split3.addWidget(self.editor4)
+
+        self.connect(self.split2, QtCore.SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(self.split2))
+        self.connect(self.split3, QtCore.SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(self.split3))
+
+        self.split1.addWidget(self.split2)
+        self.split1.addWidget(self.split3)
+
+        self.layout = QtWidgets.QHBoxLayout()
+        self.layout.addWidget(self.split1)
+        self.window.setLayout(self.layout)
+
+def main() :
+    qApp = QtWidgets.QApplication(sys.argv)
+    qApp.setStyle('cleanlooks')
+    aw = ApplicationWindow()
+    aw.show()
+    sys.exit(qApp.exec_())
+
+if __name__ == '__main__':
+    main()

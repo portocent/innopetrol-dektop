@@ -108,6 +108,8 @@ class Ui_MainWindow(object):
         # self.frame = QFrame(self.splitter)
         # self.frame.setObjectName(u"frame")
 
+        
+
         # palette = QPalette()
         # brush = QBrush(QColor(255, 255, 255, 255))
         # brush.setStyle(Qt.SolidPattern)
@@ -144,6 +146,7 @@ class Ui_MainWindow(object):
         # self.mdiArea.addSubWindow(self.subwindow_2)
 
         self.gridLayout_2.addWidget(self.mdiArea, 0, 1, 1, 1)
+        
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
