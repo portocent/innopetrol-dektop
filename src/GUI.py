@@ -78,19 +78,21 @@ class Ui_MainWindow(object):
         self.gridLayout_2 = QGridLayout(self.centralwidget)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
         self.treeWidget = QTreeWidget(self.centralwidget)
-        __qtreewidgetitem = QTreeWidgetItem(self.treeWidget)
-        __qtreewidgetitem1 = QTreeWidgetItem(__qtreewidgetitem)
-        QTreeWidgetItem(__qtreewidgetitem1)
-        __qtreewidgetitem2 = QTreeWidgetItem(__qtreewidgetitem)
-        QTreeWidgetItem(__qtreewidgetitem2)
-        __qtreewidgetitem3 = QTreeWidgetItem(self.treeWidget)
-        __qtreewidgetitem4 = QTreeWidgetItem(__qtreewidgetitem3)
-        QTreeWidgetItem(__qtreewidgetitem4)
+        # __qtreewidgetitem = QTreeWidgetItem(self.treeWidget)
+        # __qtreewidgetitem1 = QTreeWidgetItem(__qtreewidgetitem)
+        # QTreeWidgetItem(__qtreewidgetitem1)
+        # __qtreewidgetitem2 = QTreeWidgetItem(__qtreewidgetitem)
+        # QTreeWidgetItem(__qtreewidgetitem2)
+        # __qtreewidgetitem3 = QTreeWidgetItem(self.treeWidget)
+        # __qtreewidgetitem4 = QTreeWidgetItem(__qtreewidgetitem3)
+        # QTreeWidgetItem(__qtreewidgetitem4)
         self.treeWidget.setObjectName(u"treeWidget")
         self.treeWidget.setMinimumSize(QSize(150, 0))
-        self.treeWidget.setMaximumSize(QSize(200, 16777215))
+        # self.treeWidget.setMaximumSize(QSize(200, 16777215))
+        self.mainSplitter = QSplitter(self.centralwidget)
+        self.mainSplitter.setOrientation(Qt.Horizontal)
 
-        self.gridLayout_2.addWidget(self.treeWidget, 0, 0, 1, 1)
+        self.mainSplitter.addWidget(self.treeWidget)
 
         self.mdiArea = QMdiArea(self.centralwidget)
         self.mdiArea.setObjectName(u"mdiArea")
@@ -145,7 +147,8 @@ class Ui_MainWindow(object):
         # self.subwindow_2.setMinimumSize(QSize(200, 475))
         # self.mdiArea.addSubWindow(self.subwindow_2)
 
-        self.gridLayout_2.addWidget(self.mdiArea, 0, 1, 1, 1)
+        self.mainSplitter.addWidget(self.mdiArea)
+        self.gridLayout_2.addWidget(self.mainSplitter,0,0,1,1)
         
 
         MainWindow.setCentralWidget(self.centralwidget)
@@ -265,33 +268,33 @@ class Ui_MainWindow(object):
         ___qtreewidgetitem.setText(
             0, QCoreApplication.translate("MainWindow", u"Wells", None))
 
-        __sortingEnabled = self.treeWidget.isSortingEnabled()
-        self.treeWidget.setSortingEnabled(False)
-        ___qtreewidgetitem1 = self.treeWidget.topLevelItem(0)
-        ___qtreewidgetitem1.setText(
-            0, QCoreApplication.translate("MainWindow", u"Well 1", None))
-        ___qtreewidgetitem2 = ___qtreewidgetitem1.child(0)
-        ___qtreewidgetitem2.setText(
-            0, QCoreApplication.translate("MainWindow", u"Lines", None))
-        ___qtreewidgetitem3 = ___qtreewidgetitem2.child(0)
-        ___qtreewidgetitem3.setText(
-            0, QCoreApplication.translate("MainWindow", u"Cali", None))
-        ___qtreewidgetitem4 = ___qtreewidgetitem1.child(1)
-        ___qtreewidgetitem4.setText(
-            0, QCoreApplication.translate("MainWindow", u"Fills", None))
-        ___qtreewidgetitem5 = ___qtreewidgetitem4.child(0)
-        ___qtreewidgetitem5.setText(
-            0, QCoreApplication.translate("MainWindow", u"CaliOver", None))
-        ___qtreewidgetitem6 = self.treeWidget.topLevelItem(1)
-        ___qtreewidgetitem6.setText(
-            0, QCoreApplication.translate("MainWindow", u"Well 2", None))
-        ___qtreewidgetitem7 = ___qtreewidgetitem6.child(0)
-        ___qtreewidgetitem7.setText(
-            0, QCoreApplication.translate("MainWindow", u"Lines", None))
-        ___qtreewidgetitem8 = ___qtreewidgetitem7.child(0)
-        ___qtreewidgetitem8.setText(
-            0, QCoreApplication.translate("MainWindow", u"LDI", None))
-        self.treeWidget.setSortingEnabled(__sortingEnabled)
+        # __sortingEnabled = self.treeWidget.isSortingEnabled()
+        # self.treeWidget.setSortingEnabled(False)
+        # ___qtreewidgetitem1 = self.treeWidget.topLevelItem(0)
+        # ___qtreewidgetitem1.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Well 1", None))
+        # ___qtreewidgetitem2 = ___qtreewidgetitem1.child(0)
+        # ___qtreewidgetitem2.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Lines", None))
+        # ___qtreewidgetitem3 = ___qtreewidgetitem2.child(0)
+        # ___qtreewidgetitem3.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Cali", None))
+        # ___qtreewidgetitem4 = ___qtreewidgetitem1.child(1)
+        # ___qtreewidgetitem4.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Fills", None))
+        # ___qtreewidgetitem5 = ___qtreewidgetitem4.child(0)
+        # ___qtreewidgetitem5.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"CaliOver", None))
+        # ___qtreewidgetitem6 = self.treeWidget.topLevelItem(1)
+        # ___qtreewidgetitem6.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Well 2", None))
+        # ___qtreewidgetitem7 = ___qtreewidgetitem6.child(0)
+        # ___qtreewidgetitem7.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Lines", None))
+        # ___qtreewidgetitem8 = ___qtreewidgetitem7.child(0)
+        # ___qtreewidgetitem8.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"LDI", None))
+        # self.treeWidget.setSortingEnabled(__sortingEnabled)
 
         # self.subwindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Subwindow", None))
         # self.subwindow_2.setWindowTitle(QCoreApplication.translate("MainWindow", u"Subwindow", None))

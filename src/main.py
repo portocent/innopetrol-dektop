@@ -9,7 +9,8 @@ from PySide2.QtCore import (QDate, QDateTime, QMetaObject,
                             Slot, SIGNAL)
 from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen)
 from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
-                               QGridLayout, QSplitter, QPushButton)
+                               QGridLayout, QSplitter, QPushButton, 
+                               QTreeWidgetItem, QLabel)
 import os
 
 
@@ -21,9 +22,9 @@ def paintSub(self, event):
     # rect = QRect(0, 0, self.width()-2, self.height()-2)
     # painter.drawRect()
     # currentSize = self.frameGeometry()
-    painter.setPen(QPen(Qt.black, 3, Qt.SolidLine))
-    painter.drawRect(1, 1, self.width()-2, self.height()-2)
-    painter.drawRect(1, 1, self.width()-2, 25)
+    # painter.setPen(QPen(Qt.black, 3, Qt.SolidLine))
+    # painter.drawRect(1, 1, self.width()-2, self.height()-2)
+    # painter.drawRect(1, 1, self.width()-2, 25)
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -31,11 +32,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
-        self.wells = []
+        # self.wells = []
         self.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
         # self.subwindow.paintEvent = types.MethodType(paintSub,self.subwindow)
         self.menuOptions()
         self.statusBar().showMessage('Ready')
+        self.countSubW = 0
 
     def menuOptions(self):
         # Open Well
@@ -60,8 +62,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not error:
             msg = str(fileName)+" cargado correctamente"
             # self.wells.append(well)
-            self.addSubWindow(well)
+            self.addSubWindow(well, fileName)
+            self.fillTreeWell(fileName)
             self.show_about_dialog(title, msg)
+            
         else:
             if file[0]:
                 msg = str(fileName)+" no pudo ser cargado archivo inválido:" \
@@ -77,30 +81,39 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         msg_box.setStandardButtons(QtWidgets.QMessageBox.Close)
         msg_box.exec_()
 
-    def addSubWindow(self, well):
-        subwindow = subWindowWell()
+    def addSubWindow(self, well, name):
+        subwindow = subWindowWell(self)
         self.mdiArea.addSubWindow(subwindow)
+        strId = "# " + str(self.countSubW+1) + " " + name
+        self.countSubW = self.countSubW + 1
+        subwindow.setWindowTitle(strId)        
         subwindow.setWell(well)
         subwindow.show()
-
-
-# class subSplitter(QSplitter):
-#     def __init__(self):
-#         super().__init__()
-
-#     @Slot
-#     def moveSplitter(pos,index):
-#         if index >= len(self.sizes()):
-#             return
-#         oldState = self.blockSignals(True)
-#         super.moveSplitter(pos,index)
-#         self.blockSignals(oldState)
-       
+    
+    def fillTreeWell(self, wellName):
+        # __sortingEnabled = self.treeWidget.isSortingEnabled()
+        qtreewidgetitem1 = QTreeWidgetItem(self.treeWidget)
+        self.treeWidget.setSortingEnabled(False)
+        qtreewidgetitem1 = self.treeWidget.topLevelItem(len(self.mdiArea.subWindowList())-1)
+        strId = "# " + str(self.countSubW) + " " + wellName
+        qtreewidgetitem1.setText(0, strId)
+        # ___qtreewidgetitem2 = ___qtreewidgetitem1.child(0)
+        # ___qtreewidgetitem2.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Lines", None))
+        # ___qtreewidgetitem3 = ___qtreewidgetitem2.child(0)
+        # ___qtreewidgetitem3.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Cali", None))
+        # ___qtreewidgetitem4 = ___qtreewidgetitem1.child(1)
+        # ___qtreewidgetitem4.setText(
+        #     0, QCoreApplication.translate("MainWindow", u"Fills", None))
+        # ___qtreewidgetitem5 = ___qtreewidgetitem4.child(0)
+          
 
 class subWindowWell(QWidget):
-    def __init__(self):
+    def __init__(self, parent):
         # Sub Windows start here
         super().__init__()
+        self.parent = parent
         self.lTracks = []
         self.lSplit = []
         self.setObjectName(u"subwindow")
@@ -117,12 +130,25 @@ class subWindowWell(QWidget):
         vSplitter2 = QSplitter()
         vSplitter2.setOrientation(Qt.Vertical)
 
+        # Adding Label tag
+        label = QLabel("1", vSplitter)
+        label.setAlignment(Qt.AlignCenter)
+        label2 = QLabel("2", vSplitter2)
+        label2.setAlignment(Qt.AlignCenter)
+        label.setFrameShape(QFrame.Panel)
+        label.setFrameShadow(QFrame.Plain)
+        label.setLineWidth(2)
+        label2.setFrameShape(QFrame.Panel)
+        label2.setFrameShadow(QFrame.Plain)
+        label2.setLineWidth(2)
+               
         # Adding a buttons
-        button = QPushButton(vSplitter)
-        button2 = QPushButton(vSplitter2)
+        button = QPushButton(self)
+        button2 = QPushButton(self)
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
         
         frame = QFrame(vSplitter)
+        vSplitter.addWidget(label)
         vSplitter.addWidget(button)
         vSplitter.addWidget(frame)
         self.lSplit.append(vSplitter)
@@ -148,6 +174,7 @@ class subWindowWell(QWidget):
         # self.splitter.addWidget(frame)
         self.splitter.addWidget(vSplitter)
         frame_2 = QFrame(vSplitter2)
+        vSplitter2.addWidget(label2)
         vSplitter2.addWidget(button2)
         vSplitter2.addWidget(frame_2)
         # frame_2.setObjectName(u"frame_2")
@@ -198,7 +225,7 @@ class subWindowWell(QWidget):
         # button2.setText(str(button.objectName))
 
         # set init sizes
-        initSize = [50, self.height() - 50]
+        initSize = [20, 50, self.height() - 75]
         vSplitter.setSizes(initSize)
         vSplitter2.setSizes(initSize)
 
@@ -219,8 +246,15 @@ class subWindowWell(QWidget):
         # Adding a button
         button = QPushButton(vSplitter)
         frame = QFrame(vSplitter)
+        # Adding Label tag
+        label = QLabel(str(frameCount+1), vSplitter)
+        label.setAlignment(Qt.AlignCenter)
+        label.setFrameShape(QFrame.Panel)
+        label.setFrameShadow(QFrame.Plain)
+        label.setLineWidth(2)
 
         # Adding widgets to splitter
+        vSplitter.addWidget(label)
         vSplitter.addWidget(button)
         vSplitter.addWidget(frame)
         vSplitter.setSizes(self.lSplit[0].sizes())
@@ -282,7 +316,15 @@ class subWindowWell(QWidget):
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
         # msg.buttonClicked.connect(msgbtn)    
         retval = msg.exec_()
-        # print ("value of pressed message box button:", retval)
+        # Get the Window title
+        name = str(self.windowTitle())
+        # looking for the item in the tree
+        t = self.parent.treeWidget.findItems(name, Qt.MatchWrap)
+        # print ("Number:", t)
+        # self.parent.treeWidget.removeItemWidget(t[0], 0)
+        # Remove the item in the tree
+        self.parent.treeWidget.takeTopLevelItem(self.parent.treeWidget.indexOfTopLevelItem(t[0]))
+        # if click in ok then exit
         if retval == 1024: #write your required condition/check 
             event.accept()
         else:
