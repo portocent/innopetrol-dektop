@@ -41,4 +41,10 @@ class Line():
         self.rScale = 0
         self.name = ""
 
+class Shade():
+    def __init__(self):
+        self.leftLine = None
+        self.leftVal = None
+        
+
 

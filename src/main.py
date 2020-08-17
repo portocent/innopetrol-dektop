@@ -12,8 +12,10 @@ from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen)
 from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
                                QGridLayout, QSplitter, QPushButton, 
                                QTreeWidgetItem, QLabel, QComboBox, QCheckBox,
-                               QHBoxLayout)
+                               QHBoxLayout, QTableWidgetItem, QApplication,
+                               QColorDialog)
 import os
+from functools import partial
 
 
 def paintSub(self, event):
@@ -120,7 +122,7 @@ class subWindowWell(QWidget):
         self.lSplit = []
         self.setObjectName(u"subwindow")
         # self.setMinimumSize(QSize(200, 475))
-        self.setMinimumSize(QSize(200, 200))
+        self.setMinimumSize(QSize(200, 300))
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName(u"gridLayout")
         self.splitter = QSplitter(self)
@@ -147,9 +149,9 @@ class subWindowWell(QWidget):
                
         # Adding a buttons
         button = QPushButton(vSplitter)
-        button.clicked.connect(self._addLines)
+        button.clicked.connect(partial(self._addLines,1))
         button2 = QPushButton(vSplitter2)
-        button2.clicked.connect(self._addLines)
+        button2.clicked.connect(partial(self._addLines,2))
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
         
         frame = QFrame(vSplitter)
@@ -161,7 +163,7 @@ class subWindowWell(QWidget):
         # frame.setObjectName(u"frame")
         # Set frame and button names
         frame.setObjectName(u"Track_"+str(self.splitter.count()))
-        button.setObjectName(u"button"+str(self.splitter.count()))
+        button.setObjectName(u"button_"+str(self.splitter.count()))
         palette = QPalette()
         self.brush = QBrush(QColor(255, 255, 255, 255))
         self.brush.setStyle(Qt.SolidPattern)
@@ -184,7 +186,7 @@ class subWindowWell(QWidget):
         vSplitter2.addWidget(frame_2)
         # frame_2.setObjectName(u"frame_2")
         frame_2.setObjectName(u"Track_"+str(self.splitter.count()))
-        button2.setObjectName(u"Track_"+str(self.splitter.count()))
+        button2.setObjectName(u"button_"+str(self.splitter.count()))
         palette1 = QPalette()
         palette1.setBrush(QPalette.Active, QPalette.Base, self.brush)
         palette1.setBrush(QPalette.Active, QPalette.Window, self.brush)
@@ -230,7 +232,7 @@ class subWindowWell(QWidget):
         # button2.setText(str(button.objectName))
 
         # set init sizes
-        initSize = [20, 50, self.height() - 75]
+        initSize = [20, 50, self.height() - 70]
         vSplitter.setSizes(initSize)
         vSplitter2.setSizes(initSize)
 
@@ -246,11 +248,12 @@ class subWindowWell(QWidget):
         frameCount = self.splitter.count()
 
         # Internal Splitter
-        vSplitter = QSplitter()
+        vSplitter = QSplitter(self.splitter)
         vSplitter.setOrientation(Qt.Vertical)        
         # Adding a button
         button = QPushButton(vSplitter)
-        button.clicked.connect(self._addLines)
+        button.setObjectName(u"button_"+str(frameCount))
+        button.clicked.connect(partial(self._addLines,frameCount))
         frame = QFrame(vSplitter)
         # Adding Label tag
         label = QLabel(str(frameCount+1), vSplitter)
@@ -263,13 +266,13 @@ class subWindowWell(QWidget):
         vSplitter.addWidget(label)
         vSplitter.addWidget(button)
         vSplitter.addWidget(frame)
-        vSplitter.setSizes(self.lSplit[0].sizes())
+        
         self.connect(vSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter))
         self.lSplit.append(vSplitter)
 
         frame.setObjectName(u"Track_"+str(frameCount))
-        button.setObjectName(u"Track_"+str(frameCount))
-        # button.setText(str(button.objectName))
+        
+        # button.setText(str(button.objectName()))
         palette1 = QPalette()
         palette1.setBrush(QPalette.Active, QPalette.Base, self.brush)
         palette1.setBrush(QPalette.Active, QPalette.Window, self.brush)
@@ -283,15 +286,23 @@ class subWindowWell(QWidget):
         frame.setFrameShadow(QFrame.Raised)
         self.lTracks.append(frame)
         self.splitter.addWidget(vSplitter)
+        # vSplitter.setSizes(self.lSplit[0].sizes())
         # self.splitter.update()
         # Saving over frame
-        frame.mouseReleaseEvent = lambda event: self.setOverFrame(frame)
+        # frame.mouseReleaseEvent = lambda event: self.setOverFrame(frame)
         # Calculate the size for each frame
         sizes = []
         fSize = self.width()/self.splitter.count()
         for s in range(self.splitter.count()):
             sizes.append(fSize)
         self.splitter.setSizes(sizes)
+
+        # Resize all the another Splitters
+        for r in self.lSplit:
+            # if self.lSplit[0] is not r:
+            r.blockSignals(True)
+            r.setSizes(self.lSplit[0].sizes())
+            r.blockSignals(False)        
 
     @Slot()
     def delTrack(self):
@@ -304,8 +315,12 @@ class subWindowWell(QWidget):
         self.splitter.widget(self.splitter.count()-1).deleteLater()
 
     @Slot()
-    def _addLines(self):
+    def _addLines(self,track):
+        # Get clicked widget
+        # clickme = self.sender()
+        # buttonName = str(clickme.objectName())
         dialog = addCurveWindow(self)
+        dialog.setTrack(track)
         dialog.exec_()
         # dialog.show()
 
@@ -364,16 +379,26 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         self.loadWellData()
         # self.subwindow.paintEvent = types.MethodType(paintSub,self.subwindow)
     
+    def setTrack(self,track):
+        self.track = track
+        self.setWindowTitle(str(self.parent.windowTitle()) + " - Track " + str(track))
+    
     def loadWellData(self):
         well = self.parent.well
         items = []
         items = well.df.columns
         logopt = [" ","Lineal","Log"]
+        linesOpt = ["Continua", "- - - - - - -",
+        "- . - . - . -", ". . . . . . .", 
+        "- . . - . . -"]
+        self.rowColor = []
 
         # combo box
         for i in range(16):
+            # Tag Curvas ###########################################
             combo = QComboBox(self)
             comboLog = QComboBox(self)
+            comboLines = QComboBox(self)
             combo.addItem(" ")
             cell_widget = QWidget()
             lay_out = QHBoxLayout(cell_widget) 
@@ -382,13 +407,43 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             lay_out.setAlignment(Qt.AlignCenter)
             lay_out.setContentsMargins(0,0,0,0)
             cell_widget.setLayout(lay_out)
+            # Addig the color choice
+            colorButton = QPushButton("Seleccionar Color",self.tableWidget)
+            
+            self.rowColor.append("#000000")
             for op in items:
                 combo.addItem(op)
             for op in logopt:
                 comboLog.addItem(op)
-            self.tableWidget.setCellWidget(i+1,0,combo)
-            self.tableWidget.setCellWidget(i+1,3,cell_widget)
-            self.tableWidget.setCellWidget(i+1,5,comboLog)
+            for op in linesOpt:
+                comboLines.addItem(op)                
+            self.tableWidget.setCellWidget(i,0,combo)
+            self.tableWidget.setCellWidget(i,3,cell_widget)
+            self.tableWidget.setCellWidget(i,4,comboLog)
+            self.tableWidget.setCellWidget(i,5,colorButton)
+            self.tableWidget.setCellWidget(i,7,comboLines)
+            colorButton.clicked.connect(self.color_picker)
+
+            # Tag Sombras ################################
+
+            
+    @Slot()
+    def color_picker(self):
+        # Get clicked widget
+        clickme = QApplication.focusWidget()
+        color = QColorDialog.getColor()
+
+        if color.isValid():
+            button = QPushButton("Seleccionar Color")
+            # get clicked widget Pos
+            index = self.tableWidget.indexAt(clickme.pos())
+            i = index.row()
+            button.clicked.connect(self.color_picker)
+            button.setStyleSheet("QPushButton { background-color: %s;}" % color.name())
+            # self.rowColor[pos] = color.name()
+            self.tableWidget.setCellWidget(i,5,button)
+            self.rowColor[i-1] = color.name()
+        
             
         
 

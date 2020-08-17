@@ -1,59 +1,132 @@
 import sys
-from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtCore, QtWidgets, QtGui
 
-class ApplicationWindow(QtWidgets.QMainWindow):
+class Window(QtWidgets.QMainWindow):
+
     def __init__(self):
-        QtWidgets.QMainWindow.__init__(self)
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.setWindowTitle("Cluster View")
-        self.initUI()
+        super(Window, self).__init__()
+        self.setGeometry(50, 50, 500, 300)
+        self.setWindowTitle("PyQT tuts!")
+        self.setWindowIcon(QtGui.QIcon('pythonlogo.png'))
 
-        self.window.setFocus()
-        self.setCentralWidget(self.window)
-        self.showMaximized()
+        extractAction = QtWidgets.QAction("&GET TO THE CHOPPAH!!!", self)
+        extractAction.setShortcut("Ctrl+Q")
+        extractAction.setStatusTip('Leave The App')
+        extractAction.triggered.connect(self.close_application)
 
-    def splitterMoved(self, sender) :
-        print ("ok", sender)
-        receiver = self.split2 if sender is self.split3 else self.split3
-        receiver.blockSignals(True)
-        receiver.setSizes(sender.sizes())
-        receiver.blockSignals(False)
+        self.statusBar()
 
-    def initUI(self) :
-        self.window = QtWidgets.QWidget()
+        mainMenu = self.menuBar()
+        fileMenu = mainMenu.addMenu('&File')
+        fileMenu.addAction(extractAction)
+        
 
-        self.editor1 = QtWidgets.QTextEdit()
-        self.editor2 = QtWidgets.QTextEdit()
-        self.editor3 = QtWidgets.QTextEdit()
-        self.editor4 = QtWidgets.QTextEdit()
+        self.home()
 
-        self.split1 = QtWidgets.QSplitter()
-        self.split2 = QtWidgets.QSplitter()
-        self.split3 = QtWidgets.QSplitter()
-        self.split2.setOrientation(QtCore.Qt.Vertical)
-        self.split3.setOrientation(QtCore.Qt.Vertical)
+    def home(self):
+        btn = QtWidgets.QPushButton("Quit", self)
+        btn.clicked.connect(self.close_application)
+        btn.resize(btn.minimumSizeHint())
+        btn.move(0,100)
 
-        self.split2.addWidget(self.editor1)
-        self.split2.addWidget(self.editor2)
-        self.split3.addWidget(self.editor3)
-        self.split3.addWidget(self.editor4)
+        extractAction = QtWidgets.QAction(QtGui.QIcon('todachoppa.png'), 'Flee the Scene', self)
+        extractAction.triggered.connect(self.close_application)
+        self.toolBar = self.addToolBar("Extraction")
+        self.toolBar.addAction(extractAction)
 
-        self.connect(self.split2, QtCore.SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(self.split2))
-        self.connect(self.split3, QtCore.SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(self.split3))
+        fontChoice = QtWidgets.QAction('Font', self)
+        fontChoice.triggered.connect(self.font_choice)
+        #self.toolBar = self.addToolBar("Font")
+        self.toolBar.addAction(fontChoice)
 
-        self.split1.addWidget(self.split2)
-        self.split1.addWidget(self.split3)
+        fontColor = QtWidgets.QAction('Font bg Color', self)
+        fontColor.triggered.connect(self.color_picker)
 
-        self.layout = QtWidgets.QHBoxLayout()
-        self.layout.addWidget(self.split1)
-        self.window.setLayout(self.layout)
+        self.toolBar.addAction(fontColor)
 
-def main() :
-    qApp = QtWidgets.QApplication(sys.argv)
-    qApp.setStyle('cleanlooks')
-    aw = ApplicationWindow()
-    aw.show()
-    sys.exit(qApp.exec_())
+        checkBox = QtWidgets.QCheckBox('Enlarge Window', self)
+        checkBox.move(300, 25)
+        checkBox.stateChanged.connect(self.enlarge_window)
 
-if __name__ == '__main__':
-    main()
+        self.progress = QtWidgets.QProgressBar(self)
+        self.progress.setGeometry(200, 80, 250, 20)
+
+        self.btn = QtWidgets.QPushButton("Download",self)
+        self.btn.move(200,120)
+        self.btn.clicked.connect(self.download)
+
+        #print(self.style().objectName())
+        self.styleChoice = QtWidgets.QLabel("Windows Vista", self)
+
+        comboBox = QtWidgets.QComboBox(self)
+        comboBox.addItem("motif")
+        comboBox.addItem("Windows")
+        comboBox.addItem("cde")
+        comboBox.addItem("Plastique")
+        comboBox.addItem("Cleanlooks")
+        comboBox.addItem("windowsvista")
+
+        comboBox.move(50, 250)
+        self.styleChoice.move(50,150)
+        comboBox.activated[str].connect(self.style_choice)
+
+        cal = QtWidgets.QCalendarWidget(self)
+        cal.move(500,200)
+        cal.resize(200,200)
+
+        self.show()
+
+    def color_picker(self):
+        color = QtWidgets.QColorDialog.getColor()
+        self.styleChoice.setStyleSheet("QWidget { background-color: %s}" % color.name())
+
+        
+
+    def font_choice(self):
+        font, valid = QtWidgets.QFontDialog.getFont()
+        if valid:
+            self.styleChoice.setFont(font)
+
+
+    def style_choice(self, text):
+        self.styleChoice.setText(text)
+        QtWidgets.QApplication.setStyle(QtWidgets.QStyleFactory.create(text))
+
+
+    def download(self):
+        self.completed = 0
+
+        while self.completed < 100:
+            self.completed += 0.0001
+            self.progress.setValue(self.completed)
+        
+        
+
+    def enlarge_window(self, state):
+        if state == QtCore.Qt.Checked:
+            self.setGeometry(50,50, 1000, 600)
+        else:
+            self.setGeometry(50, 50, 500, 300)
+        
+
+
+    def close_application(self):
+        choice = QtWidgets.QMessageBox.question(self, 'Extract!',
+                                            "Get into the chopper?",
+                                            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if choice == QtWidgets.QMessageBox.Yes:
+            print("Extracting Naaaaaaoooww!!!!")
+            sys.exit()
+        else:
+            pass
+        
+        
+
+    
+def run():
+    app = QtWidgets.QApplication(sys.argv)
+    GUI = Window()
+    sys.exit(app.exec_())
+
+
+run()
