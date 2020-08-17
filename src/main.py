@@ -4,13 +4,15 @@ from GUI import Ui_MainWindow
 from PySide2 import QtGui
 import types
 from lasProcesor import Well
+from addCurveGUI import Ui_addCurve
 from PySide2.QtCore import (QDate, QDateTime, QMetaObject,
                             QObject, QPoint, QRect, QSize, QTime, Qt,
                             Slot, SIGNAL)
 from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen)
 from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
                                QGridLayout, QSplitter, QPushButton, 
-                               QTreeWidgetItem, QLabel)
+                               QTreeWidgetItem, QLabel, QComboBox, QCheckBox,
+                               QHBoxLayout)
 import os
 
 
@@ -145,7 +147,9 @@ class subWindowWell(QWidget):
                
         # Adding a buttons
         button = QPushButton(vSplitter)
+        button.clicked.connect(self._addLines)
         button2 = QPushButton(vSplitter2)
+        button2.clicked.connect(self._addLines)
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
         
         frame = QFrame(vSplitter)
@@ -246,6 +250,7 @@ class subWindowWell(QWidget):
         vSplitter.setOrientation(Qt.Vertical)        
         # Adding a button
         button = QPushButton(vSplitter)
+        button.clicked.connect(self._addLines)
         frame = QFrame(vSplitter)
         # Adding Label tag
         label = QLabel(str(frameCount+1), vSplitter)
@@ -298,6 +303,12 @@ class subWindowWell(QWidget):
         self.lTracks.pop()
         self.splitter.widget(self.splitter.count()-1).deleteLater()
 
+    @Slot()
+    def _addLines(self):
+        dialog = addCurveWindow(self)
+        dialog.exec_()
+        # dialog.show()
+
     def splitterMoved(self, sender):
         # Resize all the another Splitters
         for r in self.lSplit:
@@ -342,6 +353,46 @@ class subWindowWell(QWidget):
 
     def setWell(self, well):
         self.well = well
+
+class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
+    def __init__(self, subwindow):
+        super().__init__(subwindow)
+        self.setupUi(self)
+        self.parent = subwindow
+        # self.wells = []
+        self.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
+        self.loadWellData()
+        # self.subwindow.paintEvent = types.MethodType(paintSub,self.subwindow)
+    
+    def loadWellData(self):
+        well = self.parent.well
+        items = []
+        items = well.df.columns
+        logopt = [" ","Lineal","Log"]
+
+        # combo box
+        for i in range(16):
+            combo = QComboBox(self)
+            comboLog = QComboBox(self)
+            combo.addItem(" ")
+            cell_widget = QWidget()
+            lay_out = QHBoxLayout(cell_widget) 
+            check = QCheckBox(self)
+            lay_out.addWidget(check)
+            lay_out.setAlignment(Qt.AlignCenter)
+            lay_out.setContentsMargins(0,0,0,0)
+            cell_widget.setLayout(lay_out)
+            for op in items:
+                combo.addItem(op)
+            for op in logopt:
+                comboLog.addItem(op)
+            self.tableWidget.setCellWidget(i+1,0,combo)
+            self.tableWidget.setCellWidget(i+1,3,cell_widget)
+            self.tableWidget.setCellWidget(i+1,5,comboLog)
+            
+        
+
+
 
 
 # app = QtWidgets.QApplication(sys.argv)

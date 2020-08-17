@@ -29,3 +29,16 @@ class Track():
         self.grids = pd.DataFrame()
         self.header = pd.DataFrame()
 
+
+class Line():
+    def __init__(self):
+        self.color = None
+        self.grosor = None
+        self.estilo = None
+        self.log = None
+        self.visible = False
+        self.lScale = 0
+        self.rScale = 0
+        self.name = ""
+
+
