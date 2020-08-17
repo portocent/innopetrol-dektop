@@ -117,7 +117,8 @@ class subWindowWell(QWidget):
         self.lTracks = []
         self.lSplit = []
         self.setObjectName(u"subwindow")
-        self.setMinimumSize(QSize(200, 475))
+        # self.setMinimumSize(QSize(200, 475))
+        self.setMinimumSize(QSize(200, 200))
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName(u"gridLayout")
         self.splitter = QSplitter(self)
@@ -125,9 +126,9 @@ class subWindowWell(QWidget):
         self.splitter.setOrientation(Qt.Horizontal)
         
         # Internal Splitter
-        vSplitter = QSplitter()
+        vSplitter = QSplitter(self)
         vSplitter.setOrientation(Qt.Vertical)
-        vSplitter2 = QSplitter()
+        vSplitter2 = QSplitter(self)
         vSplitter2.setOrientation(Qt.Vertical)
 
         # Adding Label tag
@@ -143,8 +144,8 @@ class subWindowWell(QWidget):
         label2.setLineWidth(2)
                
         # Adding a buttons
-        button = QPushButton(self)
-        button2 = QPushButton(self)
+        button = QPushButton(vSplitter)
+        button2 = QPushButton(vSplitter2)
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
         
         frame = QFrame(vSplitter)
