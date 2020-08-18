@@ -253,7 +253,7 @@ class subWindowWell(QWidget):
         # Adding a button
         button = QPushButton(vSplitter)
         button.setObjectName(u"button_"+str(frameCount))
-        button.clicked.connect(partial(self._addLines,frameCount))
+        button.clicked.connect(partial(self._addLines,frameCount+1))
         frame = QFrame(vSplitter)
         # Adding Label tag
         label = QLabel(str(frameCount+1), vSplitter)
@@ -380,7 +380,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         # self.subwindow.paintEvent = types.MethodType(paintSub,self.subwindow)
     
     def setTrack(self,track):
-        self.track = track
+        self.trackNum = track
         self.setWindowTitle(str(self.parent.windowTitle()) + " - Track " + str(track))
     
     def loadWellData(self):
@@ -391,14 +391,16 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         linesOpt = ["Continua", "- - - - - - -",
         "- . - . - . -", ". . . . . . .", 
         "- . . - . . -"]
+        widthOpt = [1,2,3,4,5,6,7,8]
         self.rowColor = []
 
         # combo box
         for i in range(16):
             # Tag Curvas ###########################################
-            combo = QComboBox(self)
+            combo = QComboBox(self.tableWidget)
             comboLog = QComboBox(self)
             comboLines = QComboBox(self)
+            comboWidth = QComboBox(self)
             combo.addItem(" ")
             cell_widget = QWidget()
             lay_out = QHBoxLayout(cell_widget) 
@@ -409,6 +411,8 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             cell_widget.setLayout(lay_out)
             # Addig the color choice
             colorButton = QPushButton("Seleccionar Color",self.tableWidget)
+            label = Label(self.tableWidget)
+            
             
             self.rowColor.append("#000000")
             for op in items:
@@ -416,16 +420,70 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             for op in logopt:
                 comboLog.addItem(op)
             for op in linesOpt:
-                comboLines.addItem(op)                
+                comboLines.addItem(op)
+            for op in widthOpt:
+                comboWidth.addItem(str(op))               
             self.tableWidget.setCellWidget(i,0,combo)
             self.tableWidget.setCellWidget(i,3,cell_widget)
             self.tableWidget.setCellWidget(i,4,comboLog)
             self.tableWidget.setCellWidget(i,5,colorButton)
+            self.tableWidget.setCellWidget(i,6,comboWidth)
             self.tableWidget.setCellWidget(i,7,comboLines)
+            self.tableWidget.setCellWidget(i,8,label)
+            
+            
+            # Adding label output
+            
+            
+            # Events
+            combo.currentIndexChanged.connect(self.paintLabel)
+            comboWidth.currentIndexChanged.connect(self.setWidthPen)
+            comboLines.currentIndexChanged.connect(self.setStylePen)
             colorButton.clicked.connect(self.color_picker)
 
             # Tag Sombras ################################
 
+    @Slot()
+    def paintLabel(self, ix):
+        # combo = self.sender()
+        clickme = QApplication.focusWidget()
+        index = self.tableWidget.indexAt(clickme.pos())
+        i = index.row()
+        label = self.tableWidget.cellWidget(i,8)        
+        if ix != 0:
+            label.visible = True
+            label.update()
+        else:
+            label.visible = False
+            label.update()
+
+    @Slot()
+    def setStylePen(self, ix):
+        clickme = QApplication.focusWidget()
+        index = self.tableWidget.indexAt(clickme.pos())
+        i = index.row()
+        label = self.tableWidget.cellWidget(i,8) 
+        switcher = {
+            0: Qt.SolidLine,
+            1: Qt.DashLine,
+            2: Qt.DashDotLine,
+            3: Qt.DotLine,
+            4: Qt.DashDotDotLine
+        }      
+        label.penType = switcher.get(ix)
+        label.update()
+
+
+    @Slot()
+    def setWidthPen(self, ix):
+        # combo = self.sender()
+        clickme = QApplication.focusWidget()
+        index = self.tableWidget.indexAt(clickme.pos())
+        i = index.row()
+        label = self.tableWidget.cellWidget(i,8) 
+        label.penSize = ix+1
+        label.update()
+      
             
     @Slot()
     def color_picker(self):
@@ -437,12 +495,38 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             button = QPushButton("Seleccionar Color")
             # get clicked widget Pos
             index = self.tableWidget.indexAt(clickme.pos())
+            
             i = index.row()
+            label = self.tableWidget.cellWidget(i,8)
+            # label = self.tableWidget.item(i+1,7)
+            # label = self.tableWidget.item(i+1,6)
+
             button.clicked.connect(self.color_picker)
-            button.setStyleSheet("QPushButton { background-color: %s;}" % color.name())
+            # print(color.name())
+            label.penColor = color
+            # if color.name() != "#000000":
+                # button.setStyleSheet("QPushButton { background-color: %s;}" % color.name())
             # self.rowColor[pos] = color.name()
             self.tableWidget.setCellWidget(i,5,button)
-            self.rowColor[i-1] = color.name()
+            self.rowColor[i-1] = color
+
+class Label(QLabel):
+    def __init__(self, parent=None):
+        super(Label, self).__init__(parent=parent)
+        self.penColor = Qt.black
+        self.penType = Qt.SolidLine
+        self.penSize = 1
+        self.visible = False
+        
+
+    def paintEvent(self, e):
+        super().paintEvent(e)
+        qp = QtGui.QPainter(self)
+        # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
+        pen = QPen(self.penColor, self.penSize, self.penType)
+        qp.setPen(pen)
+        if self.visible:
+            qp.drawLine(2, self.height()/2, self.width()-2, self.height()/2)
         
             
         

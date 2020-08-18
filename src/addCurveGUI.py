@@ -170,7 +170,7 @@ class Ui_addCurve(object):
 
         self.retranslateUi(addCurve)
 
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(addCurve)
