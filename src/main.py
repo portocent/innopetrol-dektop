@@ -397,11 +397,17 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         # combo box
         for i in range(16):
             # Tag Curvas ###########################################
+            
+            # Combo Box
             combo = QComboBox(self.tableWidget)
+            # Disable all except first
+            if i != 0:
+                combo.setEnabled(False)
             comboLog = QComboBox(self)
             comboLines = QComboBox(self)
             comboWidth = QComboBox(self)
             combo.addItem(" ")
+            # CheckBox
             cell_widget = QWidget()
             lay_out = QHBoxLayout(cell_widget) 
             check = QCheckBox(self)
@@ -431,10 +437,6 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             self.tableWidget.setCellWidget(i,7,comboLines)
             self.tableWidget.setCellWidget(i,8,label)
             
-            
-            # Adding label output
-            
-            
             # Events
             combo.currentIndexChanged.connect(self.paintLabel)
             comboWidth.currentIndexChanged.connect(self.setWidthPen)
@@ -442,6 +444,30 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             colorButton.clicked.connect(self.color_picker)
 
             # Tag Sombras ################################
+            
+            # Combo Box
+            lCurve = QComboBox()
+            rCurve = QComboBox()
+            # Visible CheckBox
+            checkWidget = QWidget()
+            lay_out2 = QHBoxLayout(checkWidget) 
+            check2 = QCheckBox()
+            lay_out2.addWidget(check2)
+            lay_out2.setAlignment(Qt.AlignCenter)
+            lay_out2.setContentsMargins(0,0,0,0)
+            checkWidget.setLayout(lay_out2)
+            # Shading Color
+            colorButton2 = QPushButton("Color")
+            # Shading Style
+            # comboStyle = QComboBox(self.tableWidget_2)
+            # Shading Preview
+            # labelShading = Label(self.tableWidget_2)
+
+            # Filling Shading table
+            self.tableWidget_2.setCellWidget(i,0,lCurve)
+            self.tableWidget_2.setCellWidget(i,2,rCurve)
+            self.tableWidget_2.setCellWidget(i,4,checkWidget)
+            self.tableWidget_2.setCellWidget(i,5,colorButton2)
 
     @Slot()
     def paintLabel(self, ix):
@@ -450,8 +476,12 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         index = self.tableWidget.indexAt(clickme.pos())
         i = index.row()
         label = self.tableWidget.cellWidget(i,8)        
+        
         if ix != 0:
             label.visible = True
+            if i < 15:
+                nextCombo = self.tableWidget.cellWidget(i+1,0)
+                nextCombo.setEnabled(True)
             label.update()
         else:
             label.visible = False
