@@ -302,7 +302,7 @@ class subWindowWell(QWidget):
             # if self.lSplit[0] is not r:
             r.blockSignals(True)
             r.setSizes(self.lSplit[0].sizes())
-            r.blockSignals(False)        
+            r.blockSignals(False)     
 
     @Slot()
     def delTrack(self):
@@ -501,6 +501,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             colorButton2.clicked.connect(self.color_pickerS)    
     
     # def save(self):
+
 
     # def load(self):
 
