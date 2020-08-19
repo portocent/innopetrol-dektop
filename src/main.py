@@ -428,7 +428,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             label = Label(self.tableWidget)
 
             
-            self.rowColor.append("#000000")
+            # self.rowColor.append("#000000")
             for op in items:
                 combo.addItem(op)
             for op in logopt:
@@ -498,7 +498,12 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
 
             # Events 
             comboBrush.currentIndexChanged.connect(self.setStyleBrush)
-            colorButton2.clicked.connect(self.color_pickerS)            
+            colorButton2.clicked.connect(self.color_pickerS)    
+    
+    # def save(self):
+
+    # def load(self):
+
 
     @Slot()
     def paintLabel(self, ix):
@@ -534,7 +539,6 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         label.penType = switcher.get(ix)
         label.update()
 
-
     @Slot()
     def setWidthPen(self, ix):
         # combo = self.sender()
@@ -544,8 +548,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         label = self.tableWidget.cellWidget(i,8) 
         label.penSize = ix+1
         label.update()
-      
-            
+          
     @Slot()
     def color_picker(self):
         # Get clicked widget
@@ -597,9 +600,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         else:
                 label.visible = False
         label.update()              
-        
-    
-            
+                   
     @Slot()
     def color_pickerS(self):
         # Get clicked widget
