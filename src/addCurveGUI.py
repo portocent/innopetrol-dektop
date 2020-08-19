@@ -94,8 +94,8 @@ class Ui_addCurve(object):
         self.gridLayout_3 = QGridLayout(self.tabShading)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.tableWidget_2 = QTableWidget(self.tabShading)
-        if (self.tableWidget_2.columnCount() < 7):
-            self.tableWidget_2.setColumnCount(7)
+        if (self.tableWidget_2.columnCount() < 9):
+            self.tableWidget_2.setColumnCount(9)
         __qtablewidgetitem25 = QTableWidgetItem()
         self.tableWidget_2.setHorizontalHeaderItem(0, __qtablewidgetitem25)
         __qtablewidgetitem26 = QTableWidgetItem()
@@ -110,38 +110,42 @@ class Ui_addCurve(object):
         self.tableWidget_2.setHorizontalHeaderItem(5, __qtablewidgetitem30)
         __qtablewidgetitem31 = QTableWidgetItem()
         self.tableWidget_2.setHorizontalHeaderItem(6, __qtablewidgetitem31)
+        __qtablewidgetitem32 = QTableWidgetItem()
+        self.tableWidget_2.setHorizontalHeaderItem(7, __qtablewidgetitem32)
+        __qtablewidgetitem33 = QTableWidgetItem()
+        self.tableWidget_2.setHorizontalHeaderItem(8, __qtablewidgetitem33)
         if (self.tableWidget_2.rowCount() < 15):
             self.tableWidget_2.setRowCount(15)
-        __qtablewidgetitem32 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(0, __qtablewidgetitem32)
-        __qtablewidgetitem33 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(1, __qtablewidgetitem33)
         __qtablewidgetitem34 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(2, __qtablewidgetitem34)
+        self.tableWidget_2.setVerticalHeaderItem(0, __qtablewidgetitem34)
         __qtablewidgetitem35 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(3, __qtablewidgetitem35)
+        self.tableWidget_2.setVerticalHeaderItem(1, __qtablewidgetitem35)
         __qtablewidgetitem36 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(4, __qtablewidgetitem36)
+        self.tableWidget_2.setVerticalHeaderItem(2, __qtablewidgetitem36)
         __qtablewidgetitem37 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(5, __qtablewidgetitem37)
+        self.tableWidget_2.setVerticalHeaderItem(3, __qtablewidgetitem37)
         __qtablewidgetitem38 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(6, __qtablewidgetitem38)
+        self.tableWidget_2.setVerticalHeaderItem(4, __qtablewidgetitem38)
         __qtablewidgetitem39 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(7, __qtablewidgetitem39)
+        self.tableWidget_2.setVerticalHeaderItem(5, __qtablewidgetitem39)
         __qtablewidgetitem40 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(8, __qtablewidgetitem40)
+        self.tableWidget_2.setVerticalHeaderItem(6, __qtablewidgetitem40)
         __qtablewidgetitem41 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(9, __qtablewidgetitem41)
+        self.tableWidget_2.setVerticalHeaderItem(7, __qtablewidgetitem41)
         __qtablewidgetitem42 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(10, __qtablewidgetitem42)
+        self.tableWidget_2.setVerticalHeaderItem(8, __qtablewidgetitem42)
         __qtablewidgetitem43 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(11, __qtablewidgetitem43)
+        self.tableWidget_2.setVerticalHeaderItem(9, __qtablewidgetitem43)
         __qtablewidgetitem44 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(12, __qtablewidgetitem44)
+        self.tableWidget_2.setVerticalHeaderItem(10, __qtablewidgetitem44)
         __qtablewidgetitem45 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(13, __qtablewidgetitem45)
+        self.tableWidget_2.setVerticalHeaderItem(11, __qtablewidgetitem45)
         __qtablewidgetitem46 = QTableWidgetItem()
-        self.tableWidget_2.setVerticalHeaderItem(14, __qtablewidgetitem46)
+        self.tableWidget_2.setVerticalHeaderItem(12, __qtablewidgetitem46)
+        __qtablewidgetitem47 = QTableWidgetItem()
+        self.tableWidget_2.setVerticalHeaderItem(13, __qtablewidgetitem47)
+        __qtablewidgetitem48 = QTableWidgetItem()
+        self.tableWidget_2.setVerticalHeaderItem(14, __qtablewidgetitem48)
         self.tableWidget_2.setObjectName(u"tableWidget_2")
 
         self.gridLayout_3.addWidget(self.tableWidget_2, 0, 0, 1, 1)
@@ -240,39 +244,43 @@ class Ui_addCurve(object):
         ___qtablewidgetitem29 = self.tableWidget_2.horizontalHeaderItem(4)
         ___qtablewidgetitem29.setText(QCoreApplication.translate("addCurve", u"Visible", None));
         ___qtablewidgetitem30 = self.tableWidget_2.horizontalHeaderItem(5)
-        ___qtablewidgetitem30.setText(QCoreApplication.translate("addCurve", u"Relleno", None));
+        ___qtablewidgetitem30.setText(QCoreApplication.translate("addCurve", u"Color", None));
         ___qtablewidgetitem31 = self.tableWidget_2.horizontalHeaderItem(6)
-        ___qtablewidgetitem31.setText(QCoreApplication.translate("addCurve", u"Descripci\u00f3n", None));
-        ___qtablewidgetitem32 = self.tableWidget_2.verticalHeaderItem(0)
-        ___qtablewidgetitem32.setText(QCoreApplication.translate("addCurve", u"1", None));
-        ___qtablewidgetitem33 = self.tableWidget_2.verticalHeaderItem(1)
-        ___qtablewidgetitem33.setText(QCoreApplication.translate("addCurve", u"2", None));
-        ___qtablewidgetitem34 = self.tableWidget_2.verticalHeaderItem(2)
-        ___qtablewidgetitem34.setText(QCoreApplication.translate("addCurve", u"3", None));
-        ___qtablewidgetitem35 = self.tableWidget_2.verticalHeaderItem(3)
-        ___qtablewidgetitem35.setText(QCoreApplication.translate("addCurve", u"4", None));
-        ___qtablewidgetitem36 = self.tableWidget_2.verticalHeaderItem(4)
-        ___qtablewidgetitem36.setText(QCoreApplication.translate("addCurve", u"5", None));
-        ___qtablewidgetitem37 = self.tableWidget_2.verticalHeaderItem(5)
-        ___qtablewidgetitem37.setText(QCoreApplication.translate("addCurve", u"6", None));
-        ___qtablewidgetitem38 = self.tableWidget_2.verticalHeaderItem(6)
-        ___qtablewidgetitem38.setText(QCoreApplication.translate("addCurve", u"7", None));
-        ___qtablewidgetitem39 = self.tableWidget_2.verticalHeaderItem(7)
-        ___qtablewidgetitem39.setText(QCoreApplication.translate("addCurve", u"8", None));
-        ___qtablewidgetitem40 = self.tableWidget_2.verticalHeaderItem(8)
-        ___qtablewidgetitem40.setText(QCoreApplication.translate("addCurve", u"9", None));
-        ___qtablewidgetitem41 = self.tableWidget_2.verticalHeaderItem(9)
-        ___qtablewidgetitem41.setText(QCoreApplication.translate("addCurve", u"10", None));
-        ___qtablewidgetitem42 = self.tableWidget_2.verticalHeaderItem(10)
-        ___qtablewidgetitem42.setText(QCoreApplication.translate("addCurve", u"11", None));
-        ___qtablewidgetitem43 = self.tableWidget_2.verticalHeaderItem(11)
-        ___qtablewidgetitem43.setText(QCoreApplication.translate("addCurve", u"12", None));
-        ___qtablewidgetitem44 = self.tableWidget_2.verticalHeaderItem(12)
-        ___qtablewidgetitem44.setText(QCoreApplication.translate("addCurve", u"13", None));
-        ___qtablewidgetitem45 = self.tableWidget_2.verticalHeaderItem(13)
-        ___qtablewidgetitem45.setText(QCoreApplication.translate("addCurve", u"14", None));
-        ___qtablewidgetitem46 = self.tableWidget_2.verticalHeaderItem(14)
-        ___qtablewidgetitem46.setText(QCoreApplication.translate("addCurve", u"16", None));
+        ___qtablewidgetitem31.setText(QCoreApplication.translate("addCurve", u"Patr\u00f3n", None));
+        ___qtablewidgetitem32 = self.tableWidget_2.horizontalHeaderItem(7)
+        ___qtablewidgetitem32.setText(QCoreApplication.translate("addCurve", u"Relleno", None));
+        ___qtablewidgetitem33 = self.tableWidget_2.horizontalHeaderItem(8)
+        ___qtablewidgetitem33.setText(QCoreApplication.translate("addCurve", u"Descripci\u00f3n", None));
+        ___qtablewidgetitem34 = self.tableWidget_2.verticalHeaderItem(0)
+        ___qtablewidgetitem34.setText(QCoreApplication.translate("addCurve", u"1", None));
+        ___qtablewidgetitem35 = self.tableWidget_2.verticalHeaderItem(1)
+        ___qtablewidgetitem35.setText(QCoreApplication.translate("addCurve", u"2", None));
+        ___qtablewidgetitem36 = self.tableWidget_2.verticalHeaderItem(2)
+        ___qtablewidgetitem36.setText(QCoreApplication.translate("addCurve", u"3", None));
+        ___qtablewidgetitem37 = self.tableWidget_2.verticalHeaderItem(3)
+        ___qtablewidgetitem37.setText(QCoreApplication.translate("addCurve", u"4", None));
+        ___qtablewidgetitem38 = self.tableWidget_2.verticalHeaderItem(4)
+        ___qtablewidgetitem38.setText(QCoreApplication.translate("addCurve", u"5", None));
+        ___qtablewidgetitem39 = self.tableWidget_2.verticalHeaderItem(5)
+        ___qtablewidgetitem39.setText(QCoreApplication.translate("addCurve", u"6", None));
+        ___qtablewidgetitem40 = self.tableWidget_2.verticalHeaderItem(6)
+        ___qtablewidgetitem40.setText(QCoreApplication.translate("addCurve", u"7", None));
+        ___qtablewidgetitem41 = self.tableWidget_2.verticalHeaderItem(7)
+        ___qtablewidgetitem41.setText(QCoreApplication.translate("addCurve", u"8", None));
+        ___qtablewidgetitem42 = self.tableWidget_2.verticalHeaderItem(8)
+        ___qtablewidgetitem42.setText(QCoreApplication.translate("addCurve", u"9", None));
+        ___qtablewidgetitem43 = self.tableWidget_2.verticalHeaderItem(9)
+        ___qtablewidgetitem43.setText(QCoreApplication.translate("addCurve", u"10", None));
+        ___qtablewidgetitem44 = self.tableWidget_2.verticalHeaderItem(10)
+        ___qtablewidgetitem44.setText(QCoreApplication.translate("addCurve", u"11", None));
+        ___qtablewidgetitem45 = self.tableWidget_2.verticalHeaderItem(11)
+        ___qtablewidgetitem45.setText(QCoreApplication.translate("addCurve", u"12", None));
+        ___qtablewidgetitem46 = self.tableWidget_2.verticalHeaderItem(12)
+        ___qtablewidgetitem46.setText(QCoreApplication.translate("addCurve", u"13", None));
+        ___qtablewidgetitem47 = self.tableWidget_2.verticalHeaderItem(13)
+        ___qtablewidgetitem47.setText(QCoreApplication.translate("addCurve", u"14", None));
+        ___qtablewidgetitem48 = self.tableWidget_2.verticalHeaderItem(14)
+        ___qtablewidgetitem48.setText(QCoreApplication.translate("addCurve", u"16", None));
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabShading), QCoreApplication.translate("addCurve", u"Sombras", None))
         self.okButton.setText(QCoreApplication.translate("addCurve", u"OK", None))
         self.aplicarButton.setText(QCoreApplication.translate("addCurve", u"Aplicar", None))

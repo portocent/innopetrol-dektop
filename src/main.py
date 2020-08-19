@@ -13,7 +13,7 @@ from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
                                QGridLayout, QSplitter, QPushButton, 
                                QTreeWidgetItem, QLabel, QComboBox, QCheckBox,
                                QHBoxLayout, QTableWidgetItem, QApplication,
-                               QColorDialog)
+                               QColorDialog, QDoubleSpinBox, QItemDelegate)
 import os
 from functools import partial
 
@@ -388,11 +388,18 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         items = []
         items = well.df.columns
         logopt = [" ","Lineal","Log"]
-        linesOpt = ["Continua", "- - - - - - -",
-        "- . - . - . -", ". . . . . . .", 
-        "- . . - . . -"]
+        linesOpt = [QIcon("statics\\images\\solid.png"), QIcon("statics\\images\\dash.png"),
+        QIcon("statics\\images\\dashdot.png"),QIcon("statics\\images\\dot.png"), 
+        QIcon("statics\\images\\dashdotdot.png")]
         widthOpt = [1,2,3,4,5,6,7,8]
+        iconSizeLine = QSize(95, 21)
+        iconSize = QSize(91, 30)
         self.rowColor = []
+        realFormat = RealDelegate()
+        self.tableWidget.setItemDelegateForColumn(1,realFormat)
+        self.tableWidget.setItemDelegateForColumn(2,realFormat)
+        self.tableWidget_2.setItemDelegateForColumn(1,realFormat)
+        self.tableWidget_2.setItemDelegateForColumn(3,realFormat)
 
         # combo box
         for i in range(16):
@@ -405,6 +412,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 combo.setEnabled(False)
             comboLog = QComboBox(self)
             comboLines = QComboBox(self)
+            comboLines.setIconSize(iconSizeLine)
             comboWidth = QComboBox(self)
             combo.addItem(" ")
             # CheckBox
@@ -418,7 +426,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             # Addig the color choice
             colorButton = QPushButton("Seleccionar Color",self.tableWidget)
             label = Label(self.tableWidget)
-            
+
             
             self.rowColor.append("#000000")
             for op in items:
@@ -426,7 +434,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             for op in logopt:
                 comboLog.addItem(op)
             for op in linesOpt:
-                comboLines.addItem(op)
+                comboLines.addItem(op,"")
             for op in widthOpt:
                 comboWidth.addItem(str(op))               
             self.tableWidget.setCellWidget(i,0,combo)
@@ -447,7 +455,26 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             
             # Combo Box
             lCurve = QComboBox()
+            lCurve.addItem(" ")
             rCurve = QComboBox()
+            rCurve.addItem(" ")
+            comboBrush = QComboBox()
+            
+            comboBrush.setIconSize(iconSize)
+            comboBrush.addItem(" ")
+            comboBrush.addItem(QIcon("statics\\images\\d1.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d2.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d3.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d4.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d5.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d6.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d7.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d8.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d9.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d10.png"),"")
+            for op in items:
+                lCurve.addItem(op)
+                rCurve.addItem(op)
             # Visible CheckBox
             checkWidget = QWidget()
             lay_out2 = QHBoxLayout(checkWidget) 
@@ -456,18 +483,22 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             lay_out2.setAlignment(Qt.AlignCenter)
             lay_out2.setContentsMargins(0,0,0,0)
             checkWidget.setLayout(lay_out2)
+            label2 = Label()
+            label2.isBrush = True
             # Shading Color
             colorButton2 = QPushButton("Color")
-            # Shading Style
-            # comboStyle = QComboBox(self.tableWidget_2)
-            # Shading Preview
-            # labelShading = Label(self.tableWidget_2)
 
             # Filling Shading table
             self.tableWidget_2.setCellWidget(i,0,lCurve)
             self.tableWidget_2.setCellWidget(i,2,rCurve)
             self.tableWidget_2.setCellWidget(i,4,checkWidget)
             self.tableWidget_2.setCellWidget(i,5,colorButton2)
+            self.tableWidget_2.setCellWidget(i,6,comboBrush)
+            self.tableWidget_2.setCellWidget(i,7,label2)
+
+            # Events 
+            comboBrush.currentIndexChanged.connect(self.setStyleBrush)
+            colorButton2.clicked.connect(self.color_pickerS)            
 
     @Slot()
     def paintLabel(self, ix):
@@ -540,6 +571,53 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             self.tableWidget.setCellWidget(i,5,button)
             self.rowColor[i-1] = color
 
+################ Shading Events ######################
+    @Slot()
+    def setStyleBrush(self, ix):
+        clickme = QApplication.focusWidget()
+        index = self.tableWidget_2.indexAt(clickme.pos())
+        i = index.row()
+        label = self.tableWidget_2.cellWidget(i,7)
+        switcher = {
+            0: Qt.SolidPattern,
+            1: Qt.SolidPattern,
+            2: Qt.Dense1Pattern,
+            3: Qt.Dense2Pattern,
+            4: Qt.Dense3Pattern,
+            5: Qt.Dense5Pattern,
+            6: Qt.Dense6Pattern,
+            7: Qt.HorPattern,
+            8: Qt.VerPattern,
+            9: Qt.BDiagPattern,
+            10: Qt.DiagCrossPattern
+        }
+        label.penType = switcher.get(ix)
+        if ix != 0:
+                label.visible = True
+        else:
+                label.visible = False
+        label.update()              
+        
+    
+            
+    @Slot()
+    def color_pickerS(self):
+        # Get clicked widget
+        clickme = QApplication.focusWidget()
+        color = QColorDialog.getColor()
+
+        if color.isValid():
+            index = self.tableWidget_2.indexAt(clickme.pos())
+            i = index.row()
+            label = self.tableWidget_2.cellWidget(i,7)
+            label.penColor = color
+            # if label.visible:
+            label.update()
+
+class RealDelegate(QItemDelegate):
+    def createEditor(self, parent, option, index):
+        return QDoubleSpinBox(parent)
+
 class Label(QLabel):
     def __init__(self, parent=None):
         super(Label, self).__init__(parent=parent)
@@ -547,16 +625,23 @@ class Label(QLabel):
         self.penType = Qt.SolidLine
         self.penSize = 1
         self.visible = False
+        self.isBrush = False
         
 
     def paintEvent(self, e):
         super().paintEvent(e)
         qp = QtGui.QPainter(self)
         # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
-        pen = QPen(self.penColor, self.penSize, self.penType)
-        qp.setPen(pen)
+
         if self.visible:
-            qp.drawLine(2, self.height()/2, self.width()-2, self.height()/2)
+            if self.isBrush:
+                brush = QtGui.QBrush(self.penColor, self.penType)
+                qp.setBrush(brush)
+                qp.drawRect(2, 2, self.width() - 2, self.height() - 2)    
+            else:
+                pen = QPen(self.penColor, self.penSize, self.penType)
+                qp.setPen(pen)
+                qp.drawLine(2, self.height()/2, self.width()-2, self.height()/2)
         
             
         
