@@ -563,17 +563,11 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             
             i = index.row()
             label = self.tableWidget.cellWidget(i,8)
-            # label = self.tableWidget.item(i+1,7)
-            # label = self.tableWidget.item(i+1,6)
 
             button.clicked.connect(self.color_picker)
-            # print(color.name())
             label.penColor = color
-            # if color.name() != "#000000":
-                # button.setStyleSheet("QPushButton { background-color: %s;}" % color.name())
-            # self.rowColor[pos] = color.name()
             self.tableWidget.setCellWidget(i,5,button)
-            self.rowColor[i-1] = color
+            # self.rowColor[i-1] = color
 
 ################ Shading Events ######################
     @Slot()
