@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import lasio
+from PySide2.QtCore import Qt
 # import copy
 # from PySide2.QtWidgets import *
 

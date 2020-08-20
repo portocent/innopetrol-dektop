@@ -1,10 +1,10 @@
 # import sys
 from PySide2 import QtWidgets
-from GUI import Ui_MainWindow
+from src.GUI import Ui_MainWindow
 from PySide2 import QtGui
 import types
-from lasProcesor import Well
-from addCurveGUI import Ui_addCurve
+from src.lasProcesor import Well, Track, Line, Shade
+from src.addCurveGUI import Ui_addCurve
 from PySide2.QtCore import (QDate, QDateTime, QMetaObject,
                             QObject, QPoint, QRect, QSize, QTime, Qt,
                             Slot, SIGNAL)
@@ -236,6 +236,7 @@ class subWindowWell(QWidget):
         vSplitter.setSizes(initSize)
         vSplitter2.setSizes(initSize)
 
+
     #   S H O W   P O P U P   M E N U
     def setOverFrame(self, frame):
         self.onFrame = frame
@@ -297,6 +298,10 @@ class subWindowWell(QWidget):
             sizes.append(fSize)
         self.splitter.setSizes(sizes)
 
+        # Adding Well's Tracks
+        wellTrack = Track()
+        self.well.addTrack(wellTrack)
+
         # Resize all the another Splitters
         for r in self.lSplit:
             # if self.lSplit[0] is not r:
@@ -312,6 +317,7 @@ class subWindowWell(QWidget):
         # Remove last track
         self.lSplit.pop()
         self.lTracks.pop()
+        self.well.remTrack()
         self.splitter.widget(self.splitter.count()-1).deleteLater()
 
     @Slot()
@@ -368,6 +374,11 @@ class subWindowWell(QWidget):
 
     def setWell(self, well):
         self.well = well
+        # Adding Well's Tracks
+        wellTrack1 = Track()
+        wellTrack2 = Track()
+        self.well.addTrack(wellTrack1)
+        self.well.addTrack(wellTrack2)
 
 class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
     def __init__(self, subwindow):
@@ -377,6 +388,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         # self.wells = []
         self.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
         self.loadWellData()
+        self.okButton.clicked.connect(self.saveLines)
         # self.subwindow.paintEvent = types.MethodType(paintSub,self.subwindow)
     
     def setTrack(self,track):
@@ -498,9 +510,61 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
 
             # Events 
             comboBrush.currentIndexChanged.connect(self.setStyleBrush)
-            colorButton2.clicked.connect(self.color_pickerS)    
+            colorButton2.clicked.connect(self.color_pickerS)  
+        
+    @Slot()
+    def saveLines(self):
+        error = self.passValidateLines()
+        if not error:
+            for row in range(16):
+                name = self.tableWidget.cellWidget(row,0).currentText()
+                if name != " ":
+                    l = self.tableWidget.item(row, 1)
+                    r = self.tableWidget.item(row, 2)
+                    check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
+                    log = self.tableWidget.cellWidget(row,4).currentText()
+                    label = self.tableWidget.cellWidget(row,8) 
+
+                    linea = Line()
+                    linea.name = name
+                    linea.color = label.penColor
+                    linea.grosor = label.penSize
+                    linea.estilo = label.penType
+                    linea.log = log
+                    linea.visible = check[0].isChecked()
+                    linea.lScale = float(l.text())
+                    linea.rScale = float(r.text())
+                    self.parent.well.tracks[self.trackNum - 1].lines = []
+                    self.parent.well.tracks[self.trackNum - 1].lines.append(linea)
+                    # wellTrack.append(linea)
+                    print("Fin")
+        else:
+            msg_box = QtWidgets.QMessageBox()
+            msg_box.setIcon(QtWidgets.QMessageBox.Information)
+            msg_box.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
+            msg_box.setText(error)
+            msg_box.setWindowTitle("Error en los campos")
+            msg_box.setStandardButtons(QtWidgets.QMessageBox.Close)
+            msg_box.exec_()
     
-    # def save(self):
+    def passValidateLines(self):
+        for row in range(16):
+            name = self.tableWidget.cellWidget(row,0).currentText()
+            l = self.tableWidget.item(row, 1)
+            r = self.tableWidget.item(row, 2)
+            log = self.tableWidget.cellWidget(row,4).currentText()
+            if name != " ":
+                if l is None or r is None:
+                    return "Escala vacía"
+                else:
+                    leftS = float(l.text())
+                    rightS = float(r.text())
+                if leftS >= rightS:
+                    return "Escala izquierda inferior o igual a la derecha"
+                if log == " ":
+                    # if leftS <= 0
+                    return "Tipo de lína no seleccionada: Log/Lineal"
+        return ""
 
 
     # def load(self):
@@ -513,7 +577,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         index = self.tableWidget.indexAt(clickme.pos())
         i = index.row()
         label = self.tableWidget.cellWidget(i,8)        
-        
+
         if ix != 0:
             label.visible = True
             if i < 15:

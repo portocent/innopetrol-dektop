@@ -96,8 +96,7 @@ class Ui_MainWindow(object):
 
         self.mdiArea = QMdiArea(self.centralwidget)
         self.mdiArea.setObjectName(u"mdiArea")
-        # self.mdiArea.setMinimumSize(QSize(475, 0))
-        self.mdiArea.setMinimumSize(QSize(100, 0))
+        self.mdiArea.setMinimumSize(QSize(475, 0))
 
         # Sub Windows start here
         # self.subwindow = QWidget()
