@@ -3,7 +3,7 @@ from PySide2 import QtWidgets
 from src.GUI import Ui_MainWindow
 from PySide2 import QtGui
 import types
-from src.lasProcesor import Well, Track, Line, Shade
+from src.lasProcesor import Well, Track, Line, Grid
 from src.addCurveGUI import Ui_addCurve
 from PySide2.QtCore import (QDate, QDateTime, QMetaObject,
                             QObject, QPoint, QRect, QSize, QTime, Qt,
@@ -57,7 +57,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @Slot()
     def _browseFile(self):
-        file = QtWidgets.QFileDialog.getOpenFileName(self, "Open LAS", "Default File", "All Files(*)")
+        file = QtWidgets.QFileDialog.getOpenFileName(self, "Open LAS", "Default File", "*.las")
         head, fileName = os.path.split(file[0])
         error = ""
         title = "Loading LAS file"
@@ -325,8 +325,7 @@ class subWindowWell(QWidget):
         # Get clicked widget
         # clickme = self.sender()
         # buttonName = str(clickme.objectName())
-        dialog = addCurveWindow(self)
-        dialog.setTrack(track)
+        dialog = addCurveWindow(self,track)
         dialog.exec_()
         # dialog.show()
 
@@ -381,19 +380,19 @@ class subWindowWell(QWidget):
         self.well.addTrack(wellTrack2)
 
 class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
-    def __init__(self, subwindow):
+    def __init__(self, subwindow, track):
         super().__init__(subwindow)
         self.setupUi(self)
         self.parent = subwindow
+        self.trackNum = track
+        self.setWindowTitle(str(self.parent.windowTitle()) + " - Track " + str(track))
         # self.wells = []
         self.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
         self.loadWellData()
-        self.okButton.clicked.connect(self.saveLines)
+        self.okButton.clicked.connect(self.clickOkButton)
+
         # self.subwindow.paintEvent = types.MethodType(paintSub,self.subwindow)
-    
-    def setTrack(self,track):
-        self.trackNum = track
-        self.setWindowTitle(str(self.parent.windowTitle()) + " - Track " + str(track))
+
     
     def loadWellData(self):
         well = self.parent.well
@@ -413,6 +412,16 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         self.tableWidget_2.setItemDelegateForColumn(1,realFormat)
         self.tableWidget_2.setItemDelegateForColumn(3,realFormat)
 
+        comboList = []
+        comboWidthList = []
+        comboLinesList = []
+        checkBoxLines = []
+        colorButtonList = []
+        comboBrushList = []
+        colorButton2List = []
+        comboLcurve = []
+        comboRcurve = []
+
         # combo box
         for i in range(16):
             # Tag Curvas ###########################################
@@ -420,8 +429,8 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             # Combo Box
             combo = QComboBox(self.tableWidget)
             # Disable all except first
-            if i != 0:
-                combo.setEnabled(False)
+            # if i != 0:
+            #     combo.setEnabled(False)
             comboLog = QComboBox(self)
             comboLines = QComboBox(self)
             comboLines.setIconSize(iconSizeLine)
@@ -436,7 +445,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             lay_out.setContentsMargins(0,0,0,0)
             cell_widget.setLayout(lay_out)
             # Addig the color choice
-            colorButton = QPushButton("Seleccionar Color",self.tableWidget)
+            colorButton = QPushButton("Color",self.tableWidget)
             label = Label(self.tableWidget)
 
             
@@ -445,8 +454,10 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 combo.addItem(op)
             for op in logopt:
                 comboLog.addItem(op)
+            count = 0
             for op in linesOpt:
-                comboLines.addItem(op,"")
+                comboLines.addItem(op,str(count))
+                count+=1
             for op in widthOpt:
                 comboWidth.addItem(str(op))               
             self.tableWidget.setCellWidget(i,0,combo)
@@ -457,11 +468,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             self.tableWidget.setCellWidget(i,7,comboLines)
             self.tableWidget.setCellWidget(i,8,label)
             
-            # Events
-            combo.currentIndexChanged.connect(self.paintLabel)
-            comboWidth.currentIndexChanged.connect(self.setWidthPen)
-            comboLines.currentIndexChanged.connect(self.setStylePen)
-            colorButton.clicked.connect(self.color_picker)
+
 
             # Tag Sombras ################################
             
@@ -474,16 +481,16 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             
             comboBrush.setIconSize(iconSize)
             comboBrush.addItem(" ")
-            comboBrush.addItem(QIcon("statics\\images\\d1.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d2.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d3.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d4.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d5.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d6.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d7.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d8.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d9.png"),"")
-            comboBrush.addItem(QIcon("statics\\images\\d10.png"),"")
+            comboBrush.addItem(QIcon("statics\\images\\d1.png"),"1")
+            comboBrush.addItem(QIcon("statics\\images\\d2.png"),"2")
+            comboBrush.addItem(QIcon("statics\\images\\d3.png"),"3")
+            comboBrush.addItem(QIcon("statics\\images\\d4.png"),"4")
+            comboBrush.addItem(QIcon("statics\\images\\d5.png"),"5")
+            comboBrush.addItem(QIcon("statics\\images\\d6.png"),"6")
+            comboBrush.addItem(QIcon("statics\\images\\d7.png"),"7")
+            comboBrush.addItem(QIcon("statics\\images\\d8.png"),"8")
+            comboBrush.addItem(QIcon("statics\\images\\d9.png"),"9")
+            comboBrush.addItem(QIcon("statics\\images\\d10.png"),"10")
             for op in items:
                 lCurve.addItem(op)
                 rCurve.addItem(op)
@@ -507,45 +514,125 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             self.tableWidget_2.setCellWidget(i,5,colorButton2)
             self.tableWidget_2.setCellWidget(i,6,comboBrush)
             self.tableWidget_2.setCellWidget(i,7,label2)
+            comboList.append(combo)
+            comboWidthList.append(comboWidth)
+            comboLinesList.append(comboLines)
+            colorButtonList.append(colorButton)
+            comboBrushList.append(comboBrush)
+            colorButton2List.append(colorButton2)
+            checkBoxLines.append(check)
+            comboLcurve.append(lCurve)
+            comboRcurve.append(rCurve)
 
-            # Events 
-            comboBrush.currentIndexChanged.connect(self.setStyleBrush)
-            colorButton2.clicked.connect(self.color_pickerS)  
-        
+        # Out of For  
+        # Load states
+        self.loadLines()
+        self.loadGrids()
+        for i in range(16):
+            # Events Lines
+            comboList[i].currentIndexChanged.connect(self.paintLabel)
+            comboWidthList[i].currentIndexChanged.connect(self.setWidthPen)
+            comboLinesList[i].currentIndexChanged.connect(self.setStylePen)
+            colorButtonList[i].clicked.connect(self.color_picker)
+            checkBoxLines[i].clicked.connect(self.enableLabel)
+            # Events Brush
+            comboBrushList[i].currentIndexChanged.connect(self.setStyleBrush)
+            colorButton2List[i].clicked.connect(self.color_pickerS)
+            comboRcurve[i].currentIndexChanged.connect(self.pickLineGrid)
+            comboLcurve[i].currentIndexChanged.connect(self.pickLineGrid)
+
+
+    def loadLines(self):
+        row = 0
+        lines = self.parent.well.tracks[self.trackNum - 1].lines
+        for linea in lines:
+            name = linea.nameIndex
+            width = linea.grosorIndex
+            penType = linea.estiloIndex
+            log = linea.logIndex
+            visible = linea.visible
+            l = linea.lScale
+            r = linea.rScale
+            check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
+            
+            # Setting Options
+            self.tableWidget.cellWidget(row,0).setCurrentIndex(name)
+
+            rItem = QTableWidgetItem()
+            rItem.setData(Qt.DisplayRole,r)
+            lItem = QTableWidgetItem()
+            lItem.setData(Qt.DisplayRole,l)
+            self.tableWidget.setItem(row,2,rItem)
+            self.tableWidget.setItem(row,1,lItem)
+            self.tableWidget.cellWidget(row,4).setCurrentIndex(log)
+            self.tableWidget.cellWidget(row,6).setCurrentIndex(width)
+            self.tableWidget.cellWidget(row,7).setCurrentIndex(penType)
+            label = self.tableWidget.cellWidget(row,8)
+            check[0].setChecked(linea.visibleCheck)
+            label.penColor = linea.color
+            label.penType = linea.estilo 
+            label.penSize = linea.grosor
+            label.isBrush = False
+            label.visible = True
+            # self.tableWidget.removeCellWidget(row,8)
+            # self.tableWidget.setCellWidget(row,8,label)
+            label.update()
+            row += 1
+
     @Slot()
-    def saveLines(self):
-        error = self.passValidateLines()
-        if not error:
-            for row in range(16):
-                name = self.tableWidget.cellWidget(row,0).currentText()
-                if name != " ":
-                    l = self.tableWidget.item(row, 1)
-                    r = self.tableWidget.item(row, 2)
-                    check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
-                    log = self.tableWidget.cellWidget(row,4).currentText()
-                    label = self.tableWidget.cellWidget(row,8) 
-
-                    linea = Line()
-                    linea.name = name
-                    linea.color = label.penColor
-                    linea.grosor = label.penSize
-                    linea.estilo = label.penType
-                    linea.log = log
-                    linea.visible = check[0].isChecked()
-                    linea.lScale = float(l.text())
-                    linea.rScale = float(r.text())
-                    self.parent.well.tracks[self.trackNum - 1].lines = []
-                    self.parent.well.tracks[self.trackNum - 1].lines.append(linea)
-                    # wellTrack.append(linea)
-                    print("Fin")
+    def clickOkButton(self):
+        errorLines = self.passValidateLines()
+        errorGrids = self.passValidateGrids()
+        if not errorLines and not errorGrids:
+            self.saveLines()
+            self.saveGrids()
+            self.close()
         else:
             msg_box = QtWidgets.QMessageBox()
             msg_box.setIcon(QtWidgets.QMessageBox.Information)
             msg_box.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
-            msg_box.setText(error)
+            msg_box.setText(errorLines +"\n" + errorGrids)
             msg_box.setWindowTitle("Error en los campos")
             msg_box.setStandardButtons(QtWidgets.QMessageBox.Close)
             msg_box.exec_()
+
+
+    def saveLines(self):
+
+        self.parent.well.tracks[self.trackNum - 1].lines = []
+        for row in range(16):
+            name = self.tableWidget.cellWidget(row,0).currentText()
+            nameIndex = self.tableWidget.cellWidget(row,0).currentIndex()
+            if name != " ":
+
+                l = self.tableWidget.item(row, 1).text()
+                r = self.tableWidget.item(row, 2).text()
+                check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
+                log = self.tableWidget.cellWidget(row,4).currentText()
+                logIndex = self.tableWidget.cellWidget(row,4).currentIndex()
+                label = self.tableWidget.cellWidget(row,8)
+                widthIndex = self.tableWidget.cellWidget(row,6).currentIndex()
+                styleIndex = self.tableWidget.cellWidget(row,7).currentIndex()
+
+
+                linea = Line()
+                linea.name = name
+                linea.nameIndex = nameIndex
+                linea.color = label.penColor
+                linea.grosor = label.penSize
+                linea.grosorIndex = widthIndex
+                linea.estilo = label.penType
+                linea.estiloIndex = styleIndex
+                linea.log = log
+                linea.logIndex = logIndex
+                linea.visibleCheck = check[0].isChecked()
+                linea.lScale = float(l)
+                linea.rScale = float(r)
+                self.parent.well.tracks[self.trackNum - 1].lines.append(linea)
+                # wellTrack.append(linea)
+                # print("Fin")
+
+
     
     def passValidateLines(self):
         for row in range(16):
@@ -566,9 +653,145 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                     return "Tipo de lína no seleccionada: Log/Lineal"
         return ""
 
+    def loadGrids(self):
+        row = 0
+        grids = self.parent.well.tracks[self.trackNum - 1].grids
+        for grid in grids:
+            leftLine = grid.leftLineIndex
+            leftVal = grid.leftVal
+            rightLine = grid.rightLineIndex
+            rightVal = grid.rightVal
+            checkVal = grid.check
+            brush = grid.brushIndex
+            penType = grid.brush
+            penColor = grid.color
 
-    # def load(self):
+            check = self.tableWidget_2.cellWidget(row, 4).findChildren(QCheckBox)
+            check[0].setChecked(checkVal)
+            self.tableWidget_2.cellWidget(row, 0).setCurrentIndex(leftLine)
+            self.tableWidget_2.cellWidget(row, 2).setCurrentIndex(rightLine)
+            self.tableWidget_2.cellWidget(row, 6).setCurrentIndex(brush)
+            label = self.tableWidget_2.cellWidget(row, 7)
+            if leftLine == 0:
+                lItem = QTableWidgetItem()
+                lItem.setData(Qt.DisplayRole,leftVal)
+                self.tableWidget_2.setItem(row, 1, lItem)
+            if rightLine == 0:
+                rItem = QTableWidgetItem()
+                rItem.setData(Qt.DisplayRole,rightVal)
+                self.tableWidget_2.setItem(row, 3, rItem)
+            label.isBrush = True
+            label.penType = penType
+            label.penColor = penColor
+            label.visible = True
+            label.update()
 
+            row += 1
+
+
+    def saveGrids(self):
+        self.parent.well.tracks[self.trackNum - 1].grids = []
+        for row in range(15):
+            namel = self.tableWidget_2.cellWidget(row, 0).currentText()
+            namelIndex = self.tableWidget_2.cellWidget(row, 0).currentIndex()
+            lv = self.tableWidget_2.item(row, 1)
+            lvBool = False
+            if not lv is None:
+                if lv.text() == "":
+                    lvBool = True
+            else:
+                lvBool = True
+
+            if namel != " " or not lvBool:
+                namer = self.tableWidget_2.cellWidget(row, 2).currentText()
+                namerIndex = self.tableWidget_2.cellWidget(row, 2).currentIndex()
+                rv = self.tableWidget_2.item(row, 3)
+                fill = self.tableWidget_2.cellWidget(row, 6).currentIndex()
+                check = self.tableWidget_2.cellWidget(row, 4).findChildren(QCheckBox)
+                label = self.tableWidget_2.cellWidget(row, 7)
+                description = ""
+                if not self.tableWidget_2.item(row, 3) is None:
+                    description = self.tableWidget_2.item(row, 3).text()
+
+
+                grid = Grid()
+                grid.leftLineIndex = namelIndex
+                grid.leftLine = namel
+                if namelIndex == 0:
+                    grid.leftVal = float(lv.text())
+                grid.rightLineIndex = namerIndex
+                grid.rightLine = namer
+                if namerIndex == 0:
+                    grid.rightVal = float(rv.text())
+                grid.check = check[0].isChecked()
+                grid.color = label.penColor
+                grid.brush = label.penType
+                grid.brushIndex = fill
+                grid.description = description
+                self.parent.well.tracks[self.trackNum - 1].grids.append(grid)
+                # wellTrack.append(linea)
+                # print("Fin")
+
+    def passValidateGrids(self):
+        for row in range(15):
+            namel = self.tableWidget_2.cellWidget(row,0).currentText()
+            namer = self.tableWidget_2.cellWidget(row, 2).currentText()
+            lv = self.tableWidget_2.item(row, 1)
+            lvBool = False
+            rv = self.tableWidget_2.item(row, 3)
+            rvBool = False
+            fill = self.tableWidget_2.cellWidget(row,6).currentText()
+            if not lv is None:
+                if lv.text() == "":
+                    lvBool = True
+            else:
+                lvBool = True
+
+            if not rv is None:
+                if rv.text() == "":
+                    rvBool = True
+            else:
+                rvBool = True
+
+            if not lvBool or namel != " ":
+                if rvBool and namer == " ":
+                    return "Debe seleccionar una linea derecha o ingresar un valor fijo"
+                if fill == " ":
+                    return "Debe seleccionar un patrón de relleno"
+
+
+        return ""
+
+    @Slot()
+    def pickLineGrid(self, ix):
+        # combo = self.sender()
+        clickme = QApplication.focusWidget()
+        index = self.tableWidget_2.indexAt(clickme.pos())
+        i = index.row()
+        j = index.column()
+        name = self.tableWidget_2.cellWidget(i, j).currentText()
+        item = QTableWidgetItem()
+        flags = item.flags()
+        self.tableWidget_2.setItem(i, j + 1,item)
+
+        if name != " ":
+            flags = flags & ~Qt.ItemIsEnabled
+            item.setFlags(flags)
+        else:
+            item.setFlags(flags)
+
+
+
+    @Slot()
+    def enableLabel(self):
+        # combo = self.sender()
+        clickme = QApplication.focusWidget()
+        index = self.tableWidget.indexAt(clickme.pos())
+        i = index.row()
+        checkBox = self.tableWidget.cellWidget(i, 3).findChildren(QCheckBox)
+        label = self.tableWidget.cellWidget(i,8)
+        label.visibleCheck = checkBox[0].isChecked()
+        label.update()
 
     @Slot()
     def paintLabel(self, ix):
@@ -578,11 +801,11 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         i = index.row()
         label = self.tableWidget.cellWidget(i,8)        
 
-        if ix != 0:
+        if ix != 0 :
             label.visible = True
-            if i < 15:
-                nextCombo = self.tableWidget.cellWidget(i+1,0)
-                nextCombo.setEnabled(True)
+            # if i < 15:
+            #     nextCombo = self.tableWidget.cellWidget(i+1,0)
+                # nextCombo.setEnabled(True)
             label.update()
         else:
             label.visible = False
@@ -676,7 +899,14 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
 
 class RealDelegate(QItemDelegate):
     def createEditor(self, parent, option, index):
-        return QDoubleSpinBox(parent)
+        realSpinBox = QDoubleSpinBox(parent)
+        realSpinBox.setMinimum(-100000)
+        realSpinBox.setMaximum(100000)
+        # realSpinBox.setValue()
+        return realSpinBox
+
+
+
 
 class Label(QLabel):
     def __init__(self, parent=None):
@@ -686,6 +916,7 @@ class Label(QLabel):
         self.penSize = 1
         self.visible = False
         self.isBrush = False
+        self.visibleCheck = False
         
 
     def paintEvent(self, e):
@@ -702,9 +933,20 @@ class Label(QLabel):
                 pen = QPen(self.penColor, self.penSize, self.penType)
                 qp.setPen(pen)
                 qp.drawLine(2, self.height()/2, self.width()-2, self.height()/2)
-        
-            
-        
+
+
+class Frame(QFrame):
+    def __init__(self, parent=None):
+        super(Frame, self).__init__(parent=parent)
+        self.lines = []
+        self.grids = []
+
+    def paintEvent(self, e):
+        super().paintEvent(e)
+        qp = QtGui.QPainter(self)
+        # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
+
+
 
 
 

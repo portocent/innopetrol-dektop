@@ -51,24 +51,33 @@ class Track():
 class Line():
     def __init__(self):
         self.name = " "
+        self.nameIndex = 0
         self.color = Qt.black
         self.grosor = 1
+        self.grosorIndex = 0
         self.estilo = Qt.SolidLine
+        self.estiloIndex = 0
         self.log = "Lineal"
+        self.logIndex = 0
         self.visible = True
-        self.lScale = 0
-        self.rScale = 1000
+        self.lScale = 0.0
+        self.rScale = 100.0
         self.desc = ""
 
-class Shade():
+class Grid():
     def __init__(self):
         self.leftLine = " "
-        self.leftVal = 0
+        self.leftLineIndex = 0
+        self.leftVal = None
         self.rightLine = " "
-        self.rightVal = 0
+        self.rightLineIndex = 0
+        self.rightVal = None
         self.visible = True
+        self.check = False
         self.color = Qt.black
         self.brush = Qt.SolidPattern
+        self.brushIndex = 0
+        self.description = ""
 
         
 
