@@ -14,6 +14,7 @@ from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
                                QTreeWidgetItem, QLabel, QComboBox, QCheckBox,
                                QHBoxLayout, QTableWidgetItem, QApplication,
                                QColorDialog, QDoubleSpinBox, QItemDelegate)
+from src.myGuiClasses import Frame, Label
 import os
 from functools import partial
 
@@ -86,12 +87,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         msg_box.exec_()
 
     def addSubWindow(self, well, name):
-        subwindow = subWindowWell(self)
+        subwindow = subWindowWell(self,well)
         self.mdiArea.addSubWindow(subwindow)
         strId = "# " + str(self.countSubW+1) + " " + name
         self.countSubW = self.countSubW + 1
         subwindow.setWindowTitle(strId)        
-        subwindow.setWell(well)
+        # subwindow.setWell(well)
         subwindow.show()
     
     def fillTreeWell(self, wellName):
@@ -114,7 +115,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
           
 
 class subWindowWell(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent,well = None):
         # Sub Windows start here
         super().__init__()
         self.parent = parent
@@ -126,9 +127,14 @@ class subWindowWell(QWidget):
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName(u"gridLayout")
         self.splitter = QSplitter(self)
+        self.well = well
+        wellTrack1 = Track()
+        wellTrack2 = Track()
+        self.well.addTrack(wellTrack1)
+        self.well.addTrack(wellTrack2)
         # self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
-        
+        self.track2Size = 50
         # Internal Splitter
         vSplitter = QSplitter(self)
         vSplitter.setOrientation(Qt.Vertical)
@@ -154,7 +160,7 @@ class subWindowWell(QWidget):
         button2.clicked.connect(partial(self._addLines,2))
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
         
-        frame = QFrame(vSplitter)
+        frame = Frame(vSplitter,self.well.header)
         vSplitter.addWidget(label)
         vSplitter.addWidget(button)
         vSplitter.addWidget(frame)
@@ -180,7 +186,7 @@ class subWindowWell(QWidget):
         # Adding the splitter instead of the Frame
         # self.splitter.addWidget(frame)
         self.splitter.addWidget(vSplitter)
-        frame_2 = QFrame(vSplitter2)
+        frame_2 = Frame(vSplitter2,self.well.header,True)
         vSplitter2.addWidget(label2)
         vSplitter2.addWidget(button2)
         vSplitter2.addWidget(frame_2)
@@ -204,9 +210,11 @@ class subWindowWell(QWidget):
         frame.mouseReleaseEvent = lambda event: self.setOverFrame(frame)
         frame_2.mouseReleaseEvent = lambda event: self.setOverFrame(frame_2)
         # Adding the paint event for drawing
-        frame.paintEvent = types.MethodType(paintSub, frame)
+        # frame.paintEvent = types.MethodType(paintSub, frame)
         self.lTracks.append(frame)
         self.lTracks.append(frame_2)
+
+
 
         # Adding vertical splitter events conection
         self.connect(vSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter))
@@ -227,14 +235,13 @@ class subWindowWell(QWidget):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showPopup)
 
-        # Buttons options
-        # button.setText(str(button.objectName))
-        # button2.setText(str(button.objectName))
 
         # set init sizes
         initSize = [20, 50, self.height() - 70]
         vSplitter.setSizes(initSize)
         vSplitter2.setSizes(initSize)
+        initHorizontalSize = [self.width()-self.track2Size, self.track2Size]
+        self.splitter.setSizes(initHorizontalSize)
 
 
     #   S H O W   P O P U P   M E N U
@@ -255,7 +262,7 @@ class subWindowWell(QWidget):
         button = QPushButton(vSplitter)
         button.setObjectName(u"button_"+str(frameCount))
         button.clicked.connect(partial(self._addLines,frameCount+1))
-        frame = QFrame(vSplitter)
+        frame = Frame(vSplitter,self.well.header)
         # Adding Label tag
         label = QLabel(str(frameCount+1), vSplitter)
         label.setAlignment(Qt.AlignCenter)
@@ -293,9 +300,14 @@ class subWindowWell(QWidget):
         # frame.mouseReleaseEvent = lambda event: self.setOverFrame(frame)
         # Calculate the size for each frame
         sizes = []
-        fSize = self.width()/self.splitter.count()
+        fSize = (self.width()-self.track2Size)/self.splitter.count()
+        i = 0
         for s in range(self.splitter.count()):
-            sizes.append(fSize)
+            if i == 1:
+                sizes.append(self.track2Size)
+            else:
+                sizes.append(fSize)
+            i += 1
         self.splitter.setSizes(sizes)
 
         # Adding Well's Tracks
@@ -307,24 +319,18 @@ class subWindowWell(QWidget):
             # if self.lSplit[0] is not r:
             r.blockSignals(True)
             r.setSizes(self.lSplit[0].sizes())
-            r.blockSignals(False)     
+            r.blockSignals(False)
 
     @Slot()
     def delTrack(self):
-        # print("del Track Pressed" + str(self.onFrame))
-        # Remove over click track
-        # self.onFrame.deleteLater()
         # Remove last track
         self.lSplit.pop()
         self.lTracks.pop()
-        self.well.remTrack()
+        self.well.popTrack()
         self.splitter.widget(self.splitter.count()-1).deleteLater()
 
     @Slot()
     def _addLines(self,track):
-        # Get clicked widget
-        # clickme = self.sender()
-        # buttonName = str(clickme.objectName())
         dialog = addCurveWindow(self,track)
         dialog.exec_()
         # dialog.show()
@@ -632,8 +638,6 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 # wellTrack.append(linea)
                 # print("Fin")
 
-
-    
     def passValidateLines(self):
         for row in range(16):
             name = self.tableWidget.cellWidget(row,0).currentText()
@@ -904,49 +908,6 @@ class RealDelegate(QItemDelegate):
         realSpinBox.setMaximum(100000)
         # realSpinBox.setValue()
         return realSpinBox
-
-
-
-
-class Label(QLabel):
-    def __init__(self, parent=None):
-        super(Label, self).__init__(parent=parent)
-        self.penColor = Qt.black
-        self.penType = Qt.SolidLine
-        self.penSize = 1
-        self.visible = False
-        self.isBrush = False
-        self.visibleCheck = False
-        
-
-    def paintEvent(self, e):
-        super().paintEvent(e)
-        qp = QtGui.QPainter(self)
-        # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
-
-        if self.visible:
-            if self.isBrush:
-                brush = QtGui.QBrush(self.penColor, self.penType)
-                qp.setBrush(brush)
-                qp.drawRect(2, 2, self.width() - 2, self.height() - 2)    
-            else:
-                pen = QPen(self.penColor, self.penSize, self.penType)
-                qp.setPen(pen)
-                qp.drawLine(2, self.height()/2, self.width()-2, self.height()/2)
-
-
-class Frame(QFrame):
-    def __init__(self, parent=None):
-        super(Frame, self).__init__(parent=parent)
-        self.lines = []
-        self.grids = []
-
-    def paintEvent(self, e):
-        super().paintEvent(e)
-        qp = QtGui.QPainter(self)
-        # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
-
-
 
 
 

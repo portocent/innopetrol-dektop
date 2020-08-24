@@ -15,6 +15,7 @@ class Well():
 
             las = lasio.read(path, autodetect_encoding=True, ignore_header_errors = True)
             self.df = las.df()    # store las file in df variable as pandas dataframe
+            self.header = las.header
             self.name = name
             self.viewname = name
             return ''
@@ -24,10 +25,12 @@ class Well():
     def addTrack(self,track):
         self.tracks.append(track)
     
-    def remTrack(self,track):
-        self.tracks.pop()
+    # def remTrack(self,track):
+    #     self.tracks.pop()
     # def setSubWindow(self,subWinddow):
     #     self.subWindow=subWinddow
+    def popTrack(self):
+        self.tracks.pop()
 
 
 class Track():
