@@ -1,5 +1,5 @@
 from PySide2.QtWidgets import (QFrame, QLabel)
-from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen, QPainter)
+from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen, QPainter, QFontMetrics)
 from PySide2.QtCore import (Qt, QRect)
 from src.lasProcesor import Well, Track, Line, Grid
 import math
@@ -55,11 +55,14 @@ class Frame(QFrame):
             if not self.st is None and not self.end is None and not self.step is None:
                 break
 
+
     def setHead(self,head):
         self.head = head
     def paintEvent(self, e):
         super().paintEvent(e)
         qp = QPainter(self)
+        metrics = QFontMetrics(qp.font())
+        self.tall = metrics.boundingRect(str(100)).height()
         # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
 
         if self.lines:
@@ -126,10 +129,12 @@ class Frame(QFrame):
             if i%1000 == 0:
                 painter.setPen(QPen(Qt.darkGray, 2))
                 painter.drawLine(0, j * fStep, self.width(), j * fStep)
-            elif i%100 == 0 :
+            elif i%100 == 0 and (1000*fStep) > 4*self.tall:
                 painter.setPen(QPen(Qt.gray, 2))
+                if (1000*fStep) >= 2*self.tall and count >= 1000:
+                    painter.setPen(QPen(Qt.gray, 1))
                 painter.drawLine(0, j * fStep, self.width(), j * fStep)
-            elif i%10 ==0 and count <= 1000:
+            elif i%10 ==0 and (100*fStep) > 4*self.tall:
                 painter.setPen(QPen(Qt.gray, 1))
                 painter.drawLine(0, j * fStep, self.width(), j * fStep)
             i += self.step
@@ -140,18 +145,15 @@ class Frame(QFrame):
         painter.drawRect(0, 0, self.width() , self.height() )
         count = (self.end-self.st ) / self.step
         fStep = self.height()/count
+
         i = self.st
         j = 0
         while i < self.end:
             if i%1000 == 0:
-                rect = QRect(0,(j)*fStep,(self.width()),(j)*fStep)
-                painter.drawText(rect,
+                painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
                                  Qt.AlignHCenter,str(int(i)))
-                #Qt.AlignCenter|Qt.AlignHCenter
-            elif i%100 == 0 :
-                # painter.drawText((self.width()/2)-4, j * fStep, str(int(i)))
-                rect = QRect(0,(j)*fStep,(self.width()),(j)*fStep)
-                painter.drawText(rect,
+            elif i%100 == 0 and 2*(100*fStep) > self.tall:
+                painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
                                  Qt.AlignHCenter,str(int(i)))
 
             i += self.step
