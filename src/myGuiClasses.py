@@ -32,13 +32,13 @@ class Label(QLabel):
 
 
 class Frame(QFrame):
-    def __init__(self, parent=None,header=None,isdep=False):
+    def __init__(self, parent=None,well=None,isdep=False):
         super(Frame, self).__init__(parent=parent)
-        self.lines = []
-        self.grids = []
+        self.track = Track()
         self.type = "Lineal"
         self.cycles = 3
-        self.head = header
+        self.well = well
+        self.head = well.header
         self.yScale = 1
         yAxisVals = self.head.get('Well')
         self.st = None
@@ -54,10 +54,16 @@ class Frame(QFrame):
                 self.step = i.value
             if not self.st is None and not self.end is None and not self.step is None:
                 break
+        self.minVal = 99999.25
+        self.maxVal = -999.25
 
 
     def setHead(self,head):
         self.head = head
+
+    def setTrack(self,track):
+        self.track = track
+
     def paintEvent(self, e):
         super().paintEvent(e)
         qp = QPainter(self)
@@ -65,8 +71,9 @@ class Frame(QFrame):
         self.tall = metrics.boundingRect(str(100)).height()
         # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
 
-        if self.lines:
-            self.type = self.lines[0].log
+        if self.track.lines:
+            self.type = self.track.lines[0].log
+            self.drawLines(qp)
         if self.type == "Log" and not self.isdep:
             self.drawTrackLog(qp)
         elif not self.isdep:
@@ -158,3 +165,10 @@ class Frame(QFrame):
 
             i += self.step
             j += 1
+
+    def drawLines(self,painter):
+        for l in self.track.lines:
+            points = self.well.df[[l.name,'T']]
+        if self.type == "Log":
+            mapP = self.mapLog(self.minVal,self.maxVal,0,self.width(),1)
+            points.append()

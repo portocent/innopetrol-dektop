@@ -10,14 +10,17 @@ class Well():
     def __init__(self):
         self.tracks = []
 
+
     def loadLas(self, path, name):
         try:
 
             las = lasio.read(path, autodetect_encoding=True, ignore_header_errors = True)
             self.df = las.df()    # store las file in df variable as pandas dataframe
+            self.stats = self.df.describe()
             self.header = las.header
             self.name = name
             self.viewname = name
+
             return ''
         except Exception as e:
             return str(e.args) 
@@ -37,6 +40,8 @@ class Track():
     def __init__(self):
         self.lines = []
         self.grids = []
+        self.minVal = 99999.25
+        self.maxVal = -999.25
      
     def addLine(self,line):
         self.lines.append(line)
@@ -49,6 +54,14 @@ class Track():
     
     def remGrid(self,grid):
         self.grids.remove(grid)
+
+    def setMin(self,min):
+        if min < self.minVal:
+            self.minVal = min
+
+    def setMax(self,max):
+        if max > self.maxVal:
+            self.maxVal = max
 
 
 class Line():
@@ -63,9 +76,10 @@ class Line():
         self.log = "Lineal"
         self.logIndex = 0
         self.visible = True
-        self.lScale = 0.0
-        self.rScale = 100.0
+        self.lScale = None
+        self.rScale = None
         self.desc = ""
+
 
 class Grid():
     def __init__(self):

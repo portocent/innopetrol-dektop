@@ -160,7 +160,7 @@ class subWindowWell(QWidget):
         button2.clicked.connect(partial(self._addLines,2))
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
         
-        frame = Frame(vSplitter,self.well.header)
+        frame = Frame(vSplitter,self.well)
         vSplitter.addWidget(label)
         vSplitter.addWidget(button)
         vSplitter.addWidget(frame)
@@ -186,7 +186,7 @@ class subWindowWell(QWidget):
         # Adding the splitter instead of the Frame
         # self.splitter.addWidget(frame)
         self.splitter.addWidget(vSplitter)
-        frame_2 = Frame(vSplitter2,self.well.header,True)
+        frame_2 = Frame(vSplitter2,self.well,True)
         vSplitter2.addWidget(label2)
         vSplitter2.addWidget(button2)
         vSplitter2.addWidget(frame_2)
@@ -211,6 +211,8 @@ class subWindowWell(QWidget):
         frame_2.mouseReleaseEvent = lambda event: self.setOverFrame(frame_2)
         # Adding the paint event for drawing
         # frame.paintEvent = types.MethodType(paintSub, frame)
+        frame.track = self.well.tracks[0]
+        frame_2.track = self.well.tracks[1]
         self.lTracks.append(frame)
         self.lTracks.append(frame_2)
 
@@ -262,7 +264,7 @@ class subWindowWell(QWidget):
         button = QPushButton(vSplitter)
         button.setObjectName(u"button_"+str(frameCount))
         button.clicked.connect(partial(self._addLines,frameCount+1))
-        frame = Frame(vSplitter,self.well.header)
+        frame = Frame(vSplitter,self.well)
         # Adding Label tag
         label = QLabel(str(frameCount+1), vSplitter)
         label.setAlignment(Qt.AlignCenter)
@@ -293,6 +295,7 @@ class subWindowWell(QWidget):
         frame.setFrameShape(QFrame.NoFrame)
         frame.setFrameShadow(QFrame.Raised)
         self.lTracks.append(frame)
+
         self.splitter.addWidget(vSplitter)
         # vSplitter.setSizes(self.lSplit[0].sizes())
         # self.splitter.update()
@@ -313,6 +316,7 @@ class subWindowWell(QWidget):
         # Adding Well's Tracks
         wellTrack = Track()
         self.well.addTrack(wellTrack)
+        frame.track = self.well.tracks[-1]
 
         # Resize all the another Splitters
         for r in self.lSplit:
@@ -404,7 +408,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         well = self.parent.well
         items = []
         items = well.df.columns
-        logopt = [" ","Lineal","Log"]
+        logopt = [" ","Lineal","Log2Cycle","Log3Cycle","Log4Cycle","Log5Cycle"]
         linesOpt = [QIcon("statics\\images\\solid.png"), QIcon("statics\\images\\dash.png"),
         QIcon("statics\\images\\dashdot.png"),QIcon("statics\\images\\dot.png"), 
         QIcon("statics\\images\\dashdotdot.png")]
@@ -565,9 +569,11 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             self.tableWidget.cellWidget(row,0).setCurrentIndex(name)
 
             rItem = QTableWidgetItem()
-            rItem.setData(Qt.DisplayRole,r)
+            if not r is None:
+                rItem.setData(Qt.DisplayRole,r)
             lItem = QTableWidgetItem()
-            lItem.setData(Qt.DisplayRole,l)
+            if not l is None:
+                lItem.setData(Qt.DisplayRole,l)
             self.tableWidget.setItem(row,2,rItem)
             self.tableWidget.setItem(row,1,lItem)
             self.tableWidget.cellWidget(row,4).setCurrentIndex(log)
@@ -610,9 +616,10 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             name = self.tableWidget.cellWidget(row,0).currentText()
             nameIndex = self.tableWidget.cellWidget(row,0).currentIndex()
             if name != " ":
-
-                l = self.tableWidget.item(row, 1).text()
-                r = self.tableWidget.item(row, 2).text()
+                if not self.tableWidget.item(row, 1) is None:
+                    l = self.tableWidget.item(row, 1).text()
+                if not self.tableWidget.item(row, 2) is None:
+                    r = self.tableWidget.item(row, 2).text()
                 check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
                 log = self.tableWidget.cellWidget(row,4).currentText()
                 logIndex = self.tableWidget.cellWidget(row,4).currentIndex()
@@ -632,9 +639,15 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 linea.log = log
                 linea.logIndex = logIndex
                 linea.visibleCheck = check[0].isChecked()
-                linea.lScale = float(l)
-                linea.rScale = float(r)
-                self.parent.well.tracks[self.trackNum - 1].lines.append(linea)
+                if not self.tableWidget.item(row, 1) is None:
+                    linea.lScale = float(l)
+                if not self.tableWidget.item(row, 2) is None:
+                    linea.rScale = float(r)
+                minVal = self.parent.well.stats[name].min()
+                maxVal = self.parent.well.stats[name].max()
+                self.parent.well.tracks[self.trackNum - 1].addLine(linea)
+                self.parent.well.tracks[self.trackNum - 1].setMin(minVal)
+                self.parent.well.tracks[self.trackNum - 1].setMax(maxVal)
                 # wellTrack.append(linea)
                 # print("Fin")
 
@@ -645,13 +658,11 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             r = self.tableWidget.item(row, 2)
             log = self.tableWidget.cellWidget(row,4).currentText()
             if name != " ":
-                if l is None or r is None:
-                    return "Escala vacía"
-                else:
+                if not l is None or not r is None:
                     leftS = float(l.text())
                     rightS = float(r.text())
-                if leftS >= rightS:
-                    return "Escala izquierda inferior o igual a la derecha"
+                    if leftS >= rightS:
+                        return "Escala izquierda inferior o igual a la derecha"
                 if log == " ":
                     # if leftS <= 0
                     return "Tipo de lína no seleccionada: Log/Lineal"
@@ -732,7 +743,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 grid.brush = label.penType
                 grid.brushIndex = fill
                 grid.description = description
-                self.parent.well.tracks[self.trackNum - 1].grids.append(grid)
+                self.parent.well.tracks[self.trackNum - 1].addGrid(grid)
                 # wellTrack.append(linea)
                 # print("Fin")
 
