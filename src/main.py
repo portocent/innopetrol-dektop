@@ -7,7 +7,7 @@ from src.lasProcesor import Well, Track, Line, Grid
 from src.addCurveGUI import Ui_addCurve
 from PySide2.QtCore import (QDate, QDateTime, QMetaObject,
                             QObject, QPoint, QRect, QSize, QTime, Qt,
-                            Slot, SIGNAL)
+                            Slot, SIGNAL, QTimer)
 from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen)
 from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
                                QGridLayout, QSplitter, QPushButton, 
@@ -15,7 +15,8 @@ from PySide2.QtWidgets import (QFrame, QAction, QWidget, QApplication,
                                QHBoxLayout, QTableWidgetItem, QApplication,
                                QColorDialog, QDoubleSpinBox, QItemDelegate)
 from src.myGuiClasses import Frame, Label
-import os
+import os, time
+import threading
 from functools import partial
 
 
@@ -112,12 +113,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # ___qtreewidgetitem4.setText(
         #     0, QCoreApplication.translate("MainWindow", u"Fills", None))
         # ___qtreewidgetitem5 = ___qtreewidgetitem4.child(0)
-          
+    def mouseReleaseEvent(self, event:QtGui.QMouseEvent):
+        print("Released Daddy")
+
+    def mousePressEvent(self, event:QtGui.QMouseEvent):
+        if event.button() == Qt.LeftButton:
+            print("Pressed Daddy")
 
 class subWindowWell(QWidget):
     def __init__(self, parent,well = None):
         # Sub Windows start here
-        super().__init__()
+        super().__init__(parent)
         self.parent = parent
         self.lTracks = []
         self.lSplit = []
@@ -135,6 +141,8 @@ class subWindowWell(QWidget):
         # self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
         self.track2Size = 50
+        # Resize Timer
+        self.resizeTimer = QTimer()
         # Internal Splitter
         vSplitter = QSplitter(self)
         vSplitter.setOrientation(Qt.Vertical)
@@ -213,7 +221,12 @@ class subWindowWell(QWidget):
         # frame.paintEvent = types.MethodType(paintSub, frame)
         frame.track = self.well.tracks[0]
         frame_2.track = self.well.tracks[1]
+
         self.lTracks.append(frame)
+        # frame.minVal = self.well.tracks[0].minVal
+        # frame.maxVal = self.well.tracks[0].maxVal
+        # frame_2.minVal = self.well.tracks[1].minVal
+        # frame_2.maxVal = self.well.tracks[1].maxVal
         self.lTracks.append(frame_2)
 
 
@@ -246,6 +259,27 @@ class subWindowWell(QWidget):
         self.splitter.setSizes(initHorizontalSize)
 
 
+    def resizeEvent(self, event:QtGui.QResizeEvent):
+        # print("Resizing")
+        for t in self.lTracks:
+            t.timer = time.perf_counter()
+        updtDaemon = threading.Thread(target=self.updateTracks, name='updateTracks')
+        updtDaemon.setDaemon(True)
+        updtDaemon.start()
+
+    def updateTracks(self):
+        time.sleep(1.1)
+        for t in self.lTracks:
+            t.update()
+
+    def mousePressEvent(self, event:QtGui.QMouseEvent):
+        if event.button() == Qt.LeftButton:
+            print("Pressed")
+
+
+
+    def keyPressEvent(self, event):
+        print("Key pressed")
     #   S H O W   P O P U P   M E N U
     def setOverFrame(self, frame):
         self.onFrame = frame
@@ -317,6 +351,8 @@ class subWindowWell(QWidget):
         wellTrack = Track()
         self.well.addTrack(wellTrack)
         frame.track = self.well.tracks[-1]
+        frame.minVal = self.well.tracks[-1].minVal
+        frame.maxVal = self.well.tracks[-1].maxVal
 
         # Resize all the another Splitters
         for r in self.lSplit:
@@ -381,6 +417,11 @@ class subWindowWell(QWidget):
     #         print("Right Button Clicked")
     #         self.popMenu.exec_(self.button.mapToGlobal(point))
 
+
+
+        # for t in self.lTracks:
+        #     t.setUpdatesEnabled(True)
+
     def setWell(self, well):
         self.well = well
         # Adding Well's Tracks
@@ -408,7 +449,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         well = self.parent.well
         items = []
         items = well.df.columns
-        logopt = [" ","Lineal","Log2Cycle","Log3Cycle","Log4Cycle","Log5Cycle"]
+        logopt = [" ","Lineal","Log"]
         linesOpt = [QIcon("statics\\images\\solid.png"), QIcon("statics\\images\\dash.png"),
         QIcon("statics\\images\\dashdot.png"),QIcon("statics\\images\\dot.png"), 
         QIcon("statics\\images\\dashdotdot.png")]
@@ -640,14 +681,18 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 linea.logIndex = logIndex
                 linea.visibleCheck = check[0].isChecked()
                 if not self.tableWidget.item(row, 1) is None:
-                    linea.lScale = float(l)
+                    if l:
+                        linea.lScale = float(l)
                 if not self.tableWidget.item(row, 2) is None:
-                    linea.rScale = float(r)
-                minVal = self.parent.well.stats[name].min()
-                maxVal = self.parent.well.stats[name].max()
+                    if r:
+                        linea.rScale = float(r)
+                stats = self.parent.well.stats[name]
+                minVal = stats['min']
+                maxVal = stats['max']
                 self.parent.well.tracks[self.trackNum - 1].addLine(linea)
                 self.parent.well.tracks[self.trackNum - 1].setMin(minVal)
                 self.parent.well.tracks[self.trackNum - 1].setMax(maxVal)
+
                 # wellTrack.append(linea)
                 # print("Fin")
 
@@ -659,10 +704,13 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             log = self.tableWidget.cellWidget(row,4).currentText()
             if name != " ":
                 if not l is None or not r is None:
-                    leftS = float(l.text())
-                    rightS = float(r.text())
-                    if leftS >= rightS:
-                        return "Escala izquierda inferior o igual a la derecha"
+                    if l.text() != "":
+                        leftS = float(l.text())
+                    if r.text() != "":
+                        rightS = float(r.text())
+                    if l.text() != "" and r.text() != "":
+                        if leftS >= rightS:
+                            return "Escala izquierda inferior o igual a la derecha"
                 if log == " ":
                     # if leftS <= 0
                     return "Tipo de lína no seleccionada: Log/Lineal"

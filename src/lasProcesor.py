@@ -58,10 +58,55 @@ class Track():
     def setMin(self,min):
         if min < self.minVal:
             self.minVal = min
+            self.getLandR()
 
     def setMax(self,max):
         if max > self.maxVal:
             self.maxVal = max
+            self.getLandR()
+
+    def getLandR(self):
+        if self.minVal > 0 :
+            l = 1
+            r = 10
+            if self.minVal < 1:
+                l = 0.1
+            elif self.minVal < 10:
+                l = 1
+            elif self.minVal < 100:
+                l = 10
+            elif self.minVal < 1000:
+                l = 100
+            elif self.minVal < 10000:
+                l = 1000
+            elif self.minVal < 100000:
+                l = 10000
+
+
+            if self.maxVal < 1:
+                r = 1
+            elif self.maxVal < 10:
+                r = 10
+            elif self.maxVal < 100:
+                r = 100
+            elif self.maxVal < 1000:
+                r = 1000
+            elif self.maxVal < 10000:
+                r = 10000
+            elif self.maxVal < 100000:
+                r = 100000
+            elif self.maxVal < 1000000:
+                r = 1000000
+            self.lLog = l
+            self.rLog = r
+            lsize = len(str(int(l)))
+            rsize = len(str(int(r)))
+            self.cycles = rsize - lsize
+            if l<1:
+                self.cycles += 1
+        else:
+            self.lLine = self.minVal
+            self.rLine = self.maxVal
 
 
 class Line():
@@ -76,6 +121,7 @@ class Line():
         self.log = "Lineal"
         self.logIndex = 0
         self.visible = True
+        self.visibleCheck = False
         self.lScale = None
         self.rScale = None
         self.desc = ""

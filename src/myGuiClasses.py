@@ -1,8 +1,9 @@
 from PySide2.QtWidgets import (QFrame, QLabel)
-from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette, QPen, QPainter, QFontMetrics)
-from PySide2.QtCore import (Qt, QRect)
+from PySide2.QtGui import (QBrush, QColor, QPalette, QPen, QPainter, QFontMetrics, QResizeEvent)
+from PySide2.QtCore import (Qt, QRect, QPoint, QPointF)
 from src.lasProcesor import Well, Track, Line, Grid
 import math
+import time
 
 
 class Label(QLabel):
@@ -45,6 +46,7 @@ class Frame(QFrame):
         self.end = None
         self.step = None
         self.isdep = isdep
+        self.timer = time.perf_counter()
         for i in yAxisVals:
             if i.mnemonic == "STRT":
                 self.st = i.value
@@ -54,8 +56,12 @@ class Frame(QFrame):
                 self.step = i.value
             if not self.st is None and not self.end is None and not self.step is None:
                 break
-        self.minVal = 99999.25
+        self.minVal = 9999999.25
         self.maxVal = -999.25
+        self.lLog = 0.1
+        self.rLog = 100
+        self.lLine = 0
+        self.rLine = 10000
 
 
     def setHead(self,head):
@@ -68,12 +74,12 @@ class Frame(QFrame):
         super().paintEvent(e)
         qp = QPainter(self)
         metrics = QFontMetrics(qp.font())
+        # print("--------------repainted")
         self.tall = metrics.boundingRect(str(100)).height()
         # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
-
         if self.track.lines:
             self.type = self.track.lines[0].log
-            self.drawLines(qp)
+            # self.drawLines(qp)
         if self.type == "Log" and not self.isdep:
             self.drawTrackLog(qp)
         elif not self.isdep:
@@ -82,6 +88,11 @@ class Frame(QFrame):
             self.drawRowMarks(qp)
         else:
             self.drawTags(qp)
+
+    def resizeEvent(self, a0: QResizeEvent):
+        # self.draw()
+        super().resizeEvent(a0)
+        # print("Size changed")
 
     def mapLog(self,l,r,tl,tr,p):
         size=math.log10(r)-math.log10(l)
@@ -118,7 +129,7 @@ class Frame(QFrame):
         step = self.width() /self.cycles
         painter.setPen(QPen(Qt.lightGray, 1))
 
-        for i in range(self.cycles):
+        for i in range(self.track.cycles):
             painter.setPen(QPen(Qt.black, 1))
             painter.drawLine(i * step, 0, i * step, self.height())
             for j in range(10):
@@ -127,12 +138,49 @@ class Frame(QFrame):
                     painter.drawLine((self.width()/self.cycles)*self.mapTLog(j,10)+(self.width()/self.cycles)*i, 0, \
                                      (self.width()/self.cycles)*self.mapTLog(j,10)+(self.width()/self.cycles)*i, self.height())
 
+
     def drawRowMarks(self,painter):
         count = (self.end-self.st ) / self.step
         fStep = self.height()/count
+        size=self.track.maxVal-self.track.minVal
+        conv=self.width()/size
+        DrawLinesFlag = False
+        lTime = time.perf_counter()
+        elapsed = lTime - self.timer
+
+        if elapsed > 1:
+            DrawLinesFlag = True
+            # self.timer = time.perf_counter()
         i = self.st
         j = 0
+        ## For Draw Lines
+        lines = []
+        linesName = []
+        if self.track.lines:
+             for l in self.track.lines:
+                linesName.append(l.name)
+                lines.append([])
+        df = self.well.df[linesName]
+        # print(df.columns)
+
         while i < self.end:
+
+            if DrawLinesFlag:
+            # Block for generate points
+                for l in range(len(self.track.lines)):
+                    if self.track.lines[l].log == "Log" and self.track.lines[l].visibleCheck:
+                        x = df.iat[j,l]
+                        if not math.isnan(x):
+                            if x >0 :
+                                point = QPointF(self.mapLog(self.track.lLog,self.track.rLog,0,self.width(),x),j*fStep)
+                                lines[l].append(point)
+                    elif self.track.lines[l].visibleCheck:
+                        val = df.iat[j,l]
+                        if not math.isnan(val):
+                            x = (val-self.track.minVal)*conv
+                            point = QPointF(x,j*fStep)
+                            lines[l].append(point)
+            # end block for generate points
             if i%1000 == 0:
                 painter.setPen(QPen(Qt.darkGray, 2))
                 painter.drawLine(0, j * fStep, self.width(), j * fStep)
@@ -144,8 +192,17 @@ class Frame(QFrame):
             elif i%10 ==0 and (100*fStep) > 4*self.tall:
                 painter.setPen(QPen(Qt.gray, 1))
                 painter.drawLine(0, j * fStep, self.width(), j * fStep)
+
             i += self.step
             j += 1
+        # Drawing Lines
+        if DrawLinesFlag:
+            for l in range(len(self.track.lines)):
+                color = self.track.lines[l].color
+                size = self.track.lines[l].grosor
+                painter.setPen(QPen(color, size))
+                painter.drawPolyline(lines[l])
+
 
     def drawTags(self,painter):
         painter.setPen(QPen(Qt.black, 2))
@@ -166,9 +223,6 @@ class Frame(QFrame):
             i += self.step
             j += 1
 
-    def drawLines(self,painter):
-        for l in self.track.lines:
-            points = self.well.df[[l.name,'T']]
-        if self.type == "Log":
-            mapP = self.mapLog(self.minVal,self.maxVal,0,self.width(),1)
-            points.append()
+    # def drawLines(self,painter):
+
+
