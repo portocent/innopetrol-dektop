@@ -1,7 +1,7 @@
-from PySide2.QtWidgets import (QFrame, QLabel)
-from PySide2.QtGui import (QBrush, QColor, QPalette, QPen, QPainter, QFontMetrics, QResizeEvent)
-from PySide2.QtCore import (Qt, QRect, QPoint, QPointF)
-from src.lasProcesor import Well, Track, Line, Grid
+from PySide2.QtWidgets import (QFrame, QLabel, QPushButton)
+from PySide2.QtGui import (QBrush, QPen, QPainter, QFontMetrics, QResizeEvent)
+from PySide2.QtCore import (Qt, QPointF)
+from src.lasProcesor import Track, Line, Grid
 import math
 import time
 
@@ -79,6 +79,7 @@ class Frame(QFrame):
         # qp.drawPixmap(100,100,QtGui.QPixmap("cigale1.png"))
         if self.track.lines:
             self.type = self.track.lines[0].log
+            self.cycles = self.track.cycles
             # self.drawLines(qp)
         if self.type == "Log" and not self.isdep:
             self.drawTrackLog(qp)
@@ -224,5 +225,69 @@ class Frame(QFrame):
             j += 1
 
     # def drawLines(self,painter):
+
+
+class Button(QPushButton):
+    def __init__(self, parent=None,well=None,isdep=False):
+        super(Button, self).__init__(parent=parent)
+        self.penColor = Qt.black
+        self.penType = Qt.SolidLine
+        self.well = well
+        self.isdep = isdep
+        self.header = self.well.header['Well']
+        self.unit = self.header['STRT'].unit
+        self.curves = self.well.curves
+        self.track = Track()
+
+    def setTrack(self,track):
+        self.track = track
+
+    def paintEvent(self, e):
+        super().paintEvent(e)
+        qp = QPainter(self)
+
+        if self.isdep:
+            qp.drawText(0, 0, self.width(),self.height(),
+                             Qt.AlignHCenter|Qt.AlignVCenter, "DEPTH\n"+str(self.unit))
+        else:
+            metrics = QFontMetrics(qp.font())
+            fontHeight = metrics.boundingRect(str(100)).height()
+            linesName = []
+            if self.track.lines:
+                for l in self.track.lines:
+                    curve = self.curves[l.name]
+                    mnemonic = curve['mnemonic']
+                    unit = curve['unit']
+                    log = False
+                    if l.log == "Log":
+                        log = True
+                    if l.lScale is None:
+                        if log:
+                            lScale = self.track.lLog
+                        else:
+                            lScale = self.track.lLine
+                    elif str(l.lScale) == '':
+                        if log:
+                            lScale = self.track.lLog
+                        else:
+                            lScale = self.track.lLine
+                    else:
+                        lScale = l.lScale
+
+                    if l.rScale is None:
+                        if log:
+                            rScale = self.track.rLog
+                        else:
+                            rScale = self.track.rLine
+                    elif str(l.rScale) == '':
+                        if log:
+                            rScale = self.track.rLog
+                        else:
+                            rScale = self.track.rLine
+                    else:
+                        rScale = l.rScale
+
+
+
 
 

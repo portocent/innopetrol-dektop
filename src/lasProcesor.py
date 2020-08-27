@@ -1,9 +1,8 @@
-import pandas as pd
-import numpy as np
+# import pandas as pd
+# import numpy as np
 import lasio
 from PySide2.QtCore import Qt
-# import copy
-# from PySide2.QtWidgets import *
+
 
 
 class Well():
@@ -20,6 +19,7 @@ class Well():
             self.header = las.header
             self.name = name
             self.viewname = name
+            self.curves = las.curves
 
             return ''
         except Exception as e:
@@ -69,33 +69,33 @@ class Track():
         if self.minVal > 0 :
             l = 1
             r = 10
-            if self.minVal < 1:
+            if self.minVal <= 1:
                 l = 0.1
-            elif self.minVal < 10:
+            elif self.minVal <= 10:
                 l = 1
-            elif self.minVal < 100:
+            elif self.minVal <= 100:
                 l = 10
-            elif self.minVal < 1000:
+            elif self.minVal <= 1000:
                 l = 100
-            elif self.minVal < 10000:
+            elif self.minVal <= 10000:
                 l = 1000
-            elif self.minVal < 100000:
+            else:
                 l = 10000
 
 
-            if self.maxVal < 1:
+            if self.maxVal <= 1:
                 r = 1
-            elif self.maxVal < 10:
+            elif self.maxVal <= 10:
                 r = 10
-            elif self.maxVal < 100:
+            elif self.maxVal <= 100:
                 r = 100
-            elif self.maxVal < 1000:
+            elif self.maxVal <= 1000:
                 r = 1000
-            elif self.maxVal < 10000:
+            elif self.maxVal <= 10000:
                 r = 10000
-            elif self.maxVal < 100000:
+            elif self.maxVal <= 100000:
                 r = 100000
-            elif self.maxVal < 1000000:
+            else:
                 r = 1000000
             self.lLog = l
             self.rLog = r
@@ -125,6 +125,37 @@ class Line():
         self.lScale = None
         self.rScale = None
         self.desc = ""
+
+    def setlScale(self,l):
+        if l <= 1:
+            self.lScale = 0.1
+        elif l <= 10:
+            self.lScale = 1
+        elif l <= 100:
+            self.lScale = 10
+        elif l <= 1000:
+            self.lScale = 100
+        elif l <= 10000:
+            self.lScale = 1000
+        else:
+            self.lScale = 10000
+
+    def setrScale(self,r):
+        if r <= 1:
+            self.rScale = 1
+        elif r <= 10:
+            self.rScale = 10
+        elif r <= 100:
+            self.rScale = 100
+        elif r <= 1000:
+            self.rScale = 1000
+        elif r <= 10000:
+            self.rScale = 10000
+        elif r <= 100000:
+            self.rScale = 100000
+        else:
+            self.rScale = 1000000
+
 
 
 class Grid():
