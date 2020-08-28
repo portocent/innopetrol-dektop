@@ -305,7 +305,6 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
 
         # out of for
 
-
         if not minUserVal is None:
             self.parent.well.tracks[self.trackNum - 1].setMin(minUserVal)
         if not maxUserVal is None:

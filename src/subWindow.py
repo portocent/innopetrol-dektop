@@ -192,7 +192,7 @@ class subWindowWell(QWidget):
         vSplitter = QSplitter(self.splitter)
         vSplitter.setOrientation(Qt.Vertical)
         # Adding a button
-        button = QPushButton(vSplitter)
+        button = Button(vSplitter,self.well)
         button.setObjectName(u"button_ " +str(frameCount))
         button.clicked.connect(partial(self._addLines ,frameCount +1))
         frame = Frame(vSplitter ,self.well)
@@ -275,6 +275,12 @@ class subWindowWell(QWidget):
 
     def splitterMoved(self, sender):
         # Resize all the another Splitters
+        # print("Resizing")
+        for t in self.lTracks:
+            t.timer = time.perf_counter()
+        updtDaemon = threading.Thread(target=self.updateTracks, name='updateTracks')
+        updtDaemon.setDaemon(True)
+        updtDaemon.start()
         for r in self.lSplit:
             if sender is not r:
                 r.blockSignals(True)

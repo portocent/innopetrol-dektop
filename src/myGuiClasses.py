@@ -34,6 +34,7 @@ class Label(QLabel):
 
 class Frame(QFrame):
     def __init__(self, parent=None,well=None,isdep=False):
+
         super(Frame, self).__init__(parent=parent)
         self.track = Track()
         self.type = "Lineal"
@@ -62,6 +63,8 @@ class Frame(QFrame):
         self.rLog = 100
         self.lLine = 0
         self.rLine = 10000
+
+
 
 
     def setHead(self,head):
@@ -229,7 +232,6 @@ class Frame(QFrame):
 
 class Button(QPushButton):
     def __init__(self, parent=None,well=None,isdep=False):
-        super(Button, self).__init__(parent=parent)
         self.penColor = Qt.black
         self.penType = Qt.SolidLine
         self.well = well
@@ -238,6 +240,8 @@ class Button(QPushButton):
         self.unit = self.header['STRT'].unit
         self.curves = self.well.curves
         self.track = Track()
+        super(Button, self).__init__(parent=parent)
+        # self.setStyleSheet("background-color:white;")
 
     def setTrack(self,track):
         self.track = track
@@ -252,9 +256,11 @@ class Button(QPushButton):
         else:
             metrics = QFontMetrics(qp.font())
             fontHeight = metrics.boundingRect(str(100)).height()
-            linesName = []
+            oPen = qp.pen()
             if self.track.lines:
+                count = 0
                 for l in self.track.lines:
+                    qp.setPen(oPen)
                     curve = self.curves[l.name]
                     mnemonic = curve['mnemonic']
                     unit = curve['unit']
@@ -286,6 +292,19 @@ class Button(QPushButton):
                             rScale = self.track.rLine
                     else:
                         rScale = l.rScale
+                    qp.drawText(0, fontHeight*count, self.width(), fontHeight*2,
+                                Qt.AlignHCenter, str(mnemonic)+" (" + str(unit) + ")")
+                    rtextLen = metrics.boundingRect(str(round(rScale, 2))).width()
+                    ltextLen = metrics.boundingRect(str(round(lScale, 2))).width()
+                    qp.drawText(0, fontHeight*(count+1), ltextLen+4, fontHeight*2,
+                                Qt.AlignRight, str(round(lScale,2)))
+                    qp.drawText(self.width()-4-rtextLen, fontHeight * (count+1), self.width(), fontHeight*2,
+                                Qt.AlignLeft, str(round(rScale, 2)))
+                    pen = QPen(l.color, l.grosor, l.estilo)
+                    qp.setPen(pen)
+
+                    qp.drawLine(rtextLen+5, fontHeight*(count+1.5), self.width() - ltextLen-10, fontHeight*(count+1.5))
+                    count += 2
 
 
 

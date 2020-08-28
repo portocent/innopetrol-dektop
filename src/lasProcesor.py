@@ -42,6 +42,7 @@ class Track():
         self.grids = []
         self.minVal = 99999.25
         self.maxVal = -999.25
+        self.cycles = 3
      
     def addLine(self,line):
         self.lines.append(line)
@@ -104,9 +105,9 @@ class Track():
             self.cycles = rsize - lsize
             if l<1:
                 self.cycles += 1
-        else:
-            self.lLine = self.minVal
-            self.rLine = self.maxVal
+
+        self.lLine = self.minVal
+        self.rLine = self.maxVal
 
 
 class Line():
