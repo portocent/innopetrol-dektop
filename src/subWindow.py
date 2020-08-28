@@ -7,10 +7,10 @@ from PySide2.QtCore import (QSize, Qt,
 from PySide2.QtGui import (QBrush, QColor, QIcon, QPalette)
 from PySide2.QtWidgets import (QFrame, QAction, QWidget,
                                QGridLayout, QSplitter, QPushButton,
-                               QLabel)
+                               QLabel, QMenu)
 from src.myGuiClasses import Frame, Button
 import time
-import threading
+import threading, copy
 from functools import partial
 
 
@@ -24,6 +24,7 @@ class subWindowWell(QWidget):
         self.setObjectName(u"subwindow")
         # self.setMinimumSize(QSize(200, 475))
         self.setMinimumSize(QSize(200, 300))
+        self.defaultSize = QSize(220, 475)
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName(u"gridLayout")
         self.splitter = QSplitter(self)
@@ -120,13 +121,7 @@ class subWindowWell(QWidget):
 
 
         self.lTracks.append(frame)
-        # frame.minVal = self.well.tracks[0].minVal
-        # frame.maxVal = self.well.tracks[0].maxVal
-        # frame_2.minVal = self.well.tracks[1].minVal
-        # frame_2.maxVal = self.well.tracks[1].maxVal
         self.lTracks.append(frame_2)
-
-
 
         # Adding vertical splitter events conection
         self.connect(vSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter))
@@ -139,10 +134,35 @@ class subWindowWell(QWidget):
         self.delTrackAction = QAction(self)
         self.delTrackAction.setText('Remove Track')
         self.delTrackAction.triggered.connect(self.delTrack)
+        self.zoomDx = QAction("Default",self)
+        self.zoomDx.triggered.connect(self.changeZoomDx)
+        self.zoom1x = QAction("1x", self)
+        self.zoom1x.triggered.connect(self.changeZoom1x)
+        self.zoom2x = QAction("2x",self)
+        self.zoom2x.triggered.connect(self.changeZoom2x)
+        self.zoom4x = QAction("4x",self)
+        self.zoom4x.triggered.connect(self.changeZoom4x)
+        self.zoom10x = QAction("10x",self)
+        self.zoom10x.triggered.connect(self.changeZoom10x)
+        self.zoom50x = QAction("50x",self)
+        self.zoom50x.triggered.connect(self.changeZoom50x)
+        self.zoom100x = QAction("100x",self)
+        self.zoom100x.triggered.connect(self.changeZoom100x)
+
+
         # create context menu
-        self.popMenu = QtWidgets.QMenu(self)
+        self.popMenu = QMenu(self)
+        self.zoomMenu = QMenu("Zoom",self)
+        self.zoomMenu.addAction(self.zoomDx)
+        self.zoomMenu.addAction(self.zoom1x)
+        self.zoomMenu.addAction(self.zoom2x)
+        self.zoomMenu.addAction(self.zoom4x)
+        self.zoomMenu.addAction(self.zoom10x)
+        self.zoomMenu.addAction(self.zoom50x)
+        self.zoomMenu.addAction(self.zoom100x)
         self.popMenu.addAction(self.addTrackAction)
         self.popMenu.addAction(self.delTrackAction)
+        self.popMenu.addMenu(self.zoomMenu)
         #   C O N N E C T   P O P U P   M E N U   T O   O U R   B U T T O N
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showPopup)
@@ -152,31 +172,143 @@ class subWindowWell(QWidget):
         initSize = [20, 50, self.height() - 70]
         vSplitter.setSizes(initSize)
         vSplitter2.setSizes(initSize)
-        initHorizontalSize = [self.width( ) -self.track2Size, self.track2Size]
-        self.splitter.setSizes(initHorizontalSize)
+        # initHorizontalSize = [self.width( ) -self.track2Size, self.track2Size]
+
+    def changeZoomDx(self):
+        size = QSize(210, 350)
+        size.setHeight(size.height())
+        QMdiSubwindow = self.parentWidget()
+        width = QMdiSubwindow.width()
+        size.setWidth(width)
+        oldSplitSizes = self.lSplit[0].sizes()
+        QMdiSubwindow.resize(size)
+        newSplitSizes = self.lSplit[0].sizes()
+        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
+        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
+        for r in self.lSplit:
+            r.blockSignals(True)
+            r.setSizes(oldSplitSizes)
+            r.blockSignals(False)
+
+    def changeZoom1x(self):
+        size = copy.deepcopy(self.defaultSize)
+        size.setHeight(self.defaultSize.height())
+        QMdiSubwindow = self.parentWidget()
+        width = QMdiSubwindow.width()
+        size.setWidth(width)
+        oldSplitSizes = self.lSplit[0].sizes()
+        QMdiSubwindow.resize(size)
+        newSplitSizes = self.lSplit[0].sizes()
+        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
+        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
+        for r in self.lSplit:
+            r.blockSignals(True)
+            r.setSizes(oldSplitSizes)
+            r.blockSignals(False)
+
+    def changeZoom2x(self):
+        size = copy.deepcopy(self.defaultSize)
+        size.setHeight(self.defaultSize.height()*2)
+        QMdiSubwindow = self.parentWidget()
+        width = QMdiSubwindow.width()
+        size.setWidth(width)
+        oldSplitSizes = self.lSplit[0].sizes()
+        QMdiSubwindow.resize(size)
+        newSplitSizes = self.lSplit[0].sizes()
+        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
+        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
+        for r in self.lSplit:
+            r.blockSignals(True)
+            r.setSizes(oldSplitSizes)
+            r.blockSignals(False)
+
+    def changeZoom4x(self):
+        size = copy.deepcopy(self.defaultSize)
+        size.setHeight(self.defaultSize.height()*4)
+        QMdiSubwindow = self.parentWidget()
+        width = QMdiSubwindow.width()
+        size.setWidth(width)
+        oldSplitSizes = self.lSplit[0].sizes()
+        QMdiSubwindow.resize(size)
+        newSplitSizes = self.lSplit[0].sizes()
+        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
+        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
+        for r in self.lSplit:
+            r.blockSignals(True)
+            r.setSizes(oldSplitSizes)
+            r.blockSignals(False)
+
+    def changeZoom10x(self):
+        size = copy.deepcopy(self.defaultSize)
+        size.setHeight(self.defaultSize.height()*10)
+        QMdiSubwindow = self.parentWidget()
+        width = QMdiSubwindow.width()
+        size.setWidth(width)
+        oldSplitSizes = self.lSplit[0].sizes()
+        QMdiSubwindow.resize(size)
+        newSplitSizes = self.lSplit[0].sizes()
+        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
+        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
+        for r in self.lSplit:
+            r.blockSignals(True)
+            r.setSizes(oldSplitSizes)
+            r.blockSignals(False)
+
+
+    def changeZoom50x(self):
+        size = copy.deepcopy(self.defaultSize)
+        size.setHeight(self.defaultSize.height()*50)
+        QMdiSubwindow = self.parentWidget()
+        width = QMdiSubwindow.width()
+        size.setWidth(width)
+        oldSplitSizes = self.lSplit[0].sizes()
+        QMdiSubwindow.resize(size)
+        newSplitSizes = self.lSplit[0].sizes()
+        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
+        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
+        for r in self.lSplit:
+            r.blockSignals(True)
+            r.setSizes(oldSplitSizes)
+            r.blockSignals(False)
+
+    def changeZoom100x(self):
+        size = copy.deepcopy(self.defaultSize)
+        size.setHeight(size.height()*100)
+        QMdiSubwindow = self.parentWidget()
+        width = QMdiSubwindow.width()
+        size.setWidth(width)
+        oldSplitSizes = self.lSplit[0].sizes()
+        QMdiSubwindow.resize(size)
+        newSplitSizes = self.lSplit[0].sizes()
+        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
+        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
+        for r in self.lSplit:
+            r.blockSignals(True)
+            r.setSizes(oldSplitSizes)
+            r.blockSignals(False)
 
 
     def resizeEvent(self, event :QtGui.QResizeEvent):
         # print("Resizing")
+        super().resizeEvent(event)
         for t in self.lTracks:
             t.timer = time.perf_counter()
         updtDaemon = threading.Thread(target=self.updateTracks, name='updateTracks')
         updtDaemon.setDaemon(True)
         updtDaemon.start()
 
+
     def updateTracks(self):
-        time.sleep(1.1)
+        time.sleep(1.5)
         for t in self.lTracks:
             t.update()
+
 
     # def mousePressEvent(self, event :QtGui.QMouseEvent):
     #     if event.button() == Qt.LeftButton:
     #         print("Pressed")
 
 
-
-    # def keyPressEvent(self, event):
-    #     print("Key pressed")
     #   S H O W   P O P U P   M E N U
     def setOverFrame(self, frame):
         self.onFrame = frame
@@ -276,11 +408,7 @@ class subWindowWell(QWidget):
     def splitterMoved(self, sender):
         # Resize all the another Splitters
         # print("Resizing")
-        for t in self.lTracks:
-            t.timer = time.perf_counter()
-        updtDaemon = threading.Thread(target=self.updateTracks, name='updateTracks')
-        updtDaemon.setDaemon(True)
-        updtDaemon.start()
+
         for r in self.lSplit:
             if sender is not r:
                 r.blockSignals(True)

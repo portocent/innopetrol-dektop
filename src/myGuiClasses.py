@@ -1,3 +1,5 @@
+import threading
+
 from PySide2.QtWidgets import (QFrame, QLabel, QPushButton)
 from PySide2.QtGui import (QBrush, QPen, QPainter, QFontMetrics, QResizeEvent)
 from PySide2.QtCore import (Qt, QPointF)
@@ -93,10 +95,21 @@ class Frame(QFrame):
         else:
             self.drawTags(qp)
 
+
+
     def resizeEvent(self, a0: QResizeEvent):
         # self.draw()
         super().resizeEvent(a0)
+        self.timer = time.perf_counter()
+        updtDaemon = threading.Thread(target=self.updateTrack, name='updateTrack')
+        updtDaemon.setDaemon(True)
+        updtDaemon.start()
+
         # print("Size changed")
+
+    def updateTrack(self):
+        time.sleep(1.3)
+        self.update()
 
     def mapLog(self,l,r,tl,tr,p):
         size=math.log10(r)-math.log10(l)
@@ -223,6 +236,12 @@ class Frame(QFrame):
             elif i%100 == 0 and 2*(100*fStep) > self.tall:
                 painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
                                  Qt.AlignHCenter,str(int(i)))
+            elif i%10 == 0 and (10*fStep) > self.tall*5:
+                painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
+                                 Qt.AlignHCenter,str(int(i)))
+            elif i%1 == 0 and (10*fStep) > self.tall*10:
+                painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
+                                 Qt.AlignHCenter,str(int(i)))
 
             i += self.step
             j += 1
@@ -303,7 +322,7 @@ class Button(QPushButton):
                     pen = QPen(l.color, l.grosor, l.estilo)
                     qp.setPen(pen)
 
-                    qp.drawLine(rtextLen+5, fontHeight*(count+1.5), self.width() - ltextLen-10, fontHeight*(count+1.5))
+                    qp.drawLine(ltextLen+5, fontHeight*(count+1.5), self.width() - rtextLen-5, fontHeight*(count+1.5))
                     count += 2
 
 

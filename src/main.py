@@ -4,7 +4,7 @@ from src.GUI import Ui_MainWindow
 from src.lasProcesor import Well
 from src.subWindow import subWindowWell
 from PySide2.QtCore import ( Slot)
-from PySide2.QtGui import (QIcon)
+from PySide2.QtGui import (QIcon, Qt)
 from PySide2.QtWidgets import (QTreeWidgetItem, QApplication)
 import os
 
@@ -18,6 +18,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.menuOptions()
         self.statusBar().showMessage('Ready')
         self.countSubW = 0
+        self.mdiArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.mdiArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
 
     def menuOptions(self):
         # Open Well
@@ -68,7 +71,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         subwindow.setWindowTitle(strId)        
         # subwindow.setWell(well)
         subwindow.show()
-    
+
+
+
     def fillTreeWell(self, wellName):
         # __sortingEnabled = self.treeWidget.isSortingEnabled()
         qtreewidgetitem1 = QTreeWidgetItem(self.treeWidget)
