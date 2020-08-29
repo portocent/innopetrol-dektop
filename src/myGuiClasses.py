@@ -2,7 +2,7 @@ import threading
 
 from PySide2.QtWidgets import (QFrame, QLabel, QPushButton)
 from PySide2.QtGui import (QBrush, QPen, QPainter, QFontMetrics, QResizeEvent)
-from PySide2.QtCore import (Qt, QPointF)
+from PySide2.QtCore import (Qt, QPointF, QPoint)
 from src.lasProcesor import Track, Line, Grid
 import math
 import time
@@ -65,6 +65,7 @@ class Frame(QFrame):
         self.rLog = 100
         self.lLine = 0
         self.rLine = 10000
+        self.recalculate = True
 
 
 
@@ -100,10 +101,13 @@ class Frame(QFrame):
     def resizeEvent(self, a0: QResizeEvent):
         # self.draw()
         super().resizeEvent(a0)
+        self.recalculate = True
         self.timer = time.perf_counter()
         updtDaemon = threading.Thread(target=self.updateTrack, name='updateTrack')
         updtDaemon.setDaemon(True)
         updtDaemon.start()
+
+    # def recalculateLines(self):
 
         # print("Size changed")
 
@@ -170,13 +174,12 @@ class Frame(QFrame):
             # self.timer = time.perf_counter()
         i = self.st
         j = 0
-        ## For Draw Lines
-        lines = []
+        self.lines = []
         linesName = []
         if self.track.lines:
-             for l in self.track.lines:
+            for l in self.track.lines:
                 linesName.append(l.name)
-                lines.append([])
+                self.lines.append([])
         df = self.well.df[linesName]
         # print(df.columns)
 
@@ -184,19 +187,32 @@ class Frame(QFrame):
 
             if DrawLinesFlag:
             # Block for generate points
+            ## For Draw Lines
                 for l in range(len(self.track.lines)):
                     if self.track.lines[l].log == "Log" and self.track.lines[l].visibleCheck:
                         x = df.iat[j,l]
                         if not math.isnan(x):
                             if x >0 :
-                                point = QPointF(self.mapLog(self.track.lLog,self.track.rLog,0,self.width(),x),j*fStep)
-                                lines[l].append(point)
+                                lx = int(self.mapLog(self.track.lLog,self.track.rLog,0,self.width(),x))
+                                if j > 0:
+                                    if not math.isnan(df.iat[j-1,l]):
+                                        prevlx = int(self.mapLog(self.track.lLog,self.track.rLog,0,self.width(),df.iat[j-1,l]))
+                                        if lx != prevlx:
+                                            point = QPoint(lx, int(j * fStep))
+                                            self.lines[l].append(point)
+                                    else:
+                                        point = QPoint(lx, int(j * fStep))
+                                        self.lines[l].append(point)
+                                else:
+                                    point = QPoint(lx,int(j*fStep))
+                                    self.lines[l].append(point)
                     elif self.track.lines[l].visibleCheck:
                         val = df.iat[j,l]
                         if not math.isnan(val):
                             x = (val-self.track.minVal)*conv
-                            point = QPointF(x,j*fStep)
-                            lines[l].append(point)
+                            point = QPoint(int(x),int(j*fStep))
+                            self.lines[l].append(point)
+
             # end block for generate points
             if i%1000 == 0:
                 painter.setPen(QPen(Qt.darkGray, 2))
@@ -217,8 +233,10 @@ class Frame(QFrame):
             for l in range(len(self.track.lines)):
                 color = self.track.lines[l].color
                 size = self.track.lines[l].grosor
-                painter.setPen(QPen(color, size))
-                painter.drawPolyline(lines[l])
+                style = self.track.lines[l].estilo
+                painter.setPen(QPen(color, size, style))
+                painter.drawPolyline(self.lines[l])
+
 
 
     def drawTags(self,painter):

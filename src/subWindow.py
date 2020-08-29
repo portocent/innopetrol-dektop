@@ -302,6 +302,8 @@ class subWindowWell(QWidget):
         time.sleep(1.5)
         for t in self.lTracks:
             t.update()
+            time.sleep(0.2)
+
 
 
     # def mousePressEvent(self, event :QtGui.QMouseEvent):
