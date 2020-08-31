@@ -1,3 +1,4 @@
+import copy
 import threading
 
 from PySide2.QtWidgets import (QFrame, QLabel, QPushButton)
@@ -66,6 +67,7 @@ class Frame(QFrame):
         self.lLine = 0
         self.rLine = 10000
         self.recalculate = True
+        self.lines = []
 
 
 
@@ -101,19 +103,21 @@ class Frame(QFrame):
     def resizeEvent(self, a0: QResizeEvent):
         # self.draw()
         super().resizeEvent(a0)
-        self.recalculate = True
         self.timer = time.perf_counter()
         updtDaemon = threading.Thread(target=self.updateTrack, name='updateTrack')
         updtDaemon.setDaemon(True)
         updtDaemon.start()
 
-    # def recalculateLines(self):
 
         # print("Size changed")
 
     def updateTrack(self):
         time.sleep(1.3)
+        self.recalculate = True
         self.update()
+        vsplit = self.parent()
+        subw = vsplit.parent()
+        subw.update()
 
     def mapLog(self,l,r,tl,tr,p):
         size=math.log10(r)-math.log10(l)
@@ -163,29 +167,33 @@ class Frame(QFrame):
     def drawRowMarks(self,painter):
         count = (self.end-self.st ) / self.step
         fStep = self.height()/count
-        size=self.track.maxVal-self.track.minVal
-        conv=self.width()/size
+        # size=self.track.maxVal-self.track.minVal
+        # conv=self.width()/size
         DrawLinesFlag = False
         lTime = time.perf_counter()
         elapsed = lTime - self.timer
-
+        # If time elapsed between now and the latest change is less than 1 second
         if elapsed > 1:
             DrawLinesFlag = True
             # self.timer = time.perf_counter()
         i = self.st
         j = 0
-        self.lines = []
         linesName = []
         if self.track.lines:
             for l in self.track.lines:
                 linesName.append(l.name)
-                self.lines.append([])
         df = self.well.df[linesName]
         # print(df.columns)
-
+        # Init vars if recalculate == True
+        if self.recalculate:
+            self.lines = []
+            if self.track.lines:
+                for l in self.track.lines:
+                    self.lines.append([])
         while i < self.end:
 
-            if DrawLinesFlag:
+            # I have to recalculate all points again
+            if self.recalculate :
             # Block for generate points
             ## For Draw Lines
                 for l in range(len(self.track.lines)):
@@ -193,7 +201,11 @@ class Frame(QFrame):
                         x = df.iat[j,l]
                         if not math.isnan(x):
                             if x >0 :
-                                lx = int(self.mapLog(self.track.lLog,self.track.rLog,0,self.width(),x))
+                                if x < self.track.lLog:
+                                    x = copy.copy(self.track.lLog)
+                                if x > self.track.rLog:
+                                    x = copy.copy(self.track.rLog)
+                                lx = int(self.mapLog(self.track.lLog, self.track.rLog, 0, self.width(), x))
                                 if j > 0:
                                     if not math.isnan(df.iat[j-1,l]):
                                         prevlx = int(self.mapLog(self.track.lLog,self.track.rLog,0,self.width(),df.iat[j-1,l]))
@@ -209,7 +221,15 @@ class Frame(QFrame):
                     elif self.track.lines[l].visibleCheck:
                         val = df.iat[j,l]
                         if not math.isnan(val):
-                            x = (val-self.track.minVal)*conv
+                            left = self.track.minValLine
+                            right = self.track.maxValLine
+                            if not self.track.lines[l].lScale is None:
+                                left = self.track.lines[l].lScale
+                            if not self.track.lines[l].rScale is None:
+                                right = self.track.lines[l].rScale
+                            size =  right - left
+                            conv = self.width() / size
+                            x = (val - self.track.minVal) * conv
                             point = QPoint(int(x),int(j*fStep))
                             self.lines[l].append(point)
 
@@ -218,11 +238,18 @@ class Frame(QFrame):
                 painter.setPen(QPen(Qt.darkGray, 2))
                 painter.drawLine(0, j * fStep, self.width(), j * fStep)
             elif i%100 == 0 and (1000*fStep) > 4*self.tall:
-                painter.setPen(QPen(Qt.gray, 2))
-                if (1000*fStep) >= 2*self.tall and count >= 1000:
+                if (100*fStep) >= 4*self.tall and count >= 1000:
+                    painter.setPen(QPen(Qt.gray, 2))
+                else:
                     painter.setPen(QPen(Qt.gray, 1))
                 painter.drawLine(0, j * fStep, self.width(), j * fStep)
             elif i%10 ==0 and (100*fStep) > 4*self.tall:
+                if (10*fStep) > 4*self.tall:
+                    painter.setPen(QPen(Qt.gray, 2))
+                else:
+                    painter.setPen(QPen(Qt.gray, 1))
+                painter.drawLine(0, j * fStep, self.width(), j * fStep)
+            elif i%1 ==0 and (10*fStep) > 10*self.tall:
                 painter.setPen(QPen(Qt.gray, 1))
                 painter.drawLine(0, j * fStep, self.width(), j * fStep)
 
@@ -236,6 +263,7 @@ class Frame(QFrame):
                 style = self.track.lines[l].estilo
                 painter.setPen(QPen(color, size, style))
                 painter.drawPolyline(self.lines[l])
+            self.recalculate = False
 
 
 
@@ -244,20 +272,34 @@ class Frame(QFrame):
         painter.drawRect(0, 0, self.width() , self.height() )
         count = (self.end-self.st ) / self.step
         fStep = self.height()/count
+        font = painter.font()
+        higFont = copy.copy(painter.font())
+        higFont.setPointSizeF(font.pointSize()*1.1)
 
         i = self.st
         j = 0
         while i < self.end:
             if i%1000 == 0:
+                higFont.setBold(True)
+                painter.setFont(higFont)
                 painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
                                  Qt.AlignHCenter,str(int(i)))
-            elif i%100 == 0 and 2*(100*fStep) > self.tall:
+            elif i%100 == 0 and (1000*fStep) > self.tall*15:
+                higFont.setBold(False)
+                painter.setFont(higFont)
                 painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
                                  Qt.AlignHCenter,str(int(i)))
-            elif i%10 == 0 and (10*fStep) > self.tall*5:
+            elif i%10 == 0 and (100*fStep) > self.tall*15:
+                if (10*fStep) > self.tall*15:
+                    font.setBold(True)
+                else:
+                    font.setBold(False)
+                painter.setFont(font)
                 painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
                                  Qt.AlignHCenter,str(int(i)))
-            elif i%1 == 0 and (10*fStep) > self.tall*10:
+            elif i%1 == 0 and (10*fStep) > self.tall*15:
+                font.setBold(False)
+                painter.setFont(font)
                 painter.drawText(0,(j * fStep) - self.tall/2,self.width(),(j * fStep) +self.tall/2,
                                  Qt.AlignHCenter,str(int(i)))
 
@@ -306,41 +348,55 @@ class Button(QPushButton):
                         log = True
                     if l.lScale is None:
                         if log:
-                            lScale = self.track.lLog
+                            lScale = copy.copy(self.track.lLog)
                         else:
-                            lScale = self.track.lLine
+                            lScale = copy.copy(self.track.minValLine)
                     elif str(l.lScale) == '':
                         if log:
-                            lScale = self.track.lLog
+                            lScale = copy.copy(self.track.lLog)
                         else:
-                            lScale = self.track.lLine
+                            lScale = copy.copy(self.track.minValLine)
                     else:
-                        lScale = l.lScale
+                        if log:
+                            lScale = copy.copy(self.track.lLog)
+                        else:
+                            lScale = copy.copy(l.lScale)
 
                     if l.rScale is None:
                         if log:
-                            rScale = self.track.rLog
+                            rScale = copy.copy(self.track.rLog)
                         else:
-                            rScale = self.track.rLine
+                            rScale = copy.copy( self.track.maxValLine)
                     elif str(l.rScale) == '':
                         if log:
-                            rScale = self.track.rLog
+                            rScale = copy.copy(self.track.rLog)
                         else:
-                            rScale = self.track.rLine
+                            rScale = copy.copy( self.track.maxValLine)
                     else:
-                        rScale = l.rScale
+                        if log:
+                            if l.rScale > self.track.rLog:
+                                rScale = copy.copy(self.track.rLog)
+                            else:
+                                rScale = copy.copy(l.rScale)
+                        else:
+                            if l.rScale > self.track.maxValLine:
+                                rScale = copy.copy( self.track.maxValLine)
+                            else:
+                                rScale = copy.copy(l.rScale)
+
                     qp.drawText(0, fontHeight*count, self.width(), fontHeight*2,
                                 Qt.AlignHCenter, str(mnemonic)+" (" + str(unit) + ")")
                     rtextLen = metrics.boundingRect(str(round(rScale, 2))).width()
                     ltextLen = metrics.boundingRect(str(round(lScale, 2))).width()
-                    qp.drawText(0, fontHeight*(count+1), ltextLen+4, fontHeight*2,
+                    space = metrics.boundingRect(str(0)).width() *2
+                    qp.drawText(0, fontHeight*(count+1), ltextLen+space, fontHeight*2,
                                 Qt.AlignRight, str(round(lScale,2)))
-                    qp.drawText(self.width()-4-rtextLen, fontHeight * (count+1), self.width(), fontHeight*2,
+                    qp.drawText(self.width()-space-rtextLen, fontHeight * (count+1), self.width(), fontHeight*2,
                                 Qt.AlignLeft, str(round(rScale, 2)))
                     pen = QPen(l.color, l.grosor, l.estilo)
                     qp.setPen(pen)
 
-                    qp.drawLine(ltextLen+5, fontHeight*(count+1.5), self.width() - rtextLen-5, fontHeight*(count+1.5))
+                    qp.drawLine(ltextLen+space*2, fontHeight*(count+1.5), self.width() - rtextLen-space*2, fontHeight*(count+1.5))
                     count += 2
 
 

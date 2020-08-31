@@ -1,3 +1,5 @@
+import copy
+
 from PySide2 import QtWidgets
 from src.lasProcesor import Line, Grid
 from src.addCurveGUI import Ui_addCurve
@@ -183,8 +185,8 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             penType = linea.estiloIndex
             log = linea.logIndex
             visible = linea.visible
-            l = linea.lScale
-            r = linea.rScale
+            l = linea.lvScale
+            r = linea.rvScale
             check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
 
             # Setting Options
@@ -272,15 +274,19 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                             linea.setlScale(float(l))
                         else:
                             linea.lScale = float(l)
+                            linea.lvScale = float(l)
                 if not self.tableWidget.item(row, 2) is None:
                     if r:
                         if log == "Log":
                             linea.setrScale(float(r))
                         else:
                             linea.rScale = float(r)
+                            linea.rvScale = float(r)
                 stats = self.parent.well.stats[name]
                 minVal = stats['min']
                 maxVal = stats['max']
+                linea.minVal = copy.copy(minVal)
+                linea.maxVal = copy.copy(maxVal)
 
                 if not l is None:
                     if l:
@@ -288,7 +294,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                             minUserVal = float(l)
                         else:
                             if minUserVal < float(l):
-                                minUserVal = float(r)
+                                minUserVal = float(l)
 
                 if not r is None:
                     if r:
@@ -302,13 +308,20 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 self.parent.well.tracks[self.trackNum - 1].addLine(linea)
                 self.parent.well.tracks[self.trackNum - 1].setMin(minVal)
                 self.parent.well.tracks[self.trackNum - 1].setMax(maxVal)
+                if linea.log != "Log":
+                    self.parent.well.tracks[self.trackNum - 1].setMinLine(minVal)
+                    self.parent.well.tracks[self.trackNum - 1].setMaxLine(maxVal)
 
-        # out of for
+
 
         if not minUserVal is None:
-            self.parent.well.tracks[self.trackNum - 1].setMin(minUserVal)
+            self.parent.well.tracks[self.trackNum - 1].minVal = minUserVal
+            self.parent.well.tracks[self.trackNum - 1].getLandR()
         if not maxUserVal is None:
-            self.parent.well.tracks[self.trackNum - 1].setMax(maxUserVal)
+            self.parent.well.tracks[self.trackNum - 1].maxVal = maxUserVal
+            self.parent.well.tracks[self.trackNum - 1].getLandR()
+        self.parent.lTracks[self.trackNum - 1].recalculate = True
+
 
                 # wellTrack.append(linea)
                 # print("Fin")

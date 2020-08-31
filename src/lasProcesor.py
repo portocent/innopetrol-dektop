@@ -1,5 +1,7 @@
 # import pandas as pd
 # import numpy as np
+import copy
+
 import lasio
 from PySide2.QtCore import Qt
 
@@ -43,6 +45,8 @@ class Track():
         self.minVal = 99999.25
         self.maxVal = -999.25
         self.cycles = 3
+        self.minValLine = 99999.25
+        self.maxValLine = -999.25
      
     def addLine(self,line):
         self.lines.append(line)
@@ -66,19 +70,27 @@ class Track():
             self.maxVal = max
             self.getLandR()
 
+    def setMinLine(self,min):
+        if min < self.minValLine:
+            self.minValLine = min
+
+    def setMaxLine(self,max):
+        if max > self.maxValLine:
+            self.maxValLine = max
+
     def getLandR(self):
         if self.minVal > 0 :
             l = 1
             r = 10
-            if self.minVal <= 1:
+            if self.minVal < 1:
                 l = 0.1
-            elif self.minVal <= 10:
+            elif self.minVal < 10:
                 l = 1
-            elif self.minVal <= 100:
+            elif self.minVal < 100:
                 l = 10
-            elif self.minVal <= 1000:
+            elif self.minVal < 1000:
                 l = 100
-            elif self.minVal <= 10000:
+            elif self.minVal < 10000:
                 l = 1000
             else:
                 l = 10000
@@ -106,8 +118,8 @@ class Track():
             if l<1:
                 self.cycles += 1
 
-        self.lLine = self.minVal
-        self.rLine = self.maxVal
+        # self.lLine = copy.copy(self.lLog)
+        # self.rLine = copy.copy(self.rLog)
 
 
 class Line():
@@ -124,24 +136,30 @@ class Line():
         self.visible = True
         self.visibleCheck = False
         self.lScale = None
+        self.lvScale = None
+        self.rvScale = None
         self.rScale = None
+        self.minVal = None
+        self.maxVal = None
         self.desc = ""
 
     def setlScale(self,l):
-        if l <= 1:
+
+        if l < 1:
             self.lScale = 0.1
-        elif l <= 10:
+        elif l < 10:
             self.lScale = 1
-        elif l <= 100:
+        elif l < 100:
             self.lScale = 10
-        elif l <= 1000:
+        elif l < 1000:
             self.lScale = 100
-        elif l <= 10000:
+        elif l < 10000:
             self.lScale = 1000
         else:
             self.lScale = 10000
-
+        self.lvScale = l
     def setrScale(self,r):
+
         if r <= 1:
             self.rScale = 1
         elif r <= 10:
@@ -156,7 +174,7 @@ class Line():
             self.rScale = 100000
         else:
             self.rScale = 1000000
-
+        self.rvScale = r
 
 
 class Grid():

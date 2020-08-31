@@ -2,7 +2,7 @@
 from PySide2 import QtWidgets
 from src.GUI import Ui_MainWindow
 from src.lasProcesor import Well
-from src.subWindow import subWindowWell
+from src.subWindowScroll import subWindowWell
 from PySide2.QtCore import ( Slot)
 from PySide2.QtGui import (QIcon, Qt)
 from PySide2.QtWidgets import (QTreeWidgetItem, QApplication)
@@ -20,6 +20,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.countSubW = 0
         self.mdiArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.mdiArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.mdiArea.verticalScrollBar().setSingleStep(1)
+
+
 
 
     def menuOptions(self):

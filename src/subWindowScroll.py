@@ -22,38 +22,61 @@ class subWindowWell(QWidget):
         self.lTracks = []
         self.lSplit = []
         self.setObjectName(u"subwindow")
-        self.vscroll = QScrollBar(self)
+        self.frameScroll = QScrollArea(self)
+        self.headScroll = QScrollArea(self)
         # self.setMinimumSize(QSize(200, 475))
-        self.setMinimumSize(QSize(200, 300))
+        self.setMinimumSize(QSize(220, 300))
         self.defaultSize = QSize(220, 475)
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName(u"gridLayout")
         self.splitter = QSplitter(self)
+        self.headSplitter = QSplitter(self)
+        self.frameSplitter = QSplitter(self)
+        # self.frameSplitter = QSplitter(self)
         self.well = well
+        self.st = None
+        self.end = None
+        self.step = None
+        self.trackLong = 0
+        if not self.well is None:
+            self.header = well.header
+            self.trackConst = self.header.get('Well')
+            for i in self.trackConst:
+                if i.mnemonic == "STRT":
+                    self.st = i.value
+                if i.mnemonic == "STOP":
+                    self.end = i.value
+                if i.mnemonic == "STEP":
+                    self.step = i.value
+                if not self.st is None and not self.end is None and not self.step is None:
+                    self.trackLong = (self.end - self.st)
+                    break
         wellTrack1 = Track()
         wellTrack2 = Track()
         self.well.addTrack(wellTrack1)
         self.well.addTrack(wellTrack2)
         # self.splitter.setObjectName(u"splitter")
-        self.splitter.setOrientation(Qt.Horizontal)
+        self.splitter.setOrientation(Qt.Vertical)
+        self.headSplitter.setOrientation(Qt.Horizontal)
+        self.frameSplitter.setOrientation(Qt.Horizontal)
         self.track2Size = 50
         # Resize Timer
         self.resizeTimer = QTimer()
         # External Layout
 
         # Internal Splitter
-        vSplitter = QSplitter(self)
-        vSplitter.setOrientation(Qt.Vertical)
-        vSplitter2 = QSplitter(self)
-        vSplitter2.setOrientation(Qt.Vertical)
+        iSplitter = QSplitter(self)
+        iSplitter.setOrientation(Qt.Vertical)
+        iSplitter2 = QSplitter(self)
+        iSplitter2.setOrientation(Qt.Vertical)
 
         # Adding scrolling to vSplitters
-
+        
 
         # Adding Label tag
-        label = QLabel("1", vSplitter)
+        label = QLabel("1", iSplitter)
         label.setAlignment(Qt.AlignCenter)
-        label2 = QLabel("2", vSplitter2)
+        label2 = QLabel("2", iSplitter2)
         label2.setAlignment(Qt.AlignCenter)
         label.setFrameShape(QFrame.Panel)
         label.setFrameShadow(QFrame.Plain)
@@ -63,22 +86,23 @@ class subWindowWell(QWidget):
         label2.setLineWidth(2)
 
         # Adding a buttons
-        button = Button(vSplitter,self.well)
+        button = Button(iSplitter,self.well)
         button.clicked.connect(partial(self._addLines ,1))
-        button2 = Button(vSplitter2,self.well,True)
+        button2 = Button(iSplitter2,self.well,True)
         button2.clicked.connect(partial(self._addLines ,2))
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
 
-        frame = Frame(vSplitter ,self.well)
-        vSplitter.addWidget(label)
-        vSplitter.addWidget(button)
-        vSplitter.addWidget(frame)
-        self.lSplit.append(vSplitter)
-        self.lSplit.append(vSplitter2)
+        frame = Frame(self.frameSplitter ,self.well)
+        iSplitter.addWidget(label)
+        iSplitter.addWidget(button)
+        self.frameSplitter.addWidget(frame)
+        self.headSplitter.addWidget(iSplitter)
+        # self.lSplit.append(vSplitter)
+        # self.lSplit.append(vSplitter2)
         # frame.setObjectName(u"frame")
         # Set frame and button names
-        frame.setObjectName(u"Track_ " +str(self.splitter.count()))
-        button.setObjectName(u"button_ " +str(self.splitter.count()))
+        frame.setObjectName(u"Track_ " +str(self.frameSplitter.count()))
+        button.setObjectName(u"button_ " +str(self.frameSplitter.count()))
         palette = QPalette()
         self.brush = QBrush(QColor(255, 255, 255, 255))
         self.brush.setStyle(Qt.SolidPattern)
@@ -94,14 +118,25 @@ class subWindowWell(QWidget):
         frame.setFrameShadow(QFrame.Raised)
         # Adding the splitter instead of the Frame
         # self.splitter.addWidget(frame)
-        self.splitter.addWidget(vSplitter)
-        frame_2 = Frame(vSplitter2 ,self.well ,True)
-        vSplitter2.addWidget(label2)
-        vSplitter2.addWidget(button2)
-        vSplitter2.addWidget(frame_2)
+
+        frame_2 = Frame(self.frameSplitter ,self.well ,True)
+        iSplitter2.addWidget(label2)
+        iSplitter2.addWidget(button2)
+        self.frameSplitter.addWidget(frame_2)
+        self.headSplitter.addWidget(iSplitter2)
+
+        self.frameScroll.setWidget(self.frameSplitter)
+        self.frameScroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.frameScroll.setWidgetResizable(True)
+        self.headScroll.setWidget(self.headSplitter)
+        self.headScroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.headScroll.setWidgetResizable(True)
+        self.splitter.addWidget(self.headScroll)
+        self.splitter.addWidget(self.frameScroll)
+
         # frame_2.setObjectName(u"frame_2")
-        frame_2.setObjectName(u"Track_ " +str(self.splitter.count()))
-        button2.setObjectName(u"button_ " +str(self.splitter.count()))
+        frame_2.setObjectName(u"Track_ " +str(self.frameSplitter.count()))
+        button2.setObjectName(u"button_ " +str(self.frameSplitter.count()))
         palette1 = QPalette()
         palette1.setBrush(QPalette.Active, QPalette.Base, self.brush)
         palette1.setBrush(QPalette.Active, QPalette.Window, self.brush)
@@ -113,9 +148,10 @@ class subWindowWell(QWidget):
         frame_2.setAutoFillBackground(True)
         frame_2.setFrameShape(QFrame.NoFrame)
         frame_2.setFrameShadow(QFrame.Raised)
-        self.splitter.addWidget(vSplitter2)
+
+
         self.gridLayout.addWidget(self.splitter, 0, 0, 1, 1)
-        self.gridLayout.addWidget(self.vscroll,0,1,1,1)
+        # self.gridLayout.addWidget(self.,0,1,1,1)
         # Saving frame name
         frame.mouseReleaseEvent = lambda event: self.setOverFrame(frame)
         frame_2.mouseReleaseEvent = lambda event: self.setOverFrame(frame_2)
@@ -131,8 +167,8 @@ class subWindowWell(QWidget):
         self.lTracks.append(frame_2)
 
         # Adding vertical splitter events conection
-        self.connect(vSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter))
-        self.connect(vSplitter2, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter2))
+        self.connect(self.headSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(self.headSplitter))
+        self.connect(self.frameSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(self.frameSplitter))
 
         # create actions
         self.addTrackAction = QAction(self)
@@ -141,19 +177,19 @@ class subWindowWell(QWidget):
         self.delTrackAction = QAction(self)
         self.delTrackAction.setText('Remove Track')
         self.delTrackAction.triggered.connect(self.delTrack)
-        self.zoomDx = QAction("Default",self)
+        self.zoomDx = QAction("Ajustar ventana",self)
         self.zoomDx.triggered.connect(self.changeZoomDx)
-        self.zoom1x = QAction("1x", self)
+        self.zoom1x = QAction("1000", self)
         self.zoom1x.triggered.connect(self.changeZoom1x)
-        self.zoom2x = QAction("2x",self)
+        self.zoom2x = QAction("500",self)
         self.zoom2x.triggered.connect(self.changeZoom2x)
-        self.zoom4x = QAction("4x",self)
+        self.zoom4x = QAction("100",self)
         self.zoom4x.triggered.connect(self.changeZoom4x)
-        self.zoom10x = QAction("10x",self)
+        self.zoom10x = QAction("50",self)
         self.zoom10x.triggered.connect(self.changeZoom10x)
-        self.zoom50x = QAction("50x",self)
+        self.zoom50x = QAction("25",self)
         self.zoom50x.triggered.connect(self.changeZoom50x)
-        self.zoom100x = QAction("100x",self)
+        self.zoom100x = QAction("10",self)
         self.zoom100x.triggered.connect(self.changeZoom100x)
 
 
@@ -176,129 +212,120 @@ class subWindowWell(QWidget):
 
 
         # set init sizes
-        initSize = [20, 50, self.height() - 70]
-        vSplitter.setSizes(initSize)
-        vSplitter2.setSizes(initSize)
+        initSize = [70, self.height() - 70]
+        self.splitter.setSizes(initSize)
+        iSplitter.setSizes([20,50])
+        iSplitter2.setSizes([20,50])
+
+        wSize = self.width()
+        self.headSplitter.blockSignals(True)
+        self.frameSplitter.blockSignals(True)
+
+        self.headSplitter.setSizes([wSize-self.track2Size,self.track2Size])
+        self.frameSplitter.setSizes([wSize-self.track2Size,self.track2Size])
+        self.headSplitter.blockSignals(False)
+        self.frameSplitter.blockSignals(False)
+
         # initHorizontalSize = [self.width( ) -self.track2Size, self.track2Size]
 
     def changeZoomDx(self):
-        size = QSize(210, 350)
-        size.setHeight(size.height())
+        # size = QSize(210, 350)
+        # size.setHeight(size.height())
         QMdiSubwindow = self.parentWidget()
-        width = QMdiSubwindow.width()
-        size.setWidth(width)
-        oldSplitSizes = self.lSplit[0].sizes()
+        size = QMdiSubwindow.size()
+        size.setHeight(self.parent.mdiArea.height())
+        oldSplitSizes = self.splitter.sizes()
         QMdiSubwindow.resize(size)
-        newSplitSizes = self.lSplit[0].sizes()
-        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
-        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
-        for r in self.lSplit:
-            r.blockSignals(True)
-            r.setSizes(oldSplitSizes)
-            r.blockSignals(False)
+        newSplitSizes = self.splitter.sizes()
+        newSizeDraw = newSplitSizes[0] + newSplitSizes[1]
+        oldSplitSizes[1] = newSizeDraw - oldSplitSizes[0]
+        self.splitter.blockSignals(True)
+        self.splitter.setSizes(oldSplitSizes)
+        self.splitter.blockSignals(False)
         self.update()
 
     def changeZoom1x(self):
-        size = copy.deepcopy(self.defaultSize)
-        size.setHeight(self.defaultSize.height())
-        QMdiSubwindow = self.parentWidget()
-        width = QMdiSubwindow.width()
-        size.setWidth(width)
-        oldSplitSizes = self.lSplit[0].sizes()
-        QMdiSubwindow.resize(size)
-        newSplitSizes = self.lSplit[0].sizes()
-        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
-        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
-        for r in self.lSplit:
-            r.blockSignals(True)
-            r.setSizes(oldSplitSizes)
-            r.blockSignals(False)
+        scale = 1000
+        # QMdiSubwindow = self.parentWidget()
+        # width = QMdiSubwindow.width()
+        # height = QMdiSubwindow.height()
+        oldSplitSizes = self.splitter.sizes()
+        newSplitSizes = self.splitter.sizes()
+        # oldFrameSize = oldSplitSizes[0]
+        newFrameSize = 400*self.trackLong/scale
+        newSizeDraw = newSplitSizes[0] + newFrameSize
+        oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
+        self.splitter.setSizes(oldSplitSizes)
+        for t in range(self.frameSplitter.count()):
+            self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
 
+
     def changeZoom2x(self):
-        size = copy.deepcopy(self.defaultSize)
-        size.setHeight(self.defaultSize.height()*2)
-        QMdiSubwindow = self.parentWidget()
-        width = QMdiSubwindow.width()
-        size.setWidth(width)
-        oldSplitSizes = self.lSplit[0].sizes()
-        # QMdiSubwindow.resize(size)
-        newSplitSizes = self.lSplit[0].sizes()
-        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
-        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
-        for r in self.lSplit:
-            r.blockSignals(True)
-            r.setSizes(oldSplitSizes)
-            r.blockSignals(False)
+        scale = 500
+        oldSplitSizes = self.splitter.sizes()
+        newSplitSizes = self.splitter.sizes()
+        # oldFrameSize = oldSplitSizes[0]
+        newFrameSize = 400*self.trackLong/scale
+        newSizeDraw = newSplitSizes[0] + newFrameSize
+        oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
+        self.splitter.setSizes(oldSplitSizes)
+        for t in range(self.frameSplitter.count()):
+            self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
 
     def changeZoom4x(self):
-        size = copy.deepcopy(self.defaultSize)
-        size.setHeight(self.defaultSize.height()*4)
-        QMdiSubwindow = self.parentWidget()
-        width = QMdiSubwindow.width()
-        size.setWidth(width)
-        oldSplitSizes = self.lSplit[0].sizes()
-        QMdiSubwindow.resize(size)
-        newSplitSizes = self.lSplit[0].sizes()
-        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
-        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
-        for r in self.lSplit:
-            r.blockSignals(True)
-            r.setSizes(oldSplitSizes)
-            r.blockSignals(False)
+        scale = 100
+        oldSplitSizes = self.splitter.sizes()
+        newSplitSizes = self.splitter.sizes()
+        # oldFrameSize = oldSplitSizes[0]
+        newFrameSize = 400 * self.trackLong / scale
+        newSizeDraw = newSplitSizes[0] + newFrameSize
+        oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
+        self.splitter.setSizes(oldSplitSizes)
+        for t in range(self.frameSplitter.count()):
+            self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
 
     def changeZoom10x(self):
-        size = copy.deepcopy(self.defaultSize)
-        size.setHeight(self.defaultSize.height()*10)
-        QMdiSubwindow = self.parentWidget()
-        width = QMdiSubwindow.width()
-        size.setWidth(width)
-        oldSplitSizes = self.lSplit[0].sizes()
-        QMdiSubwindow.resize(size)
-        newSplitSizes = self.lSplit[0].sizes()
-        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
-        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
-        for r in self.lSplit:
-            r.blockSignals(True)
-            r.setSizes(oldSplitSizes)
-            r.blockSignals(False)
+        scale = 50
+        oldSplitSizes = self.splitter.sizes()
+        newSplitSizes = self.splitter.sizes()
+        # oldFrameSize = oldSplitSizes[0]
+        newFrameSize = 400*self.trackLong/scale
+        newSizeDraw = newSplitSizes[0] + newFrameSize
+        oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
+        self.splitter.setSizes(oldSplitSizes)
+        for t in range(self.frameSplitter.count()):
+            self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
 
 
     def changeZoom50x(self):
-        size = copy.deepcopy(self.defaultSize)
-        size.setHeight(self.defaultSize.height()*50)
-        QMdiSubwindow = self.parentWidget()
-        width = QMdiSubwindow.width()
-        size.setWidth(width)
-        oldSplitSizes = self.lSplit[0].sizes()
-        QMdiSubwindow.resize(size)
-        newSplitSizes = self.lSplit[0].sizes()
-        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
-        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
-        for r in self.lSplit:
-            r.blockSignals(True)
-            r.setSizes(oldSplitSizes)
-            r.blockSignals(False)
+        scale = 25
+        oldSplitSizes = self.splitter.sizes()
+        newSplitSizes = self.splitter.sizes()
+        # oldFrameSize = oldSplitSizes[0]
+        newFrameSize = 400 * self.trackLong / scale
+        newSizeDraw = newSplitSizes[0] + newFrameSize
+        oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
+        self.splitter.setSizes(oldSplitSizes)
+        for t in range(self.frameSplitter.count()):
+            self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
 
     def changeZoom100x(self):
-        size = copy.deepcopy(self.defaultSize)
-        size.setHeight(size.height()*100)
-        QMdiSubwindow = self.parentWidget()
-        width = QMdiSubwindow.width()
-        size.setWidth(width)
-        oldSplitSizes = self.lSplit[0].sizes()
-        QMdiSubwindow.resize(size)
-        newSplitSizes = self.lSplit[0].sizes()
-        newSizeDraw = newSplitSizes[0] + newSplitSizes[1] + newSplitSizes[2]
-        oldSplitSizes[2] = newSizeDraw - oldSplitSizes[0] - oldSplitSizes[1]
-        for r in self.lSplit:
-            r.blockSignals(True)
-            r.setSizes(oldSplitSizes)
-            r.blockSignals(False)
+        scale = 10
+        oldSplitSizes = self.splitter.sizes()
+        newSplitSizes = self.splitter.sizes()
+        # oldFrameSize = oldSplitSizes[0]
+        newFrameSize = 400 * self.trackLong / scale
+        newFrameSize = 400 * self.trackLong / scale
+        newSizeDraw = newSplitSizes[0] + newFrameSize
+        oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
+        self.splitter.setSizes(oldSplitSizes)
+        for t in range(self.frameSplitter.count()):
+            self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
 
 
@@ -345,30 +372,35 @@ class subWindowWell(QWidget):
 
     @Slot()
     def addTrack(self):
-        frameCount = self.splitter.count()
+        frameCount = self.frameSplitter.count()
 
         # Internal Splitter
-        vSplitter = QSplitter(self)
-        vSplitter.setOrientation(Qt.Vertical)
+        iSplitter = QSplitter(self)
+        iSplitter.setOrientation(Qt.Vertical)
         # Adding a button
-        button = Button(vSplitter,self.well)
+        button = Button(iSplitter,self.well)
         button.setObjectName(u"button_ " +str(frameCount))
         button.clicked.connect(partial(self._addLines ,frameCount +1))
-        frame = Frame(vSplitter ,self.well)
+        frame = Frame(self.frameSplitter ,self.well)
         # Adding Label tag
-        label = QLabel(str(frameCount +1), vSplitter)
+        label = QLabel(str(frameCount +1), iSplitter)
         label.setAlignment(Qt.AlignCenter)
         label.setFrameShape(QFrame.Panel)
         label.setFrameShadow(QFrame.Plain)
         label.setLineWidth(2)
+        # New label for fill space
+        label2 = QLabel()
+        label2.setMinimumSize(QSize(self.frameScroll.verticalScrollBar().width(),0))
 
         # Adding widgets to splitter
-        vSplitter.addWidget(label)
-        vSplitter.addWidget(button)
-        vSplitter.addWidget(frame)
+        iSplitter.addWidget(label)
+        iSplitter.addWidget(button)
+        prevH = self.headSplitter.widget(1)
+        iSplitter.setSizes(prevH.sizes())
+        self.headSplitter.addWidget(iSplitter)
+        self.frameSplitter.addWidget(frame)
+        # Vertical Splitter sizes:
 
-        self.connect(vSplitter, SIGNAL("splitterMoved(int, int)"), lambda x : self.splitterMoved(vSplitter))
-        self.lSplit.append(vSplitter)
 
         frame.setObjectName(u"Track_ " +str(frameCount))
 
@@ -386,22 +418,22 @@ class subWindowWell(QWidget):
         frame.setFrameShadow(QFrame.Raised)
         self.lTracks.append(frame)
 
-        self.splitter.addWidget(vSplitter)
+        # self.splitter.addWidget(vSplitter)
         # vSplitter.setSizes(self.lSplit[0].sizes())
         # self.splitter.update()
         # Saving over frame
         # frame.mouseReleaseEvent = lambda event: self.setOverFrame(frame)
         # Calculate the size for each frame
         sizes = []
-        fSize = (self.width( ) -self.track2Size ) /self.splitter.count()
+        fSize = (self.frameSplitter.width( ) -self.track2Size ) /self.frameSplitter.count()
         i = 0
-        for s in range(self.splitter.count()):
+        for s in range(self.frameSplitter.count()):
             if i == 1:
                 sizes.append(self.track2Size)
             else:
                 sizes.append(fSize)
             i += 1
-        self.splitter.setSizes(sizes)
+        self.frameSplitter.setSizes(sizes)
 
         # Adding Well's Tracks
         wellTrack = Track()
@@ -412,19 +444,17 @@ class subWindowWell(QWidget):
         button.setTrack(self.well.tracks[-1])
 
         # Resize all the another Splitters
-        for r in self.lSplit:
-            # if self.lSplit[0] is not r:
-            r.blockSignals(True)
-            r.setSizes(self.lSplit[0].sizes())
-            r.blockSignals(False)
+        self.headSplitter.blockSignals(True)
+        self.headSplitter.setSizes(self.frameSplitter.sizes())
+        self.headSplitter.blockSignals(False)
 
     @Slot()
     def delTrack(self):
         # Remove last track
-        self.lSplit.pop()
         self.lTracks.pop()
         self.well.popTrack()
-        self.splitter.widget(self.splitter.count( ) -1).deleteLater()
+        self.frameSplitter.widget(self.frameSplitter.count( ) -1).deleteLater()
+        self.headSplitter.widget(self.headSplitter.count() - 1).deleteLater()
 
     @Slot()
     def _addLines(self ,track):
@@ -433,14 +463,15 @@ class subWindowWell(QWidget):
         # dialog.show()
 
     def splitterMoved(self, sender):
-        # Resize all the another Splitters
-        # print("Resizing")
+        if sender is self.headSplitter:
+            self.frameSplitter.blockSignals(True)
+            self.frameSplitter.setSizes(sender.sizes())
+            self.frameSplitter.blockSignals(False)
+        elif sender is self.frameSplitter:
+            self.headSplitter.blockSignals(True)
+            self.headSplitter.setSizes(sender.sizes())
+            self.headSplitter.blockSignals(False)
 
-        for r in self.lSplit:
-            if sender is not r:
-                r.blockSignals(True)
-                r.setSizes(sender.sizes())
-                r.blockSignals(False)
 
     def closeEvent(self, event):
         msg = QtWidgets.QMessageBox()
