@@ -180,22 +180,29 @@ class subWindowWell(QWidget):
         self.zoomDx = QAction("Ajustar ventana",self)
         self.zoomDx.triggered.connect(self.changeZoomDx)
         self.zoom1x = QAction("1000", self)
+        self.zoom1x.setCheckable(True)
         self.zoom1x.triggered.connect(self.changeZoom1x)
         self.zoom2x = QAction("500",self)
+        self.zoom2x.setCheckable(True)
         self.zoom2x.triggered.connect(self.changeZoom2x)
         self.zoom4x = QAction("100",self)
+        self.zoom4x.setCheckable(True)
         self.zoom4x.triggered.connect(self.changeZoom4x)
         self.zoom10x = QAction("50",self)
+        self.zoom10x.setCheckable(True)
         self.zoom10x.triggered.connect(self.changeZoom10x)
         self.zoom50x = QAction("25",self)
+        self.zoom50x.setCheckable(True)
         self.zoom50x.triggered.connect(self.changeZoom50x)
         self.zoom100x = QAction("10",self)
+        self.zoom100x.setCheckable(True)
         self.zoom100x.triggered.connect(self.changeZoom100x)
 
 
         # create context menu
         self.popMenu = QMenu(self)
         self.zoomMenu = QMenu("Zoom",self)
+
         self.zoomMenu.addAction(self.zoomDx)
         self.zoomMenu.addAction(self.zoom1x)
         self.zoomMenu.addAction(self.zoom2x)
@@ -256,6 +263,12 @@ class subWindowWell(QWidget):
         newSizeDraw = newSplitSizes[0] + newFrameSize
         oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
         self.splitter.setSizes(oldSplitSizes)
+        self.zoom2x.setChecked(False)
+        self.zoom4x.setChecked(False)
+        self.zoom10x.setChecked(False)
+        self.zoom50x.setChecked(False)
+        self.zoom100x.setChecked(False)
+        self.zoom1x.setChecked(True)
         for t in range(self.frameSplitter.count()):
             self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
@@ -270,6 +283,12 @@ class subWindowWell(QWidget):
         newSizeDraw = newSplitSizes[0] + newFrameSize
         oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
         self.splitter.setSizes(oldSplitSizes)
+        self.zoom1x.setChecked(False)
+        self.zoom4x.setChecked(False)
+        self.zoom10x.setChecked(False)
+        self.zoom50x.setChecked(False)
+        self.zoom100x.setChecked(False)
+        self.zoom2x.setChecked(True)
         for t in range(self.frameSplitter.count()):
             self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
@@ -283,6 +302,12 @@ class subWindowWell(QWidget):
         newSizeDraw = newSplitSizes[0] + newFrameSize
         oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
         self.splitter.setSizes(oldSplitSizes)
+        self.zoom2x.setChecked(False)
+        self.zoom1x.setChecked(False)
+        self.zoom10x.setChecked(False)
+        self.zoom50x.setChecked(False)
+        self.zoom100x.setChecked(False)
+        self.zoom4x.setChecked(True)
         for t in range(self.frameSplitter.count()):
             self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
@@ -296,6 +321,12 @@ class subWindowWell(QWidget):
         newSizeDraw = newSplitSizes[0] + newFrameSize
         oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
         self.splitter.setSizes(oldSplitSizes)
+        self.zoom2x.setChecked(False)
+        self.zoom4x.setChecked(False)
+        self.zoom1x.setChecked(False)
+        self.zoom50x.setChecked(False)
+        self.zoom100x.setChecked(False)
+        self.zoom10x.setChecked(True)
         for t in range(self.frameSplitter.count()):
             self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
@@ -310,6 +341,12 @@ class subWindowWell(QWidget):
         newSizeDraw = newSplitSizes[0] + newFrameSize
         oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
         self.splitter.setSizes(oldSplitSizes)
+        self.zoom2x.setChecked(False)
+        self.zoom4x.setChecked(False)
+        self.zoom10x.setChecked(False)
+        self.zoom1x.setChecked(False)
+        self.zoom100x.setChecked(False)
+        self.zoom50x.setChecked(True)
         for t in range(self.frameSplitter.count()):
             self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
@@ -324,6 +361,12 @@ class subWindowWell(QWidget):
         newSizeDraw = newSplitSizes[0] + newFrameSize
         oldSplitSizes[1] = newSizeDraw - newSplitSizes[0]
         self.splitter.setSizes(oldSplitSizes)
+        self.zoom2x.setChecked(False)
+        self.zoom4x.setChecked(False)
+        self.zoom10x.setChecked(False)
+        self.zoom50x.setChecked(False)
+        self.zoom1x.setChecked(False)
+        self.zoom100x.setChecked(True)
         for t in range(self.frameSplitter.count()):
             self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
