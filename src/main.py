@@ -48,7 +48,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             msg = str(fileName)+" cargado correctamente"
             # self.wells.append(well)
             self.addSubWindow(well, fileName)
-            self.fillTreeWell(fileName)
+            self.fillTreeWell(fileName,well)
             self.show_about_dialog(title, msg)
             
         else:
@@ -66,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         msg_box.setStandardButtons(QtWidgets.QMessageBox.Close)
         msg_box.exec_()
 
-    def addSubWindow(self, well, name):
+    def addSubWindow(self, well:Well, name):
         subwindow = subWindowWell(self,well)
         self.mdiArea.addSubWindow(subwindow)
         strId = "# " + str(self.countSubW+1) + " " + name
@@ -77,22 +77,67 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 
-    def fillTreeWell(self, wellName):
+    def fillTreeWell(self, wellName,well:Well):
         # __sortingEnabled = self.treeWidget.isSortingEnabled()
         qtreewidgetitem1 = QTreeWidgetItem(self.treeWidget)
+
         self.treeWidget.setSortingEnabled(False)
         qtreewidgetitem1 = self.treeWidget.topLevelItem(len(self.mdiArea.subWindowList())-1)
         strId = "# " + str(self.countSubW) + " " + wellName
         qtreewidgetitem1.setText(0, strId)
-        # ___qtreewidgetitem2 = ___qtreewidgetitem1.child(0)
-        # ___qtreewidgetitem2.setText(
-        #     0, QCoreApplication.translate("MainWindow", u"Lines", None))
-        # ___qtreewidgetitem3 = ___qtreewidgetitem2.child(0)
-        # ___qtreewidgetitem3.setText(
-        #     0, QCoreApplication.translate("MainWindow", u"Cali", None))
-        # ___qtreewidgetitem4 = ___qtreewidgetitem1.child(1)
-        # ___qtreewidgetitem4.setText(
-        #     0, QCoreApplication.translate("MainWindow", u"Fills", None))
+
+        qtreewidgetitem2 = QTreeWidgetItem(qtreewidgetitem1)
+        qtreewidgetitem3 = QTreeWidgetItem(qtreewidgetitem1)
+        qtreewidgetitem4 = QTreeWidgetItem(qtreewidgetitem1)
+        qtreewidgetitem2 = qtreewidgetitem1.child(0)
+        qtreewidgetitem2.setText(0, "Info Pozo")
+        # Info Pozo
+        i = 0
+        for p in well.las.well:
+            qtreewidgetitemline = QTreeWidgetItem(qtreewidgetitem2)
+            qtreewidgetitemline = qtreewidgetitem2.child(i)
+            qtreewidgetitemline.setText(0,str(p.mnemonic)+": "+str(p.value) + " "+str(p.unit))
+            i+=1
+        qtreewidgetitem3 = qtreewidgetitem1.child(1)
+        qtreewidgetitem3.setText(0, "Lineas")
+        i = 0
+        for l in well.las.curves:
+            if not str(l.mnemonic).startswith("DEPT"):
+                stats = well.stats[l.mnemonic]
+                minVal = stats['min']
+                maxVal = stats['max']
+            qtreewidgetitemline = QTreeWidgetItem(qtreewidgetitem3)
+            qtreewidgetitemline = qtreewidgetitem3.child(i)
+            qtreewidgetitemline.setText(0,str(l.mnemonic))
+            # Lines info
+            qtreewidgetitemUnit = QTreeWidgetItem(qtreewidgetitemline)
+            qtreewidgetitemDesc = QTreeWidgetItem(qtreewidgetitemline)
+            qtreewidgetitemUnit = qtreewidgetitemline.child(0)
+            qtreewidgetitemDesc = qtreewidgetitemline.child(1)
+            qtreewidgetitemUnit.setText(0, "Unit: " + str(l.unit))
+            qtreewidgetitemDesc.setText(0, "Desc: " + str(l.descr))
+            if not str(l.mnemonic).startswith("DEPT"):
+
+                qtreewidgetitemMin = QTreeWidgetItem(qtreewidgetitemline)
+                qtreewidgetitemMax = QTreeWidgetItem(qtreewidgetitemline)
+                qtreewidgetitemMin = qtreewidgetitemline.child(2)
+                qtreewidgetitemMax = qtreewidgetitemline.child(3)
+                qtreewidgetitemMin.setText(0,"Min: "+str(minVal))
+                qtreewidgetitemMax.setText(0, "Max: " + str(maxVal))
+            else:
+                qtreewidgetitemMin = QTreeWidgetItem(qtreewidgetitemline)
+                qtreewidgetitemMax = QTreeWidgetItem(qtreewidgetitemline)
+                qtreewidgetitemStep = QTreeWidgetItem(qtreewidgetitemline)
+                qtreewidgetitemMin = qtreewidgetitemline.child(2)
+                qtreewidgetitemMax = qtreewidgetitemline.child(3)
+                qtreewidgetitemStep = qtreewidgetitemline.child(4)
+                qtreewidgetitemMin.setText(0, "START: " + str(well.las.well.STRT.value))
+                qtreewidgetitemMax.setText(0, "END: " + str(well.las.well.STOP.value))
+                qtreewidgetitemStep.setText(0, "STEP: " + str(well.las.well.STEP.value))
+            i+=1
+
+        # qtreewidgetitem4 = qtreewidgetitem1.child(2)
+        # qtreewidgetitem4.setText(0, "Rellenos")
         # ___qtreewidgetitem5 = ___qtreewidgetitem4.child(0)
     # def mouseReleaseEvent(self, event:QtGui.QMouseEvent):
     #     print("Released Daddy")

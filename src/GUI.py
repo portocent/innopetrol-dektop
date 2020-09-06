@@ -184,7 +184,7 @@ class Ui_MainWindow(object):
         self.menuMenu.addAction(self.actionOpen_Database)
         self.menuMenu.addAction(self.actionOpen_Well)
         self.menuMenu.addAction(self.actionOpen_Template)
-        self.menuWell.addAction(self.actionSelect_Well)
+        # self.menuWell.addAction(self.actionSelect_Well)
         self.menuWell.addAction(self.actionManage_Zone_Picks)
         self.menuWell.addAction(self.actionCustom_Zones)
         self.menuWell.addAction(self.actionExtract_Petrophysics)

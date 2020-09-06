@@ -89,7 +89,7 @@ class subWindowWell(QWidget):
         button = Button(iSplitter,self.well)
         button.clicked.connect(partial(self._addLines ,1))
         button2 = Button(iSplitter2,self.well,True)
-        button2.clicked.connect(partial(self._addLines ,2))
+        # button2.clicked.connect(partial(self._addLines ,2))
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
 
         frame = Frame(self.frameSplitter ,self.well)

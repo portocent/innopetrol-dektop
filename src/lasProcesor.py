@@ -15,13 +15,13 @@ class Well():
     def loadLas(self, path, name):
         try:
 
-            las = lasio.read(path, autodetect_encoding=True, ignore_header_errors = True)
-            self.df = las.df()    # store las file in df variable as pandas dataframe
+            self.las = lasio.read(path, autodetect_encoding=True, ignore_header_errors = True)
+            self.df = self.las.df()    # store las file in df variable as pandas dataframe
             self.stats = self.df.describe()
-            self.header = las.header
+            self.header = self.las.header
             self.name = name
             self.viewname = name
-            self.curves = las.curves
+            self.curves = self.las.curves
 
             return ''
         except Exception as e:
