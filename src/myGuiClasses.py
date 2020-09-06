@@ -3,7 +3,7 @@ import threading
 
 from PySide2.QtWidgets import (QFrame, QLabel, QPushButton)
 from PySide2.QtGui import (QBrush, QPen, QPainter, QFontMetrics, QResizeEvent)
-from PySide2.QtCore import (Qt, QPointF, QPoint)
+from PySide2.QtCore import (Qt, QPointF, QPoint, QRect)
 from src.lasProcesor import Track, Line, Grid
 import math
 import time
@@ -68,8 +68,10 @@ class Frame(QFrame):
         self.rLine = 10000
         self.recalculate = True
         self.lines = []
-
-
+        self.grids = []
+        self.gridsL = []
+        self.gridsR = []
+        self.gridsCalc = []
 
 
     def setHead(self,head):
@@ -164,6 +166,7 @@ class Frame(QFrame):
                                      (self.width()/self.cycles)*self.mapTLog(j,10)+(self.width()/self.cycles)*i, self.height())
 
 
+
     def drawRowMarks(self,painter):
         count = (self.end-self.st ) / self.step
         fStep = self.height()/count
@@ -182,14 +185,20 @@ class Frame(QFrame):
         if self.track.lines:
             for l in self.track.lines:
                 linesName.append(l.name)
+
         df = self.well.df[linesName]
         # print(df.columns)
         # Init vars if recalculate == True
         if self.recalculate:
             self.lines = []
+            self.gridsL = []
+            self.gridsR = []
+            if self.type == "Log":
+                isLog = True
             if self.track.lines:
                 for l in self.track.lines:
                     self.lines.append([])
+
         while i < self.end:
 
             # I have to recalculate all points again
@@ -209,9 +218,9 @@ class Frame(QFrame):
                                 if j > 0:
                                     if not math.isnan(df.iat[j-1,l]):
                                         prevlx = int(self.mapLog(self.track.lLog,self.track.rLog,0,self.width(),df.iat[j-1,l]))
-                                        if lx != prevlx:
-                                            point = QPoint(lx, int(j * fStep))
-                                            self.lines[l].append(point)
+                                        # if lx != prevlx:
+                                        point = QPoint(lx, int(j * fStep))
+                                        self.lines[l].append(point)
                                     else:
                                         point = QPoint(lx, int(j * fStep))
                                         self.lines[l].append(point)
@@ -232,6 +241,7 @@ class Frame(QFrame):
                             x = (val - self.track.minVal) * conv
                             point = QPoint(int(x),int(j*fStep))
                             self.lines[l].append(point)
+
 
             # end block for generate points
             if i%1000 == 0:
@@ -255,8 +265,82 @@ class Frame(QFrame):
 
             i += self.step
             j += 1
+        # Calculating Grids
+        if self.recalculate:
+            self.gridsL = []
+            self.gridsR = []
+            self.gridsCalc = []
+            for g in self.track.grids:
+                findl = False
+                findr = False
+                for l in self.track.lines:
+                    if g.leftLine == l.name:
+                        self.gridsL.append(self.track.lines.index(l))
+                        findl = True
+                    if g.rightLine == l.name:
+                        self.gridsR.append(self.track.lines.index(l))
+                        findr = True
+                    if findl and findr:
+                        break
+                if findl and findr:
+                    reversedR = copy.deepcopy(self.lines[self.gridsR[-1]])
+
+                    for pl,pr in zip(self.lines[self.gridsL[-1]],reversedR):
+                        if pl.x() > pr.x():
+                            pr.setX(pl.x())
+                    reversedR.reverse()
+                    out = []
+                    out += self.lines[self.gridsL[-1]] + reversedR
+                    self.gridsCalc.append(out)
+                elif findl and isinstance(g.rightVal, float):
+                    left = self.track.minValLine
+                    right = self.track.maxValLine
+                    if not l.lScale is None:
+                        left = l.lScale
+                    if not l.rScale is None:
+                        right = l.rScale
+                    if l.log == "Log":
+                        x = int(self.mapLog(self.track.lLog, self.track.rLog, 0, self.width(), g.rightVal))
+                    else:
+                        x = int(self.mapping(left, right, 0, self.width(), g.rightVal))
+                    leftPoints = copy.deepcopy(self.lines[self.gridsL[-1]])
+                    for pl in leftPoints:
+                        if pl.x() < x:
+                            pl.setX(x)
+                    out = []
+                    out += leftPoints + [QPoint(x,self.height()),QPoint(x,0)]
+                    self.gridsCalc.append(out)
+                elif findr and isinstance(g.leftVal, float):
+                    left = self.track.minValLine
+                    right = self.track.maxValLine
+                    if not l.lScale is None:
+                        left = l.lScale
+                    if not l.rScale is None:
+                        right = l.rScale
+                    if l.log == "Log":
+                        x = int(self.mapLog(self.track.lLog, self.track.rLog, 0, self.width(), g.leftVal))
+                    else:
+                        x = int(self.mapping(left, right, 0, self.width(), g.leftVal))
+                    rightPoints = copy.deepcopy(self.lines[self.gridsR[-1]])
+                    for pr in rightPoints:
+                        if pr.x() > x:
+                            pr.setX(x)
+                    out = []
+                    out += [QPoint(x, 0), QPoint(x, self.height())]
+                    out += rightPoints
+                    self.gridsCalc.append(out)
+            # en calculating grids
+
         # Drawing Lines
         if DrawLinesFlag:
+            for g in range(len(self.track.grids)):
+                if self.track.grids[g].check:
+                    color = self.track.grids[g].color
+                    type = self.track.grids[g].brush
+                    brush = QBrush(color, type)
+                    painter.setBrush(brush)
+                    painter.drawPolygon(self.gridsCalc[g])
+
             for l in range(len(self.track.lines)):
                 color = self.track.lines[l].color
                 size = self.track.lines[l].grosor
@@ -336,6 +420,7 @@ class Button(QPushButton):
             metrics = QFontMetrics(qp.font())
             fontHeight = metrics.boundingRect(str(100)).height()
             oPen = qp.pen()
+            elements = 0
             if self.track.lines:
                 count = 0
                 for l in self.track.lines:
@@ -398,8 +483,28 @@ class Button(QPushButton):
 
                     qp.drawLine(ltextLen+space*2, fontHeight*(count+1.5), self.width() - rtextLen-space*2, fontHeight*(count+1.5))
                     count += 2
+                    elements+=1
 
+                elements+=3
+                pen = QPen(Qt.black, 1, Qt.SolidLine)
+                qp.setPen(pen)
+                font = qp.font()
+                higFont = copy.copy(qp.font())
+                higFont.setPointSizeF(font.pointSize() * 2)
+                higFont.setBold(True)
 
-
+                for g in self.track.grids:
+                    text = " " + g.description + " "
+                    color = g.color
+                    type = g.brush
+                    textLen = metrics.boundingRect(text).width()
+                    brush = QBrush(color, type)
+                    qp.setPen(pen)
+                    qp.setBrush(brush)
+                    qp.drawRect(QRect(0,fontHeight*(elements), self.width() / 2 - textLen / 2,fontHeight))
+                    qp.drawRect(QRect(self.width() / 2 + textLen / 2, fontHeight * (elements), self.width() / 2 - textLen / 2, fontHeight))
+                    qp.drawText(self.width()/2 - textLen/2, fontHeight * elements, textLen, fontHeight,
+                                Qt.AlignHCenter, text)
+                    elements += 1
 
 

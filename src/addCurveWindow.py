@@ -53,8 +53,12 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         colorButtonList = []
         comboBrushList = []
         colorButton2List = []
-        comboLcurve = []
-        comboRcurve = []
+        self.comboLcurve = []
+        self.comboRcurve = []
+        self.choosedLines = []
+        # Grids combobox values
+        # Combo Box
+
 
         # combo box
         for i in range(16):
@@ -105,8 +109,6 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
 
 
             # Tag Sombras ################################
-
-            # Combo Box
             lCurve = QComboBox()
             lCurve.addItem(" ")
             rCurve = QComboBox()
@@ -125,9 +127,9 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             comboBrush.addItem(QIcon("statics\\images\\d8.png") ,"8")
             comboBrush.addItem(QIcon("statics\\images\\d9.png") ,"9")
             comboBrush.addItem(QIcon("statics\\images\\d10.png") ,"10")
-            for op in items:
-                lCurve.addItem(op)
-                rCurve.addItem(op)
+            # for op in items:
+            #     lCurve.addItem(op)
+            #     rCurve.addItem(op)
             # Visible CheckBox
             checkWidget = QWidget()
             lay_out2 = QHBoxLayout(checkWidget)
@@ -155,8 +157,8 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             comboBrushList.append(comboBrush)
             colorButton2List.append(colorButton2)
             checkBoxLines.append(check)
-            comboLcurve.append(lCurve)
-            comboRcurve.append(rCurve)
+            self.comboLcurve.append(lCurve)
+            self.comboRcurve.append(rCurve)
 
         # Out of For
         # Load states
@@ -172,13 +174,39 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             # Events Brush
             comboBrushList[i].currentIndexChanged.connect(self.setStyleBrush)
             colorButton2List[i].clicked.connect(self.color_pickerS)
-            comboRcurve[i].currentIndexChanged.connect(self.pickLineGrid)
-            comboLcurve[i].currentIndexChanged.connect(self.pickLineGrid)
+            self.comboRcurve[i].currentIndexChanged.connect(self.pickLineGrid)
+            self.comboLcurve[i].currentIndexChanged.connect(self.pickLineGrid)
+        self.tabWidget.currentChanged.connect(self.changetab)
 
+    def changetab(self):
+        self.choosedLines = []
+        self.choosedLines.append(" ")
+        for row in range(16):
+            name = self.tableWidget.cellWidget(row, 0).currentText()
+            if name != " ":
+                self.choosedLines.append(name)
+        for line in range(len(self.comboRcurve)):
+            self.comboRcurve[line].blockSignals(True)
+            self.comboLcurve[line].blockSignals(True)
+            prevRval = self.comboRcurve[line].currentText()
+            prevLval = self.comboLcurve[line].currentText()
+            self.comboRcurve[line].clear()
+            self.comboLcurve[line].clear()
+            self.comboRcurve[line].addItems(self.choosedLines)
+            self.comboLcurve[line].addItems(self.choosedLines)
+            rindex = self.comboRcurve[line].findText(prevRval, Qt.MatchFixedString)
+            lindex = self.comboLcurve[line].findText(prevLval, Qt.MatchFixedString)
+            if rindex >= 0:
+                self.comboRcurve[line].setCurrentIndex(rindex)
+            if lindex >= 0:
+                self.comboLcurve[line].setCurrentIndex(lindex)
+            self.comboRcurve[line].blockSignals(False)
+            self.comboLcurve[line].blockSignals(False)
 
     def loadLines(self):
         row = 0
         lines = self.parent.well.tracks[self.trackNum - 1].lines
+        self.choosedLines = []
         for linea in lines:
             name = linea.nameIndex
             width = linea.grosorIndex
@@ -188,7 +216,8 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             l = linea.lvScale
             r = linea.rvScale
             check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
-
+            # Filling Grids Choose Lines
+            self.choosedLines.append(linea.name)
             # Setting Options
             self.tableWidget.cellWidget(row ,0).setCurrentIndex(name)
 
@@ -215,8 +244,10 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             label.update()
             row += 1
 
+
     @Slot()
     def clickOkButton(self):
+        self.changetab()
         errorLines = self.passValidateLines()
         errorGrids = self.passValidateGrids()
         if not errorLines and not errorGrids:
@@ -343,29 +374,37 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                             leftS = float(l.text())
                             if log == "Log":
                                 if leftS < 0:
-                                    return "Las escalas logaritmicas deben ser positivas"
+                                    return "Pestaña curvas fila "+str(row+1)+": Las escalas logaritmicas deben ser positivas"
                     if not rIsNone:
                         if r.text() != "":
                             rightS = float(r.text())
                             if log == "Log":
                                 if rightS < 0:
-                                    return "Las escalas logaritmicas deben ser positivas"
+                                    return "Pestaña curvas fila "+str(row+1)+": Las escalas logaritmicas deben ser positivas"
                     if not rIsNone and not lIsNone:
                         if l.text() != "" and r.text() != "":
                             if leftS >= rightS:
-                                return "Escala izquierda inferior o igual a la derecha"
+                                return "Pestaña curvas fila "+str(row+1)+": Escala izquierda inferior o igual a la derecha"
 
                 if log == " ":
-                    return "Tipo de lína no seleccionada: Log/Lineal"
+                    return "Pestaña curvas fila "+str(row+1)+": Tipo de lína no seleccionada: Log/Lineal"
         return ""
 
     def loadGrids(self):
         row = 0
         grids = self.parent.well.tracks[self.trackNum - 1].grids
+        for line in range(len(self.comboRcurve)):
+            self.comboRcurve[line].clear()
+            self.comboLcurve[line].clear()
+            self.comboRcurve[line].addItem(" ")
+            self.comboLcurve[line].addItem(" ")
+            self.comboRcurve[line].addItems(self.choosedLines)
+            self.comboLcurve[line].addItems(self.choosedLines)
+
         for grid in grids:
-            leftLine = grid.leftLineIndex
+            leftLine = grid.leftLine
             leftVal = grid.leftVal
-            rightLine = grid.rightLineIndex
+            rightLine = grid.rightLine
             rightVal = grid.rightVal
             checkVal = grid.check
             brush = grid.brushIndex
@@ -374,15 +413,24 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
 
             check = self.tableWidget_2.cellWidget(row, 4).findChildren(QCheckBox)
             check[0].setChecked(checkVal)
-            self.tableWidget_2.cellWidget(row, 0).setCurrentIndex(leftLine)
-            self.tableWidget_2.cellWidget(row, 2).setCurrentIndex(rightLine)
+
+            lindex = self.tableWidget_2.cellWidget(row, 0).findText(leftLine, Qt.MatchFixedString)
+            if lindex >= 0:
+                self.tableWidget_2.cellWidget(row, 0).setCurrentIndex(lindex)
+            rindex = self.tableWidget_2.cellWidget(row, 2).findText(rightLine, Qt.MatchFixedString)
+            if rindex >= 0:
+                self.tableWidget_2.cellWidget(row, 2).setCurrentIndex(rindex)
+            # self.tableWidget_2.cellWidget(row, 0).setItems(self.choosedLines)
+            # self.tableWidget_2.cellWidget(row, 2).setItems(self.choosedLines)
+            # self.tableWidget_2.cellWidget(row, 0).setCurrentIndex(leftLine)
+            # self.tableWidget_2.cellWidget(row, 2).setCurrentIndex(rightLine)
             self.tableWidget_2.cellWidget(row, 6).setCurrentIndex(brush)
             label = self.tableWidget_2.cellWidget(row, 7)
-            if leftLine == 0:
+            if leftLine == " ":
                 lItem = QTableWidgetItem()
                 lItem.setData(Qt.DisplayRole, leftVal)
                 self.tableWidget_2.setItem(row, 1, lItem)
-            if rightLine == 0:
+            if rightLine == " ":
                 rItem = QTableWidgetItem()
                 rItem.setData(Qt.DisplayRole, rightVal)
                 self.tableWidget_2.setItem(row, 3, rItem)
@@ -398,6 +446,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         self.parent.well.tracks[self.trackNum - 1].grids = []
         for row in range(15):
             namel = self.tableWidget_2.cellWidget(row, 0).currentText()
+            namer = self.tableWidget_2.cellWidget(row, 2).currentText()
             namelIndex = self.tableWidget_2.cellWidget(row, 0).currentIndex()
             lv = self.tableWidget_2.item(row, 1)
             lvBool = False
@@ -408,15 +457,14 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 lvBool = True
 
             if namel != " " or not lvBool:
-                namer = self.tableWidget_2.cellWidget(row, 2).currentText()
                 namerIndex = self.tableWidget_2.cellWidget(row, 2).currentIndex()
                 rv = self.tableWidget_2.item(row, 3)
                 fill = self.tableWidget_2.cellWidget(row, 6).currentIndex()
                 check = self.tableWidget_2.cellWidget(row, 4).findChildren(QCheckBox)
                 label = self.tableWidget_2.cellWidget(row, 7)
                 description = ""
-                if not self.tableWidget_2.item(row, 3) is None:
-                    description = self.tableWidget_2.item(row, 3).text()
+                if not self.tableWidget_2.item(row, 8) is None:
+                    description = self.tableWidget_2.item(row, 8).text()
 
                 grid = Grid()
                 grid.leftLineIndex = namelIndex
@@ -431,7 +479,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 grid.color = label.penColor
                 grid.brush = label.penType
                 grid.brushIndex = fill
-                grid.description = description
+                grid.description = str(description)
                 self.parent.well.tracks[self.trackNum - 1].addGrid(grid)
                 # wellTrack.append(linea)
                 # print("Fin")
@@ -457,11 +505,11 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             else:
                 rvBool = True
 
-            if not lvBool or namel != " ":
+            if not lvBool or  namel != " ":
                 if rvBool and namer == " ":
-                    return "Debe seleccionar una linea derecha o ingresar un valor fijo"
+                        return "Pestaña Sombras fila "+str(row+1)+": Debe seleccionar una linea derecha o ingresar un valor fijo"
                 if fill == " ":
-                    return "Debe seleccionar un patrón de relleno"
+                    return "Pestaña Sombras fila "+str(row+1)+": Debe seleccionar un patrón de relleno"
 
         return ""
 
