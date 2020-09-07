@@ -61,7 +61,7 @@ class Frame(QFrame):
             if not self.st is None and not self.end is None and not self.step is None:
                 break
         self.minVal = 9999999.25
-        self.maxVal = -999.25
+        self.maxVal = -9999999.25
         self.lLog = 0.1
         self.rLog = 100
         self.lLine = 0
@@ -99,6 +99,7 @@ class Frame(QFrame):
             self.drawRowMarks(qp)
         else:
             self.drawTags(qp)
+        # super().paintEvent(e)
 
 
 
@@ -114,12 +115,27 @@ class Frame(QFrame):
         # print("Size changed")
 
     def updateTrack(self):
-        time.sleep(1.3)
+        time.sleep(1.1)
         self.recalculate = True
-        self.update()
-        vsplit = self.parent()
-        subw = vsplit.parent()
-        subw.update()
+        # # self.update()
+        # vsplit = self.parent()
+        # subw = vsplit.parent()
+
+        # # subw.update()
+        # subWell = subw.parent().parent().parent()
+        # for t in subWell.lTracks:
+        #     t.update()
+        # # sizes = subWell.size()
+        # vsplit.update()
+        # subw.update()
+        # subw.parent().update()
+        # subw.parent().parent().update()
+        # subWell.update()
+
+        # self.update()
+
+        # subWell.parent().update()
+        # print("breack")
 
     def mapLog(self,l,r,tl,tr,p):
         size=math.log10(r)-math.log10(l)
@@ -230,15 +246,16 @@ class Frame(QFrame):
                     elif self.track.lines[l].visibleCheck:
                         val = df.iat[j,l]
                         if not math.isnan(val):
-                            left = self.track.minValLine
-                            right = self.track.maxValLine
-                            if not self.track.lines[l].lScale is None:
-                                left = self.track.lines[l].lScale
-                            if not self.track.lines[l].rScale is None:
-                                right = self.track.lines[l].rScale
+                            left = copy.copy(self.track.minValLine)
+                            right = copy.copy(self.track.maxValLine)
+                            st = self.track.minValLine
+                            if not self.track.lines[l].lvScale is None:
+                                left = copy.copy(self.track.lines[l].lvScale)
+                            if not self.track.lines[l].rvScale is None:
+                                right = copy.copy(self.track.lines[l].rvScale)
                             size =  right - left
                             conv = self.width() / size
-                            x = (val - self.track.minVal) * conv
+                            x = (val-left) * conv
                             point = QPoint(int(x),int(j*fStep))
                             self.lines[l].append(point)
 
@@ -295,36 +312,43 @@ class Frame(QFrame):
                 elif findl and isinstance(g.rightVal, float):
                     left = self.track.minValLine
                     right = self.track.maxValLine
-                    if not l.lScale is None:
-                        left = l.lScale
-                    if not l.rScale is None:
-                        right = l.rScale
+                    if not self.track.lines[self.gridsL[-1]].lvScale is None:
+                        left = copy.copy(self.track.lines[self.gridsL[-1]].lvScale)
+                    if not self.track.lines[self.gridsL[-1]].rvScale is None:
+                        right = copy.copy(self.track.lines[self.gridsL[-1]].rvScale)
                     if l.log == "Log":
                         x = int(self.mapLog(self.track.lLog, self.track.rLog, 0, self.width(), g.rightVal))
                     else:
-                        x = int(self.mapping(left, right, 0, self.width(), g.rightVal))
+                        size = right - left
+                        conv = self.width() / size
+                        x = (g.rightVal - left) * conv
+
                     leftPoints = copy.deepcopy(self.lines[self.gridsL[-1]])
                     for pl in leftPoints:
-                        if pl.x() < x:
+                        if pl.x() > x:
                             pl.setX(x)
                     out = []
                     out += leftPoints + [QPoint(x,self.height()),QPoint(x,0)]
                     self.gridsCalc.append(out)
                 elif findr and isinstance(g.leftVal, float):
-                    left = self.track.minValLine
-                    right = self.track.maxValLine
-                    if not l.lScale is None:
-                        left = l.lScale
-                    if not l.rScale is None:
-                        right = l.rScale
+                    left = copy.copy(self.track.minValLine)
+                    right = copy.copy(self.track.maxValLine)
+                    if not self.track.lines[self.gridsR[-1]].lvScale is None:
+                        left = copy.copy(self.track.lines[self.gridsR[-1]].lvScale)
+                    if not self.track.lines[self.gridsR[-1]].rvScale is None:
+                        right = copy.copy(self.track.lines[self.gridsR[-1]].rvScale)
                     if l.log == "Log":
                         x = int(self.mapLog(self.track.lLog, self.track.rLog, 0, self.width(), g.leftVal))
                     else:
+                        size = right - left
+                        conv = self.width() / size
+                        # x = (g.leftVal - left) * conv
                         x = int(self.mapping(left, right, 0, self.width(), g.leftVal))
                     rightPoints = copy.deepcopy(self.lines[self.gridsR[-1]])
                     for pr in rightPoints:
-                        if pr.x() > x:
+                        if pr.x() < x:
                             pr.setX(x)
+                    rightPoints.reverse()
                     out = []
                     out += [QPoint(x, 0), QPoint(x, self.height())]
                     out += rightPoints
@@ -431,43 +455,18 @@ class Button(QPushButton):
                     log = False
                     if l.log == "Log":
                         log = True
-                    if l.lScale is None:
-                        if log:
-                            lScale = copy.copy(self.track.lLog)
-                        else:
-                            lScale = copy.copy(self.track.minValLine)
-                    elif str(l.lScale) == '':
-                        if log:
-                            lScale = copy.copy(self.track.lLog)
-                        else:
-                            lScale = copy.copy(self.track.minValLine)
-                    else:
-                        if log:
-                            lScale = copy.copy(self.track.lLog)
-                        else:
-                            lScale = copy.copy(l.lScale)
 
-                    if l.rScale is None:
-                        if log:
-                            rScale = copy.copy(self.track.rLog)
-                        else:
-                            rScale = copy.copy( self.track.maxValLine)
-                    elif str(l.rScale) == '':
-                        if log:
-                            rScale = copy.copy(self.track.rLog)
-                        else:
-                            rScale = copy.copy( self.track.maxValLine)
+                    if log:
+                        lScale = copy.copy(self.track.lLog)
+                        rScale = copy.copy(self.track.rLog)
                     else:
-                        if log:
-                            if l.rScale > self.track.rLog:
-                                rScale = copy.copy(self.track.rLog)
-                            else:
-                                rScale = copy.copy(l.rScale)
-                        else:
-                            if l.rScale > self.track.maxValLine:
-                                rScale = copy.copy( self.track.maxValLine)
-                            else:
-                                rScale = copy.copy(l.rScale)
+                        lScale = self.track.minValLine
+                        rScale = self.track.maxValLine
+                        if not l.lvScale is None:
+                            lScale = l.lvScale
+                        if not l.rvScale is None:
+                            rScale = l.rvScale
+
 
                     qp.drawText(0, fontHeight*count, self.width(), fontHeight*2,
                                 Qt.AlignHCenter, str(mnemonic)+" (" + str(unit) + ")")

@@ -4,7 +4,7 @@ from src.GUI import Ui_MainWindow
 from src.lasProcesor import Well
 from src.subWindowScroll import subWindowWell
 from PySide2.QtCore import ( Slot)
-from PySide2.QtGui import (QIcon, Qt)
+from PySide2.QtGui import (QIcon, Qt, QMouseEvent)
 from PySide2.QtWidgets import (QTreeWidgetItem, QApplication)
 import os
 
@@ -139,12 +139,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # qtreewidgetitem4 = qtreewidgetitem1.child(2)
         # qtreewidgetitem4.setText(0, "Rellenos")
         # ___qtreewidgetitem5 = ___qtreewidgetitem4.child(0)
-    # def mouseReleaseEvent(self, event:QtGui.QMouseEvent):
-    #     print("Released Daddy")
-    #
-    # def mousePressEvent(self, event:QtGui.QMouseEvent):
-    #     if event.button() == Qt.LeftButton:
-    #         print("Pressed Daddy")
+    def mouseReleaseEvent(self, event:QMouseEvent):
+        print("Released Daddy")
+
+    def mousePressEvent(self, event:QMouseEvent):
+        if event.button() == Qt.LeftButton:
+            print("Pressed Daddy")
 
 
 

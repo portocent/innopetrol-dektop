@@ -385,13 +385,8 @@ class subWindowWell(QWidget):
 
     def updateTracks(self):
         time.sleep(1.5)
-        # for t in self.lTracks:
-        #     t.update()
-        #     time.sleep(0.2)
         self.update()
         self.parent.update()
-
-
 
     # def mousePressEvent(self, event :QtGui.QMouseEvent):
     #     if event.button() == Qt.LeftButton:
@@ -409,6 +404,22 @@ class subWindowWell(QWidget):
             # print(str(t.timer))
             t.repaint()
         self.update()
+
+
+    def enterEvent(self, event):
+        # print ("Mouse Entered")
+        for t in self.lTracks:
+            t.timer = time.perf_counter() -5
+            # print(str(t.timer))
+            t.blockSignals(True)
+            t.repaint()
+            t.blockSignals(False)
+        self.update()
+        return super(subWindowWell, self).enterEvent(event)
+
+    def leaveEvent(self, event):
+        print("Leave Window")
+        return super(subWindowWell, self).enterEvent(event)
 
     def showPopup(self, position):
         self.popMenu.exec_(self.mapToGlobal(position))
@@ -494,10 +505,11 @@ class subWindowWell(QWidget):
     @Slot()
     def delTrack(self):
         # Remove last track
-        self.lTracks.pop()
-        self.well.popTrack()
-        self.frameSplitter.widget(self.frameSplitter.count( ) -1).deleteLater()
-        self.headSplitter.widget(self.headSplitter.count() - 1).deleteLater()
+        if len(self.lTracks) > 2:
+            self.lTracks.pop()
+            self.well.popTrack()
+            self.frameSplitter.widget(self.frameSplitter.count( ) -1).deleteLater()
+            self.headSplitter.widget(self.headSplitter.count() - 1).deleteLater()
 
     @Slot()
     def _addLines(self ,track):

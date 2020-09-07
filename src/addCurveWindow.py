@@ -1,4 +1,4 @@
-import copy
+import copy, math
 
 from PySide2 import QtWidgets
 from src.lasProcesor import Line, Grid
@@ -40,11 +40,11 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         iconSizeLine = QSize(95, 21)
         iconSize = QSize(91, 30)
         self.rowColor = []
-        realFormat = RealDelegate()
-        self.tableWidget.setItemDelegateForColumn(1 ,realFormat)
-        self.tableWidget.setItemDelegateForColumn(2 ,realFormat)
-        self.tableWidget_2.setItemDelegateForColumn(1 ,realFormat)
-        self.tableWidget_2.setItemDelegateForColumn(3 ,realFormat)
+        # realFormat = RealDelegate()
+        # self.tableWidget.setItemDelegateForColumn(1 ,realFormat)
+        # self.tableWidget.setItemDelegateForColumn(2 ,realFormat)
+        # self.tableWidget_2.setItemDelegateForColumn(1 ,realFormat)
+        # self.tableWidget_2.setItemDelegateForColumn(3 ,realFormat)
 
         comboList = []
         comboWidthList = []
@@ -223,10 +223,10 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
 
             rItem = QTableWidgetItem()
             if not r is None:
-                rItem.setData(Qt.DisplayRole ,r)
+                rItem.setData(Qt.DisplayRole ,str(r))
             lItem = QTableWidgetItem()
             if not l is None:
-                lItem.setData(Qt.DisplayRole ,l)
+                lItem.setData(Qt.DisplayRole ,str(l))
             self.tableWidget.setItem(row ,2 ,rItem)
             self.tableWidget.setItem(row ,1 ,lItem)
             self.tableWidget.cellWidget(row ,4).setCurrentIndex(log)
@@ -371,20 +371,28 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
                 if not l is None or not r is None:
                     if not lIsNone:
                         if l.text() != "":
-                            leftS = float(l.text())
+
+                            try:
+                                leftS = float(l.text())
+                            except ValueError:
+                                return ("Los valores de la escala deben ser numéricos")
                             if log == "Log":
                                 if leftS < 0:
                                     return "Pestaña curvas fila "+str(row+1)+": Las escalas logaritmicas deben ser positivas"
                     if not rIsNone:
                         if r.text() != "":
-                            rightS = float(r.text())
+
+                            try:
+                                rightS = float(r.text())
+                            except ValueError:
+                                return ("Los valores de la escala deben ser numéricos")
                             if log == "Log":
                                 if rightS < 0:
                                     return "Pestaña curvas fila "+str(row+1)+": Las escalas logaritmicas deben ser positivas"
-                    if not rIsNone and not lIsNone:
-                        if l.text() != "" and r.text() != "":
-                            if leftS >= rightS:
-                                return "Pestaña curvas fila "+str(row+1)+": Escala izquierda inferior o igual a la derecha"
+                    # if not rIsNone and not lIsNone:
+                        # if l.text() != "" and r.text() != "":
+                            # if leftS >= rightS:
+                                # return "Pestaña curvas fila "+str(row+1)+": Escala izquierda inferior o igual a la derecha"
 
                 if log == " ":
                     return "Pestaña curvas fila "+str(row+1)+": Tipo de lína no seleccionada: Log/Lineal"
@@ -403,9 +411,9 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
 
         for grid in grids:
             leftLine = grid.leftLine
-            leftVal = grid.leftVal
+            leftVal = str(grid.leftVal)
             rightLine = grid.rightLine
-            rightVal = grid.rightVal
+            rightVal = str(grid.rightVal)
             checkVal = grid.check
             brush = grid.brushIndex
             penType = grid.brush
@@ -496,12 +504,22 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             if not lv is None:
                 if lv.text() == "":
                     lvBool = True
+                else:
+                    try:
+                        float(lv.text())
+                    except ValueError:
+                        return ("El valor izquierdo debe ser numérico")
             else:
                 lvBool = True
 
             if not rv is None:
                 if rv.text() == "":
                     rvBool = True
+                else:
+                    try:
+                        float(rv.text())
+                    except ValueError:
+                        return ("El valor derecho debe ser numérico")
             else:
                 rvBool = True
 
@@ -651,5 +669,7 @@ class RealDelegate(QItemDelegate):
         realSpinBox = QDoubleSpinBox(parent)
         realSpinBox.setMinimum(-100000)
         realSpinBox.setMaximum(100000)
+        realSpinBox.setSpecialValueText("")
+        realSpinBox.setValue(math.nan)
         # realSpinBox.setValue()
         return realSpinBox
