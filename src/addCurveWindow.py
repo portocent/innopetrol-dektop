@@ -1,4 +1,5 @@
 import copy, math
+import time
 
 from PySide2 import QtWidgets
 from src.lasProcesor import Line, Grid
@@ -23,10 +24,30 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         # self.wells = []
         self.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
         self.loadWellData()
+
         self.okButton.clicked.connect(self.clickOkButton)
+        self.closeButton.clicked.connect(self.cerrarWindow)
+        self.aplicarButton.clicked.connect(self.clickApplyButton)
 
         # self.subwindow.paintEvent = types.MethodType(paintSub,self.subwindow)
 
+    @Slot()
+    def cerrarWindow(self):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
+        msg.setText("¿Desea salir de la ventada de edición de líneas del track " + str(self.trackNum) + "?")
+        # msg.setInformativeText("This is additional information")
+        msg.setWindowTitle("Cerrar menú de edición de líneas")
+        # msg.setDetailedText("The details are as follows:")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+        # msg.buttonClicked.connect(msgbtn)
+        retval = msg.exec_()
+        # Get the Window title
+
+        # if click in ok then exit
+        if retval == 1024:  # write your required condition/check
+            super(addCurveWindow, self).close()
 
     def loadWellData(self):
         well = self.parent.well
@@ -207,41 +228,43 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
         row = 0
         lines = self.parent.well.tracks[self.trackNum - 1].lines
         self.choosedLines = []
-        for linea in lines:
-            name = linea.nameIndex
-            width = linea.grosorIndex
-            penType = linea.estiloIndex
-            log = linea.logIndex
-            visible = linea.visible
-            l = linea.lvScale
-            r = linea.rvScale
-            check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
-            # Filling Grids Choose Lines
-            self.choosedLines.append(linea.name)
-            # Setting Options
-            self.tableWidget.cellWidget(row ,0).setCurrentIndex(name)
 
-            rItem = QTableWidgetItem()
-            if not r is None:
-                rItem.setData(Qt.DisplayRole ,str(r))
-            lItem = QTableWidgetItem()
-            if not l is None:
-                lItem.setData(Qt.DisplayRole ,str(l))
-            self.tableWidget.setItem(row ,2 ,rItem)
-            self.tableWidget.setItem(row ,1 ,lItem)
-            self.tableWidget.cellWidget(row ,4).setCurrentIndex(log)
-            self.tableWidget.cellWidget(row ,6).setCurrentIndex(width)
-            self.tableWidget.cellWidget(row ,7).setCurrentIndex(penType)
-            label = self.tableWidget.cellWidget(row ,8)
-            check[0].setChecked(linea.visibleCheck)
-            label.penColor = linea.color
-            label.penType = linea.estilo
-            label.penSize = linea.grosor
-            label.isBrush = False
-            label.visible = True
-            # self.tableWidget.removeCellWidget(row,8)
-            # self.tableWidget.setCellWidget(row,8,label)
-            label.update()
+        for linea in lines:
+            name = self.tableWidget.cellWidget(row, 0).findText(linea.name, Qt.MatchFixedString)
+            if name > -1:
+                width = linea.grosorIndex
+                penType = linea.estiloIndex
+                log = linea.logIndex
+                visible = linea.visible
+                l = linea.lvScale
+                r = linea.rvScale
+                check = self.tableWidget.cellWidget(row, 3).findChildren(QCheckBox)
+                # Filling Grids Choose Lines
+                self.choosedLines.append(linea.name)
+                # Setting Options
+                self.tableWidget.cellWidget(row ,0).setCurrentIndex(name)
+
+                rItem = QTableWidgetItem()
+                if not r is None:
+                    rItem.setData(Qt.DisplayRole ,str(r))
+                lItem = QTableWidgetItem()
+                if not l is None:
+                    lItem.setData(Qt.DisplayRole ,str(l))
+                self.tableWidget.setItem(row ,2 ,rItem)
+                self.tableWidget.setItem(row ,1 ,lItem)
+                self.tableWidget.cellWidget(row ,4).setCurrentIndex(log)
+                self.tableWidget.cellWidget(row ,6).setCurrentIndex(width)
+                self.tableWidget.cellWidget(row ,7).setCurrentIndex(penType)
+                label = self.tableWidget.cellWidget(row ,8)
+                check[0].setChecked(linea.visibleCheck)
+                label.penColor = linea.color
+                label.penType = linea.estilo
+                label.penSize = linea.grosor
+                label.isBrush = False
+                label.visible = True
+                # self.tableWidget.removeCellWidget(row,8)
+                # self.tableWidget.setCellWidget(row,8,label)
+                label.update()
             row += 1
 
 
@@ -255,6 +278,31 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             self.saveGrids()
             self.parent.update()
             self.close()
+        else:
+            msg_box = QtWidgets.QMessageBox()
+            msg_box.setIcon(QtWidgets.QMessageBox.Information)
+            msg_box.setWindowIcon(QIcon("statics\\images\\LOGO-08.png"))
+            msg_box.setText(errorLines +"\n" + errorGrids)
+            msg_box.setWindowTitle("Error en los campos")
+            msg_box.setStandardButtons(QtWidgets.QMessageBox.Close)
+            msg_box.exec_()
+    @Slot()
+    def clickApplyButton(self):
+        self.changetab()
+        errorLines = self.passValidateLines()
+        errorGrids = self.passValidateGrids()
+        self.changetab()
+        if not errorLines and not errorGrids:
+            self.saveLines()
+            self.saveGrids()
+            for t in self.parent.lTracks:
+                t.timer = time.perf_counter() - 5
+                # print(str(t.timer))
+                t.repaint()
+            self.parent.update()
+
+
+            # self.close()
         else:
             msg_box = QtWidgets.QMessageBox()
             msg_box.setIcon(QtWidgets.QMessageBox.Information)
@@ -464,7 +512,7 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             else:
                 lvBool = True
 
-            if namel != " " or not lvBool:
+            if namel != " " or namer != " ":
                 namerIndex = self.tableWidget_2.cellWidget(row, 2).currentIndex()
                 rv = self.tableWidget_2.item(row, 3)
                 fill = self.tableWidget_2.cellWidget(row, 6).currentIndex()
@@ -664,12 +712,12 @@ class addCurveWindow(QtWidgets.QDialog, Ui_addCurve):
             # if label.visible:
             label.update()
 
-class RealDelegate(QItemDelegate):
-    def createEditor(self, parent, option, index):
-        realSpinBox = QDoubleSpinBox(parent)
-        realSpinBox.setMinimum(-100000)
-        realSpinBox.setMaximum(100000)
-        realSpinBox.setSpecialValueText("")
-        realSpinBox.setValue(math.nan)
-        # realSpinBox.setValue()
-        return realSpinBox
+# class RealDelegate(QItemDelegate):
+#     def createEditor(self, parent, option, index):
+#         realSpinBox = QDoubleSpinBox(parent)
+#         realSpinBox.setMinimum(-100000)
+#         realSpinBox.setMaximum(100000)
+#         realSpinBox.setSpecialValueText("")
+#         realSpinBox.setValue(math.nan)
+#         # realSpinBox.setValue()
+#         return realSpinBox

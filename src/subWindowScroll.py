@@ -11,6 +11,7 @@ from PySide2.QtWidgets import (QFrame, QAction, QWidget,
 from src.myGuiClasses import Frame, Button
 import time
 import threading, copy
+import pickle
 from functools import partial
 
 
@@ -20,6 +21,7 @@ class subWindowWell(QWidget):
         super().__init__(parent)
         self.parent = parent
         self.lTracks = []
+        self.lButtons = []
         self.lSplit = []
         self.setObjectName(u"subwindow")
         self.frameScroll = QScrollArea(self)
@@ -87,8 +89,10 @@ class subWindowWell(QWidget):
 
         # Adding a buttons
         button = Button(iSplitter,self.well)
+        self.lButtons.append(button)
         button.clicked.connect(partial(self._addLines ,1))
         button2 = Button(iSplitter2,self.well,True)
+        self.lButtons.append(button2)
         # button2.clicked.connect(partial(self._addLines ,2))
         # button.clicked.connect(lambda:self.whichbtn(self.b2))
 
@@ -233,6 +237,8 @@ class subWindowWell(QWidget):
         self.headSplitter.blockSignals(False)
         self.frameSplitter.blockSignals(False)
 
+        # Loading templates
+        self.loadTemplate()
         # initHorizontalSize = [self.width( ) -self.track2Size, self.track2Size]
 
     def changeZoomDx(self):
@@ -331,7 +337,6 @@ class subWindowWell(QWidget):
             self.frameSplitter.widget(t).setMinimumHeight(newFrameSize)
         self.update()
 
-
     def changeZoom50x(self):
         scale = 25
         oldSplitSizes = self.splitter.sizes()
@@ -381,6 +386,23 @@ class subWindowWell(QWidget):
         updtDaemon.setDaemon(True)
         updtDaemon.start()
 
+    def loadTemplate(self):
+        if not self.parent.template is None:
+            if self.parent.template:
+                ltracks = copy.deepcopy(self.parent.template)
+                count = 0
+                for t in ltracks:
+                    if count > 1:
+                        self.addTrack()
+                    self.well.tracks[count] = t
+                    self.lTracks[count].track = t
+                    self.lTracks[count].minVal = t.minVal
+                    self.lTracks[count].maxVal = t.maxVal
+                    self.lButtons[count].setTrack(t)
+                    count+=1
+                self.update()
+
+
 
 
     def updateTracks(self):
@@ -407,18 +429,11 @@ class subWindowWell(QWidget):
 
 
     def enterEvent(self, event):
-        # print ("Mouse Entered")
-        for t in self.lTracks:
-            t.timer = time.perf_counter() -5
-            # print(str(t.timer))
-            t.blockSignals(True)
-            t.repaint()
-            t.blockSignals(False)
         self.update()
         return super(subWindowWell, self).enterEvent(event)
 
     def leaveEvent(self, event):
-        print("Leave Window")
+        # print("Leave Window")
         return super(subWindowWell, self).enterEvent(event)
 
     def showPopup(self, position):
@@ -433,6 +448,7 @@ class subWindowWell(QWidget):
         iSplitter.setOrientation(Qt.Vertical)
         # Adding a button
         button = Button(iSplitter,self.well)
+        self.lButtons.append(button)
         button.setObjectName(u"button_ " +str(frameCount))
         button.clicked.connect(partial(self._addLines ,frameCount +1))
         frame = Frame(self.frameSplitter ,self.well)
@@ -508,6 +524,7 @@ class subWindowWell(QWidget):
         if len(self.lTracks) > 2:
             self.lTracks.pop()
             self.well.popTrack()
+            self.lButtons.pop()
             self.frameSplitter.widget(self.frameSplitter.count( ) -1).deleteLater()
             self.headSplitter.widget(self.headSplitter.count() - 1).deleteLater()
 
@@ -546,10 +563,11 @@ class subWindowWell(QWidget):
         # print ("Number:", t)
         # self.parent.treeWidget.removeItemWidget(t[0], 0)
         # Remove the item in the tree
-        self.parent.treeWidget.takeTopLevelItem(self.parent.treeWidget.indexOfTopLevelItem(t[0]))
+
         # if click in ok then exit
         if retval == 1024:  # write your required condition/check
             event.accept()
+            self.parent.treeWidget.takeTopLevelItem(self.parent.treeWidget.indexOfTopLevelItem(t[0]))
         else:
             event.ignore()
 

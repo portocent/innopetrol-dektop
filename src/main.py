@@ -1,12 +1,15 @@
 # import sys
+import pickle
+
 from PySide2 import QtWidgets
-from src.GUI import Ui_MainWindow
-from src.lasProcesor import Well
+from src.GUI import Ui_MainWindow, QAction, QFileDialog
+from src.lasProcesor import Well, Track
 from src.subWindowScroll import subWindowWell
 from PySide2.QtCore import ( Slot)
 from PySide2.QtGui import (QIcon, Qt, QMouseEvent)
 from PySide2.QtWidgets import (QTreeWidgetItem, QApplication)
 import os
+
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -21,8 +24,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.mdiArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.mdiArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.mdiArea.verticalScrollBar().setSingleStep(1)
+        self.template = None
 
-
+        qtreewidgetitem1 = QTreeWidgetItem(self.treeWidget)
+        qtreewidgetitem1 = self.treeWidget.topLevelItem(0)
+        qtreewidgetitem1.setText(0,"Plantilla:")
 
 
     def menuOptions(self):
@@ -36,6 +42,115 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionOpen_Well = addWellAction
         self.menuMenu.addAction(self.actionOpen_Well)
         # self.actionOpen_Well
+        self.saveTempAction = QAction(self)
+        self.saveTempAction.setText('Save Template')
+        self.saveTempAction.setShortcut('Ctrl+T')
+        self.saveTempAction.setStatusTip('Save Template...')
+        self.saveTempAction.triggered.connect(self.saveTemplate)
+        self.menuMenu.addAction(self.saveTempAction)
+        # Load Template
+        self.loadTempAction = QAction(self)
+        self.loadTempAction.setText('Load Template')
+        self.loadTempAction.setShortcut('Ctrl+L')
+        self.loadTempAction.setStatusTip('Load Template...')
+        self.loadTempAction.triggered.connect(self.loadTemplate)
+        self.menuMenu.addAction(self.loadTempAction)
+        # Remove Template
+        self.remTempAction = QAction(self)
+        self.remTempAction.setText('Clear Template')
+        self.remTempAction.setShortcut('Ctrl+C')
+        self.remTempAction.setStatusTip('Clear Template...')
+        self.remTempAction.triggered.connect(self.remTemplate)
+        self.menuMenu.addAction(self.remTempAction)
+
+    @Slot()
+    def saveTemplate(self):
+        # tracks = self.well.tracks
+        if self.mdiArea.subWindowList():
+            tracks = self.mdiArea.currentSubWindow().widget().well.tracks
+            fileName = QFileDialog.getSaveFileName(self, 'Guardar Plantilla', os.path.expanduser("~"),
+                                                   '*.temp')
+            if fileName[0]:
+                with open(fileName[0], 'wb') as out_s:
+                    for o in tracks:
+                        # print('WRITING: {} ({})'.format(
+                        #     o.name, o.name_backwards))
+                        pickle.dump(o, out_s)
+
+    def loadTemplate(self):
+        fileName = QFileDialog.getOpenFileName(self, 'Cargar Plantilla', os.path.expanduser("~"),
+                                               '*.temp')
+        if fileName[0]:
+            ltracks = []
+            head, name = os.path.split(fileName[0])
+            with open(fileName[0], 'rb') as in_s:
+                while True:
+                    try:
+                        o = pickle.load(in_s)
+                    except EOFError:
+                        break
+                    else:
+                        ltracks.append(o)
+
+            self.template = ltracks
+            qtreewidgetitem = QTreeWidgetItem(self.treeWidget)
+
+            self.treeWidget.setSortingEnabled(False)
+            qtreewidgetitem = self.treeWidget.topLevelItem(0)
+            strId = "Plantilla: " + name
+            qtreewidgetitem.setText(0, strId)
+            # qtreewidgetitem2 = QTreeWidgetItem(qtreewidgetitem)
+            # qtreewidgetitem2 = qtreewidgetitem.child(0)
+            # qtreewidgetitem2.setText(0, "Tracks:")
+            # Tracks
+            i = 0
+            for t in ltracks:
+                if i != 1:
+                    qtreewidgetitemtrack = QTreeWidgetItem(qtreewidgetitem)
+                    qtreewidgetitemtrack = qtreewidgetitem.child(i)
+                    qtreewidgetitemtrack.setText(0, "Track " + str(i+1)+":")
+                    qtreewidgetitemlines = QTreeWidgetItem(qtreewidgetitemtrack)
+                    qtreewidgetitemlines = qtreewidgetitemtrack.child(0)
+                    qtreewidgetitemlines.setText(0, "Lines:")
+                    qtreewidgetitemgrids = QTreeWidgetItem(qtreewidgetitemtrack)
+                    qtreewidgetitemgrids = qtreewidgetitemtrack.child(1)
+                    qtreewidgetitemgrids.setText(0, "Grids:")
+                    j = 0
+                    for l in t.lines:
+                        qtreewidgetitemline = QTreeWidgetItem(qtreewidgetitemlines)
+                        qtreewidgetitemline = qtreewidgetitemlines.child(j)
+                        qtreewidgetitemline.setText(0, l.name)
+                        j+=1
+
+
+                    j = 0
+                    for g in t.grids:
+                        qtreewidgetitemgrid = QTreeWidgetItem(qtreewidgetitemgrids)
+                        qtreewidgetitemgrid = qtreewidgetitemgrids.child(j)
+                        if g.leftLine == " ":
+                            l = g.leftVal
+                        else:
+                            l = g.leftLine
+                        r = g.rightLine
+                        if r == " ":
+                            r = g.rightVal
+                        qtreewidgetitemgrid.setText(0, "Left: " + str(l) + " - Right: " + str(r))
+                        j += 1
+
+                i += 1
+
+
+    def remTemplate(self):
+        self.template = None
+        t = self.treeWidget.findItems("Plantilla:", Qt.MatchStartsWith)
+        self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(t[0]))
+        qtreewidgetitem = QTreeWidgetItem(self.treeWidget)
+        self.treeWidget.setSortingEnabled(False)
+        qtreewidgetitem = self.treeWidget.topLevelItem(0)
+        strId = "Plantilla:"
+        qtreewidgetitem.setText(0, strId)
+
+        #
 
     @Slot()
     def _browseFile(self):
@@ -82,7 +197,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         qtreewidgetitem1 = QTreeWidgetItem(self.treeWidget)
 
         self.treeWidget.setSortingEnabled(False)
-        qtreewidgetitem1 = self.treeWidget.topLevelItem(len(self.mdiArea.subWindowList())-1)
+        qtreewidgetitem1 = self.treeWidget.topLevelItem(len(self.mdiArea.subWindowList()))
         strId = "# " + str(self.countSubW) + " " + wellName
         qtreewidgetitem1.setText(0, strId)
 
