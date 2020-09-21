@@ -143,7 +143,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def remTemplate(self):
         self.template = None
         t = self.treeWidget.findItems("Plantilla:", Qt.MatchStartsWith)
-        self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(t[0]))
+        current_item = t[0]
+        children = []
+        for child in range(current_item.childCount()):
+            children.append(current_item.child(child))
+        for child in children:
+            current_item.removeChild(child)
+        # self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(t[0]))
         qtreewidgetitem = QTreeWidgetItem(self.treeWidget)
         self.treeWidget.setSortingEnabled(False)
         qtreewidgetitem = self.treeWidget.topLevelItem(0)
