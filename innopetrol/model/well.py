@@ -11,6 +11,7 @@ import lasio
 import numpy as np
 
 from innopetrol.i18n import _, ngettext
+from innopetrol.model.location import Location, location_from_header
 from innopetrol.model.survey import Survey
 from innopetrol.model.tops import Top
 
@@ -65,10 +66,13 @@ class Well:
     survey: Survey | None = None
     elevation: float | None = None  # elevation of the depth reference (KB/DF/GL) above sea level
     source: str | None = None  # frame name inside a multi-frame file (DLIS)
+    location: Location | None = None  # surface location (from the header or entered by the user)
 
     def __post_init__(self):
         if self.elevation is None:
             self.elevation = elevation_from_header(self.header, self.depth_unit)
+        if self.location is None:
+            self.location = location_from_header(self.header)
 
     def tvd(self) -> np.ndarray:
         """True vertical depth of every sample (the well is assumed vertical without a survey)."""

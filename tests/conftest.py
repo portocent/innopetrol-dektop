@@ -41,3 +41,13 @@ def no_modal_boxes(monkeypatch):
         monkeypatch.setattr(QMessageBox, name, staticmethod(lambda *a, _n=name, **k: calls.append((_n, a))))
     monkeypatch.setattr(QMessageBox, "question", staticmethod(lambda *a, **k: QMessageBox.Yes))
     return calls
+
+
+@pytest.fixture(autouse=True)
+def builtin_aliases():
+    """User mnemonic aliases are global: every test starts and ends with the built-in ones."""
+    from innopetrol.model import mnemonics
+
+    mnemonics.set_user_aliases({})
+    yield
+    mnemonics.set_user_aliases({})

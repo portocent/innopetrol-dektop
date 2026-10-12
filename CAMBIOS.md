@@ -330,6 +330,56 @@ La profundidad del clic se convierte a MD antes de guardarla, así que funciona 
 TVD/TVDSS o aplanada en otro tope. Los topes se guardan en el pozo original (con su historial de
 deshacer), y su ventana se actualiza al instante.
 
+### 3.6 Despliegue y escala
+
+**Instaladores.** Hasta ahora la CI generaba un `.zip` por sistema. Ahora genera lo que cada usuario espera:
+- **Windows:** un instalador hecho con Inno Setup. Instala por usuario, sin pedir permisos de
+  administrador, agrega accesos directos y asocia los archivos `.ipproj` para que se abran con doble clic.
+- **macOS:** una imagen `.dmg` con el acceso a Aplicaciones para arrastrar la app.
+- **Linux:** un `.tar.gz` con `install.sh`, que agrega el programa al menú de aplicaciones. Se usa tar
+  en vez de zip porque conserva los permisos de ejecución.
+
+La CI no se conforma con generarlos: instala el `.exe` en modo silencioso, descomprime el tar y monta el
+DMG, y en cada caso el programa instalado tiene que arrancar y dibujar un pozo.
+
+La **firma de código** requiere certificados pagos (Apple Developer, 99 USD por año; un certificado de
+Windows o Azure Trusted Signing). `docs/DISTRIBUTION.md` explica las opciones y los pasos.
+
+**Autoguardado y recuperación.** Si hay cambios sin guardar, cada 2 minutos se guarda una copia del
+proyecto en la carpeta de datos del programa. Al cerrar normalmente se borra; si al arrancar sigue ahí,
+el programa no se cerró bien y ofrece recuperarla. La copia se escribe primero en un archivo temporal y
+después se renombra (`os.replace`), así un corte de luz a mitad de la escritura nunca deja un archivo
+roto.
+
+**Errores sin cerrar el programa.** Un error no previsto antes cerraba la aplicación. Ahora `sys.excepthook`
+lo intercepta:
+- escribe el traceback completo en `innopetrol.log` (archivo rotativo de 1 MB × 3);
+- guarda los pozos abiertos por las dudas;
+- muestra un diálogo con los detalles.
+
+Si falla algo mientras informa el error, sólo se registra, para no entrar en un bucle.
+
+**Alias de mnemónicos editables.** Cada compañía nombra sus curvas a su manera. En *Plantilla ▸ Alias de
+mnemónicos…* se agregan nombres a cada familia, y se exportan e importan en JSON para que todo el equipo
+use los mismos. Un alias del usuario tiene prioridad, así que también sirve para corregir uno incorporado:
+por ejemplo, si en tu compañía "RT" es una resistividad media.
+
+**Mapa base.** La ubicación sale del encabezado, aceptando X/Y o latitud/longitud con muchas grafías y
+también en grados-minutos-segundos (`58° 26' 29.9" N`), o se ingresa en el diálogo de survey. Un 0/0 se
+descarta, porque muchos archivos lo traen como "sin dato". Con el survey se dibuja la trayectoria, y
+para latitud/longitud la longitud se multiplica por cos(latitud) para que un kilómetro mida lo mismo en
+las dos direcciones. Haciendo clic en los pozos en orden se arma una sección, y "Correlacionar
+seleccionados" abre la correlación con ese orden.
+
+**Crossplots e histogramas multipozo.** Al tildar otros pozos:
+- se busca la curva equivalente por nombre o por familia (SGR en un pozo, GR en otro);
+- se convierte a las unidades del pozo activo (densidad en kg/m³ y en g/cm³ quedan juntas);
+- las zonas se eligen por nombre de tope, y cada pozo usa sus propios topes;
+- el crossplot pasa a colorear por pozo, y el histograma dibuja un contorno por pozo con P10/P50/P90 de
+  cada uno.
+
+Es la herramienta para ver si hace falta normalizar el GR antes de calcular Vsh en varios pozos.
+
 ## 4. Arquitectura
 
 ```

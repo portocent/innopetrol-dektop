@@ -41,26 +41,45 @@ jobs:
       - name: System libraries for Qt (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      - name: Inno Setup for the Windows installer
+        if: runner.os == 'Windows'
+        run: choco install innosetup --no-progress -y
       - run: uv sync --group build
       - run: uv run --group build python packaging/build.py
 
-      # Checks that the packaged executable starts, opens a LAS file and draws it.
-      - name: Test executable (Windows)
+      # Checks what users download: installs or unpacks it, then the program must start, open a LAS
+      # file and draw it.
+      - name: Test installer (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $p = Start-Process -FilePath dist\InnoPetrol\InnoPetrol.exe -ArgumentList '--smoke-test', "$PWD\samples\Testdata.las" -Wait -PassThru
+          $setup = Get-ChildItem dist\*-windows-setup.exe | Select-Object -First 1
+          if (-not $setup) { throw "the installer was not built" }
+          $dir = "$env:RUNNER_TEMP\InnoPetrol-test"
+          Start-Process -FilePath $setup.FullName -ArgumentList '/VERYSILENT', '/CURRENTUSER', '/SUPPRESSMSGBOXES', "/DIR=$dir" -Wait
+          $p = Start-Process -FilePath "$dir\InnoPetrol.exe" -ArgumentList '--smoke-test', "$PWD\samples\Testdata.las" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "smoke-test failed with exit code $($p.ExitCode)" }
-      - name: Test executable (Linux)
+      - name: Test archive (Linux)
         if: runner.os == 'Linux'
         env:
           QT_QPA_PLATFORM: offscreen
-        run: ./dist/InnoPetrol/InnoPetrol --smoke-test "$PWD/samples/Testdata.las"
-      - name: Test executable (macOS)
+        run: |
+          mkdir -p "$RUNNER_TEMP/unpacked"
+          tar -xzf dist/*.tar.gz -C "$RUNNER_TEMP/unpacked"
+          test -x "$RUNNER_TEMP/unpacked/InnoPetrol/install.sh"
+          "$RUNNER_TEMP/unpacked/InnoPetrol/InnoPetrol" --smoke-test "$PWD/samples/Testdata.las"
+      - name: Test disk image (macOS)
         if: runner.os == 'macOS'
-        run: ./dist/InnoPetrol.app/Contents/MacOS/InnoPetrol --smoke-test "$PWD/samples/Testdata.las"
+        run: |
+          hdiutil attach -nobrowse -readonly -mountpoint "$RUNNER_TEMP/dmg" dist/*.dmg
+          "$RUNNER_TEMP/dmg/InnoPetrol.app/Contents/MacOS/InnoPetrol" --smoke-test "$PWD/samples/Testdata.las"
+          hdiutil detach "$RUNNER_TEMP/dmg"
 
       - uses: actions/upload-artifact@v4
         with:
           name: InnoPetrol-${{ runner.os }}
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*.dmg
+            dist/*.tar.gz
+            dist/*-setup.exe

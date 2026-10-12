@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 07:01-0500\n"
+"POT-Creation-Date: 2026-10-12 07:19-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -43,6 +43,9 @@ msgid "&Well"
 msgstr ""
 
 msgid "(above the first top)"
+msgstr ""
+
+msgid "(by well)"
 msgstr ""
 
 msgid "(computed)"
@@ -84,6 +87,12 @@ msgstr ""
 msgid "Add depth track"
 msgstr ""
 
+msgid ""
+"Add the curve names your company or service providers use, separated by commas. They are "
+"recognized when opening wells and applying templates. A name written here wins over a built-in "
+"one, so it can also move a mnemonic to another family."
+msgstr ""
+
 #, python-brace-format
 msgid "Add top at {depth}…"
 msgstr ""
@@ -101,7 +110,17 @@ msgstr ""
 msgid "Add/update a “Petrophysical results” track"
 msgstr ""
 
+msgid ""
+"Aliases saved: they apply to wells opened and templates applied from now on (Template ▸ Rebuild "
+"Triple Combo for an open well)."
+msgstr ""
+
 msgid "All tracks"
+msgstr ""
+
+msgid ""
+"An unexpected error occurred. The program keeps running, but it is a good idea to save your work "
+"and restart it."
 msgstr ""
 
 msgid "Apply template"
@@ -150,10 +169,19 @@ msgstr ""
 msgid "Base ({unit})"
 msgstr ""
 
+msgid "Base map"
+msgstr ""
+
+msgid "Base map…"
+msgstr ""
+
 msgid "Bins:"
 msgstr ""
 
 msgid "Bit size"
+msgstr ""
+
+msgid "Built-in names"
 msgstr ""
 
 msgid "Bulk volume hydrocarbon"
@@ -203,10 +231,18 @@ msgstr ""
 msgid "Clean GR must be lower than shale GR."
 msgstr ""
 
+msgid "Clear selection"
+msgstr ""
+
 msgid "Clear the selected zone"
 msgstr ""
 
 msgid "Click on a well to place the top there; clicking again moves it. Right-click: more options."
+msgstr ""
+
+msgid ""
+"Click wells in order to draw a correlation section · double-click opens a well · drag to pan, "
+"wheel to zoom"
 msgstr ""
 
 #, python-brace-format
@@ -246,6 +282,9 @@ msgstr ""
 msgid "Constants: pi, e, nan. Curves with special names: [K-3104]"
 msgstr ""
 
+msgid "Coordinates:"
+msgstr ""
+
 msgid "Copy (for Excel)"
 msgstr ""
 
@@ -256,6 +295,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "Corrections on load ({count})"
+msgstr ""
+
+#, python-brace-format
+msgid "Correlate selected ({count})"
 msgstr ""
 
 msgid "Correlation"
@@ -270,6 +313,10 @@ msgid "Could not export: {error}"
 msgstr ""
 
 msgid "Could not open:"
+msgstr ""
+
+#, python-brace-format
+msgid "Could not read the file: {error}"
 msgstr ""
 
 #, python-brace-format
@@ -310,6 +357,9 @@ msgid "Curve calculator — {well}"
 msgstr ""
 
 msgid "Curve calculator…"
+msgstr ""
+
+msgid "Curve names of your company, recognized when opening wells and applying templates"
 msgstr ""
 
 msgid "Curve:"
@@ -440,10 +490,14 @@ msgstr ""
 msgid "Description:"
 msgstr ""
 
+#, python-brace-format
+msgid "Details were written to {path}"
+msgstr ""
+
 msgid "Deviation survey"
 msgstr ""
 
-msgid "Deviation survey and elevation…"
+msgid "Deviation survey, elevation and location…"
 msgstr ""
 
 #, python-brace-format
@@ -509,6 +563,9 @@ msgstr ""
 msgid "Elevation:"
 msgstr ""
 
+msgid "Enter both coordinates of the surface location."
+msgstr ""
+
 #, python-brace-format
 msgid "Error: {error}"
 msgstr ""
@@ -531,6 +588,9 @@ msgstr ""
 msgid "Export LAS (with computed curves)…"
 msgstr ""
 
+msgid "Export aliases"
+msgstr ""
+
 msgid "Export image / PDF…"
 msgstr ""
 
@@ -548,6 +608,9 @@ msgid "Export…"
 msgstr ""
 
 msgid "Expression:"
+msgstr ""
+
+msgid "Family"
 msgstr ""
 
 msgid "Feet"
@@ -650,10 +713,16 @@ msgstr ""
 msgid "Hydrocarbon"
 msgstr ""
 
+msgid "If you choose No, the saved copy is deleted."
+msgstr ""
+
 msgid "Image saved."
 msgstr ""
 
 msgid "Import CSV…"
+msgstr ""
+
+msgid "Import aliases"
 msgstr ""
 
 msgid "Import survey"
@@ -665,7 +734,14 @@ msgstr ""
 msgid "Import tops"
 msgstr ""
 
+msgid "Import…"
+msgstr ""
+
 msgid "Indonesia (shaly sands, fresh water)"
+msgstr ""
+
+#, python-brace-format
+msgid "InnoPetrol did not close properly last time. Restore the work saved automatically at {time}?"
 msgstr ""
 
 #, python-brace-format
@@ -711,6 +787,19 @@ msgid "Larionov (older rocks)"
 msgstr ""
 
 msgid "Larionov (tertiary rocks)"
+msgstr ""
+
+#, python-brace-format
+msgid "Lat {lat} · Lon {lon}"
+msgstr ""
+
+msgid "Latitude / longitude (degrees)"
+msgstr ""
+
+msgid "Latitude must be between -90 and 90 and longitude between -180 and 180."
+msgstr ""
+
+msgid "Latitude:"
 msgstr ""
 
 msgid "Layout applied."
@@ -771,7 +860,13 @@ msgstr ""
 msgid "Logarithmic scale"
 msgstr ""
 
+msgid "Longitude:"
+msgstr ""
+
 msgid "Main"
+msgstr ""
+
+msgid "Map"
 msgstr ""
 
 msgid "Matrix"
@@ -809,6 +904,12 @@ msgstr ""
 
 #, python-brace-format
 msgid "Minimum: {value}"
+msgstr ""
+
+msgid "Mnemonic aliases"
+msgstr ""
+
+msgid "Mnemonic aliases…"
 msgstr ""
 
 msgid "Model:"
@@ -908,6 +1009,15 @@ msgstr ""
 msgid ""
 "No tops were found in the file.\n"
 "Expected format: name, depth[, color] (with or without a header)."
+msgstr ""
+
+msgid ""
+"None of the open wells has coordinates in its header. Enter them in Well ▸ Deviation survey, "
+"elevation and location…"
+msgstr ""
+
+#, python-brace-format
+msgid "Not shown, coordinates of another type (projected vs. latitude/longitude): {wells}"
 msgstr ""
 
 msgid "Oilfield (ft, g/cm³, µs/ft, °F, psi, in)"
@@ -1050,6 +1160,12 @@ msgstr ""
 msgid "Project saved to {path}"
 msgstr ""
 
+msgid "Projected X / Y (feet)"
+msgstr ""
+
+msgid "Projected X / Y (meters)"
+msgstr ""
+
 msgid "Quit"
 msgstr ""
 
@@ -1064,6 +1180,9 @@ msgid "Rebuild Triple Combo"
 msgstr ""
 
 msgid "Rebuild Triple Combo in the active well"
+msgstr ""
+
+msgid "Recover work"
 msgstr ""
 
 msgid "Redo"
@@ -1284,11 +1403,14 @@ msgstr ""
 msgid "Style"
 msgstr ""
 
+msgid "Surface location"
+msgstr ""
+
 msgid "Surface temperature:"
 msgstr ""
 
 #, python-brace-format
-msgid "Survey and elevation — {well}"
+msgid "Survey, elevation and location — {well}"
 msgstr ""
 
 msgid "Surveys (*.csv *.txt *.dev *.svy);;All files (*)"
@@ -1327,6 +1449,9 @@ msgid "The fill takes the color of its curve's value at each depth, along the cu
 msgstr ""
 
 msgid "The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first."
+msgstr ""
+
+msgid "These names are in more than one family:"
 msgstr ""
 
 msgid "Tile"
@@ -1392,10 +1517,17 @@ msgstr ""
 msgid "Undo"
 msgstr ""
 
+msgid "Unexpected error"
+msgstr ""
+
 msgid "Unit system"
 msgstr ""
 
 msgid "Unit:"
+msgstr ""
+
+#, python-brace-format
+msgid "Unknown families were ignored: {families}"
 msgstr ""
 
 msgid "Unsaved changes"
@@ -1465,6 +1597,9 @@ msgstr ""
 msgid "Water saturation"
 msgstr ""
 
+msgid "Well"
+msgstr ""
+
 msgid "Well correlation"
 msgstr ""
 
@@ -1493,7 +1628,15 @@ msgstr ""
 msgid "Wells"
 msgstr ""
 
+msgid ""
+"Wells included. Curves are matched by name or by family (e.g. GR and SGR) and converted to the "
+"units of the active well."
+msgstr ""
+
 msgid "Wells to correlate (in order):"
+msgstr ""
+
+msgid "Wells:"
 msgstr ""
 
 msgid "What is visible on screen"
@@ -1511,16 +1654,32 @@ msgstr ""
 msgid "Width / grid / divisions:"
 msgstr ""
 
+#, python-brace-format
+msgid "Without coordinates (enter them in Well ▸ Deviation survey, elevation and location…): {wells}"
+msgstr ""
+
+msgid "X (easting):"
+msgstr ""
+
 msgid "X axis:"
 msgstr ""
 
 msgid "X min / max:"
 msgstr ""
 
+msgid "Y (northing):"
+msgstr ""
+
 msgid "Y axis:"
 msgstr ""
 
 msgid "Y min / max:"
+msgstr ""
+
+msgid "Your names"
+msgstr ""
+
+msgid "Your open wells were saved for recovery."
 msgstr ""
 
 msgid "Zone"
@@ -1571,6 +1730,9 @@ msgstr ""
 msgid "a curve named {name} already exists"
 msgstr ""
 
+msgid "aliases"
+msgstr ""
+
 #, python-brace-format
 msgid "array channel not supported yet, skipped: {channels}"
 msgid_plural "array channels not supported yet, skipped: {channels}"
@@ -1599,6 +1761,12 @@ msgid "could not save the image"
 msgstr ""
 
 msgid "depth was not always increasing; samples were sorted by depth"
+msgstr ""
+
+msgid "e.g. 435050.2"
+msgstr ""
+
+msgid "e.g. 58° 26' 29.9\" N or -58.4416"
 msgstr ""
 
 #, python-brace-format
@@ -1654,6 +1822,9 @@ msgstr ""
 msgid "no data in the interval"
 msgstr ""
 
+msgid "no equivalent curve"
+msgstr ""
+
 msgid "no numeric survey stations were found"
 msgstr ""
 
@@ -1692,6 +1863,9 @@ msgid "the file has no depth-indexed data"
 msgstr ""
 
 msgid "the file is empty"
+msgstr ""
+
+msgid "the file is not an InnoPetrol mnemonic aliases file"
 msgstr ""
 
 msgid "the file is not an InnoPetrol project"
@@ -1740,6 +1914,10 @@ msgid "volume fraction"
 msgstr ""
 
 msgid "whole well"
+msgstr ""
+
+#, python-brace-format
+msgid "{alias}: {families}"
 msgstr ""
 
 #, python-brace-format
@@ -1858,6 +2036,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "{well}: curves not found: {curves}"
+msgstr ""
+
+#, python-brace-format
+msgid "{well}: invalid location"
 msgstr ""
 
 #, python-brace-format

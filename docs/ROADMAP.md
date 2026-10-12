@@ -110,6 +110,12 @@ Items marked **[checked]** were verified in the code.
   (shale / matrix / hydrocarbon / water from VSH, VMAT, BVH, BVW), log heading on the first page of the
   PDF/PNG, picking tops by clicking in the correlation window (moves, removes, undo). Still open from B:
   core / interval / comment tracks, interval selection with the mouse, synchronized cursor across wells.
+- **Phase 5 (done, except signing):** Windows installer (Inno Setup), macOS disk image, Linux archive
+  with install script, all built and tested in CI; user-editable mnemonic aliases (import/export);
+  autosave every 2 minutes with crash recovery, error log and error dialog; base map with surface
+  locations and survey trajectories, picking correlation sections; multi-well crossplots and
+  histograms. Code signing and notarization need paid certificates: see `docs/DISTRIBUTION.md`.
+  Still open: projects with hundreds of wells (lazy loading, filters), copying data into the project.
 
 ## Recommended order
 
@@ -119,4 +125,4 @@ Items marked **[checked]** were verified in the code.
 | 2 | DLIS · surveys + TVD/TVDSS + datum · display depth unit **(done)** | Without these, real project data cannot be opened or correlated correctly |
 | 3 | Curve units · undo/redo · zone parameters · Simandoux/Indonesia · temperature-corrected Rw · graphical parameter picking **(done)** | Interpretation becomes trustworthy and correctable |
 | 4 | Wrap-around · color-map fill · lithology track · log header · click-to-pick tops **(done)** | Professional presentation quality |
-| 5 | Signing/notarization and installers · editable aliases · autosave · base map · multi-well | Deployment and scale |
+| 5 | Signing/notarization and installers · editable aliases · autosave · base map · multi-well **(done, signing pending certificates)** | Deployment and scale |

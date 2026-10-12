@@ -15,8 +15,8 @@ from innopetrol.model.petro import PetroParams
 from innopetrol.model.scales import log_decades, nice_linear_range
 from innopetrol.render.painter import BORDER, fmt, polygon_from_arrays
 from innopetrol.resources import app_icon
-from innopetrol.ui.analysis import zone_choices
 from innopetrol.ui.document import WellDocument
+from innopetrol.ui.multiwell import checked_docs, color_of, values_as, well_list, zone_mask, zone_names
 from innopetrol.ui.plotting import Axis, colormap, draw_axes, plot_rect
 from innopetrol.ui.widgets import parse_float
 
@@ -48,6 +48,9 @@ class CrossplotWidget(QWidget):
         # Converters from the reference units of the overlays (fraction, g/cm³) to the axes' units.
         self.x_from_ref = self.y_from_ref = lambda v: v
         self.pickett: PetroParams | None = None
+        # Several wells colored by well: (name, color) per group and the group of each point.
+        self.groups: list[tuple[str, str]] = []
+        self.g = np.array([], dtype=int)
 
     def paintEvent(self, e):
         p = QPainter(self)
@@ -58,7 +61,7 @@ class CrossplotWidget(QWidget):
         p.fillRect(area, QColor("#f7f8f9"))
         p.setRenderHint(QPainter.Antialiasing)
         fm = QFontMetricsF(p.font())
-        bar_w = 96 if self.c.size else 0
+        bar_w = 150 if self.groups else 96 if self.c.size else 0
         r = plot_rect(QRectF(area.left(), area.top(), area.width() - bar_w, area.height()), fm)
         draw_axes(p, r, self.xa, self.ya)
         p.save()
@@ -72,13 +75,35 @@ class CrossplotWidget(QWidget):
         p.setPen(BORDER)
         p.drawText(QRectF(r.left() + 6, r.top() + 4, r.width() - 12, fm.height()), Qt.AlignRight,
                    _("{count} points").format(count=int(ok.sum())))
-        if self.c.size:
+        if self.groups:
+            self._draw_legend(p, QRectF(r.right() + 14, r.top(), bar_w - 18, r.height()), fm)
+        elif self.c.size:
             self._draw_colorbar(p, QRectF(r.right() + 18, r.top(), 16, r.height()), fm)
+
+    def _draw_legend(self, p, r, fm):
+        for i, (name, color) in enumerate(self.groups):
+            y = r.top() + i * (fm.height() + 6)
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(color))
+            p.drawEllipse(QPointF(r.left() + 6, y + fm.height() / 2), 5, 5)
+            p.setPen(BORDER)
+            p.drawText(QRectF(r.left() + 16, y, r.width() - 16, fm.height()), Qt.AlignLeft | Qt.AlignVCenter,
+                       fm.elidedText(name, Qt.ElideRight, r.width() - 16))
 
     def _draw_points(self, p: QPainter, px, py, ok):
         """Points grouped into color levels: one drawPoints call per level instead of one
         drawEllipse per point (higher levels are drawn last, so they end up on top)."""
         pen = QPen(QColor("#2e86c1"), 4.8, Qt.SolidLine, Qt.RoundCap)
+        if self.groups:
+            for i, (_name, color) in enumerate(self.groups):
+                sel = ok & (self.g == i)
+                if sel.any():
+                    c = QColor(color)
+                    c.setAlpha(170)
+                    pen.setColor(c)
+                    p.setPen(pen)
+                    p.drawPoints(_points(px[sel], py[sel]))
+            return
         if not self.c.size:
             color = QColor("#2e86c1")
             color.setAlpha(150)
@@ -156,10 +181,16 @@ class CrossplotWidget(QWidget):
         p.restore()
 
 
+BY_WELL = "__well__"
+
+
 class CrossplotWindow(QDialog):
-    def __init__(self, doc: WellDocument, mode: str = "free", parent=None):
+    def __init__(self, doc: WellDocument, mode: str = "free", parent=None, docs: list | None = None):
         super().__init__(parent)
         self.doc = doc
+        self.docs = [d for d in (docs or [doc])]
+        if doc not in self.docs:
+            self.docs.insert(0, doc)
         w = doc.well
         self.setWindowTitle(_("Crossplot — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
@@ -172,13 +203,16 @@ class CrossplotWindow(QDialog):
             self.mode.addItem(v, k)
         self.x, self.y, self.c = QComboBox(), QComboBox(), QComboBox()
         self.c.addItem(_("(no color)"), None)
+        if len(self.docs) > 1:
+            self.c.addItem(_("(by well)"), BY_WELL)
         for m in w.curves:
             for combo in (self.x, self.y, self.c):
                 combo.addItem(m, m)
         self.logx, self.logy = QCheckBox(_("Logarithmic X")), QCheckBox(_("Logarithmic Y"))
+        self.wells = well_list(self.docs, doc) if len(self.docs) > 1 else None
+        self._n_wells = 1
         self.zone = QComboBox()
-        for name, top, base in zone_choices(w):
-            self.zone.addItem(name, (top, base))
+        self._fill_zones()
         self.xmin, self.xmax, self.ymin, self.ymax = (QLineEdit() for _i in range(4))
         for e in (self.xmin, self.xmax, self.ymin, self.ymax):
             e.setPlaceholderText("auto")
@@ -192,6 +226,9 @@ class CrossplotWindow(QDialog):
         form.addRow(_("X axis:"), self.x)
         form.addRow(_("Y axis:"), self.y)
         form.addRow(_("Color:"), self.c)
+        if self.wells is not None:
+            form.addRow(_("Wells:"), self.wells)
+            self.wells.itemChanged.connect(self._wells_changed)
         form.addRow(_("Interval:"), self.zone)
         form.addRow(self.logx)
         form.addRow(self.logy)
@@ -223,6 +260,42 @@ class CrossplotWindow(QDialog):
             s.valueChanged.connect(self._update)
         self.mode.setCurrentIndex(max(self.mode.findData(mode), 0))
         self._mode_changed()
+
+    def _fill_zones(self):
+        """Whole well plus the zones by name: with several wells, each well uses its own tops."""
+        current = self.zone.currentData()
+        docs = checked_docs(self.wells) if self.wells is not None else [self.doc]
+        self.zone.blockSignals(True)
+        self.zone.clear()
+        self.zone.addItem(_("Whole well"), None)
+        for name in zone_names(docs):
+            self.zone.addItem(name, name)
+        self.zone.setCurrentIndex(max(self.zone.findData(current), 0))
+        self.zone.blockSignals(False)
+
+    def _wells_changed(self):
+        names = [d.title for d in checked_docs(self.wells)]
+        self.setWindowTitle(_("Crossplot — {well}").format(well=", ".join(names) or self.doc.title))
+        if len(names) > 1 and self._n_wells <= 1:
+            self.c.setCurrentIndex(self.c.findData(BY_WELL))  # a second well added: tell them apart
+        self._n_wells = len(names)
+        self._fill_zones()
+        self._update()
+
+    def series(self, mx: str, my: str, mc: str | None) -> list[tuple[WellDocument, np.ndarray, np.ndarray, np.ndarray]]:
+        """(well, x, y, color values) of each included well, in the active well's units."""
+        docs = checked_docs(self.wells) if self.wells is not None else [self.doc]
+        zone = self.zone.currentData()
+        out = []
+        for d in docs:
+            x, y = values_as(d, mx, self.doc), values_as(d, my, self.doc)
+            if x is None or y is None:
+                continue
+            c = values_as(d, mc, self.doc) if mc and mc != BY_WELL else None
+            mask = zone_mask(d, zone)
+            c = c[mask] if c is not None else np.full(int(mask.sum()), np.nan)
+            out.append((d, x[mask], y[mask], c))
+        return out
 
     @staticmethod
     def _pair(a, b):
@@ -302,21 +375,28 @@ class CrossplotWindow(QDialog):
     def _update(self):
         if self._setting_mode:
             return
-        w = self.doc.well
         shown = self.doc.view.curves  # values and units as displayed
         mx, my, mc = self.x.currentData(), self.y.currentData(), self.c.currentData()
         if not mx or not my:
             return
-        top, base = self.zone.currentData()
-        mask = w.interval_mask(top, base)
-        x, y = shown[mx].values[mask], shown[my].values[mask]
-        c = shown[mc].values[mask] if mc else np.array([])
+        series = self.series(mx, my, mc)
         plot = self.plot
+        if series:
+            x = np.concatenate([s[1] for s in series])
+            y = np.concatenate([s[2] for s in series])
+            c = np.concatenate([s[3] for s in series]) if mc and mc != BY_WELL else np.array([])
+        else:
+            x = y = c = np.array([])
         plot.x, plot.y, plot.c = x, y, c
+        if mc == BY_WELL:
+            plot.groups = [(d.title, color_of(self.wells, d)) for d, *_rest in series]
+            plot.g = np.concatenate([np.full(s[1].size, i) for i, s in enumerate(series)]) if series else np.array([])
+        else:
+            plot.groups, plot.g = [], np.array([], dtype=int)
         unit = lambda m: f" ({shown[m].unit})" if shown[m].unit else ""  # noqa: E731
         plot.xa = self._axis(x, self.logx.isChecked(), self.xmin, self.xmax, mx + unit(mx))
         plot.ya = self._axis(y, self.logy.isChecked(), self.ymin, self.ymax, my + unit(my))
-        if c.size:
+        if c.size and mc != BY_WELL:
             f = c[np.isfinite(c)]
             plot.c_range = (float(np.percentile(f, 2)), float(np.percentile(f, 98))) if f.size else (0.0, 1.0)
             plot.c_label = mc + unit(mc)

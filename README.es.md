@@ -41,12 +41,21 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 - Calculadora de curvas con expresiones (`(2.65 - RHOB) / 1.65`, `where(GR > 75, 1, 0)`) evaluadas de forma segura.
 - Estadísticas e histograma por curva y zona (P10/P50/P90).
 - Crossplots con color por una tercera curva: libre, **neutrón-densidad** con líneas de litología y **Pickett** con líneas de Sw.
+- **Mapa base** con la ubicación de los pozos (del encabezado o ingresada a mano, X/Y o latitud/longitud,
+  decimal o grados-minutos-segundos) y las trayectorias del survey; clic en los pozos para elegir una sección
+  de correlación.
+- **Crossplots e histogramas multipozo**: curvas emparejadas por nombre o familia y convertidas a unidades
+  comunes, zonas por nombre de tope, color por pozo, P10/P50/P90 por pozo.
 - **Correlación multi-pozo** lado a lado, en profundidad o **aplanada en un tope**, con líneas que unen topes del mismo nombre.
   **Picado de topes con clic** en cada pozo (mismo nombre y color en todos, clic derecho para agregar o quitar, Ctrl+Z).
 
 **Archivos**
 - Plantillas en JSON (`.ipt.json`): se aplican a otros pozos aunque usen otros mnemónicos. Plantilla por defecto configurable.
 - Proyectos (`.ipproj`): pozos, layouts, topes, parámetros y curvas calculadas (guardadas como fórmulas).
+- **Autoguardado y recuperación**: el trabajo sin guardar se guarda cada 2 minutos y se ofrece recuperarlo
+  tras un cierre inesperado. Los errores quedan en un archivo de registro y se informan sin cerrar el programa.
+- **Alias de mnemónicos** editables por el usuario (Plantilla ▸ Alias de mnemónicos…), que se importan y
+  exportan en JSON para compartir la nomenclatura de una compañía.
 - Exportar el registro a **PDF paginado** o **PNG** a escala, con **encabezado de registro** (compañía, campo, compañía de servicio, referencia de profundidad, elevación, survey), **LAS** (con curvas calculadas) y **CSV**.
 
 | Correlación aplanada en un tope | Crossplot neutrón-densidad |
@@ -60,12 +69,14 @@ Debian 11+, RHEL/Rocky 8+) y **macOS 12+**. No necesita tarjeta gráfica dedicad
 
 ### Ejecutable (sin instalar Python)
 
-En la pestaña **Actions** del repositorio en GitHub, cada versión genera un `.zip` por sistema
-(`InnoPetrol-Windows`, `InnoPetrol-Linux`, `InnoPetrol-macOS`). Descomprimir y ejecutar
-`InnoPetrol.exe` (Windows), `InnoPetrol/InnoPetrol` (Linux) o `InnoPetrol.app` (macOS).
+En la pestaña **Actions** del repositorio en GitHub, cada versión genera por sistema: un **instalador
+de Windows** (`…-windows-setup.exe`, no requiere permisos de administrador), una **imagen de disco de
+macOS** (`.dmg`, arrastrar a Aplicaciones) y un **archivo para Linux** (`.tar.gz` con `install.sh`), además
+de los `.zip` simples.
 
-En Windows, la primera vez SmartScreen puede advertir que el programa no está firmado:
-«Más información» ▸ «Ejecutar de todas formas».
+Los ejecutables todavía no están firmados: SmartScreen de Windows advierte la primera vez («Más
+información» ▸ «Ejecutar de todas formas») y macOS pide abrirlo con clic derecho ▸ Abrir. Qué hace falta
+para firmarlos está en [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md).
 
 Para generarlo a mano en la máquina de destino:
 

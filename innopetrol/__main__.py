@@ -16,7 +16,13 @@ def main() -> int:
     app.setWindowIcon(app_icon())
     app.setStyle("Fusion")
     window = MainWindow()
+    from innopetrol.errors import ErrorReporter, setup_logging
+
+    log_path = setup_logging(window.data_dir)
+    ErrorReporter(log_path, before_report=window.autosave).install()
     window.show()
+    if "--smoke-test" not in sys.argv:
+        window.check_recovery()
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
     projects = [a for a in args if a.lower().endswith(SUFFIX)]
     if projects:

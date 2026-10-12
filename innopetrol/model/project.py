@@ -11,6 +11,7 @@ from innopetrol.i18n import _
 from innopetrol.model.calculator import evaluate
 from innopetrol.model.io import load_well
 from innopetrol.model.layout import LogLayout
+from innopetrol.model.location import Location
 from innopetrol.model.petro import PetroParams
 from innopetrol.model.tops import Top
 from innopetrol.model.survey import Survey
@@ -60,6 +61,7 @@ def save_project(path: str | Path, entries: list[WellEntry]) -> None:
             "source": e.well.source,  # frame inside a DLIS file
             "survey": e.well.survey.to_dict() if e.well.survey is not None else None,
             "elevation": e.well.elevation,
+            "location": e.well.location.to_dict() if e.well.location is not None else None,
             "depth_reference": e.depth_reference,
             "display_unit": e.display_unit,
             "curve_units": e.curve_units,
@@ -94,6 +96,11 @@ def load_project(path: str | Path) -> LoadResult:
                 result.errors.append(_("{well}: invalid survey: {error}").format(well=well.name, error=e))
         if "elevation" in w:
             well.elevation = w["elevation"]
+        if w.get("location"):
+            try:
+                well.location = Location.from_dict(w["location"])
+            except (KeyError, TypeError, ValueError):
+                result.errors.append(_("{well}: invalid location").format(well=well.name))
         for c in w.get("computed", []):
             try:
                 values = evaluate(c["formula"], well.formula_env())

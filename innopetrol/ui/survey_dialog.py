@@ -1,11 +1,13 @@
-"""Deviation survey and elevation of a well."""
+"""Deviation survey, elevation and surface location of a well."""
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout, QHBoxLayout,
-                               QLabel, QMessageBox, QPushButton, QVBoxLayout)
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog,
+                               QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
+                               QVBoxLayout)
 
 from innopetrol.i18n import _
+from innopetrol.model.location import Location, parse_coordinate
 from innopetrol.model.survey import SurveyError, load_survey_csv
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
@@ -17,9 +19,9 @@ class SurveyDialog(QDialog):
         self.doc = doc
         w = doc.well
         self.survey = w.survey
-        self.setWindowTitle(_("Survey and elevation — {well}").format(well=doc.title))
+        self.setWindowTitle(_("Survey, elevation and location — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
-        self.resize(520, 300)
+        self.resize(560, 420)
         lay = QVBoxLayout(self)
         form = QFormLayout()
         self.has_elevation = QCheckBox(_("Known elevation of the depth reference (KB/DF) above sea level"))
@@ -50,6 +52,29 @@ class SurveyDialog(QDialog):
         hint.setWordWrap(True)
         hint.setStyleSheet("color:#566573")
         lay.addWidget(hint)
+
+        # Surface location, for the base map.
+        box = QGroupBox(_("Surface location"))
+        box.setCheckable(True)
+        loc = w.location
+        box.setChecked(loc is not None)
+        f = QFormLayout(box)
+        self.location_box = box
+        self.coord_kind = QComboBox()
+        self.coord_kind.addItem(_("Latitude / longitude (degrees)"), "geo")
+        self.coord_kind.addItem(_("Projected X / Y (meters)"), "m")
+        self.coord_kind.addItem(_("Projected X / Y (feet)"), "ft")
+        kind = "geo" if loc is None or loc.geographic else loc.unit
+        self.coord_kind.setCurrentIndex(max(self.coord_kind.findData(kind), 0))
+        self.coord_y = QLineEdit("" if loc is None else f"{loc.y:.10g}")
+        self.coord_x = QLineEdit("" if loc is None else f"{loc.x:.10g}")
+        self.y_label, self.x_label = QLabel(), QLabel()
+        f.addRow(_("Coordinates:"), self.coord_kind)
+        f.addRow(self.y_label, self.coord_y)
+        f.addRow(self.x_label, self.coord_x)
+        self.coord_kind.currentIndexChanged.connect(self._coord_labels)
+        self._coord_labels()
+        lay.addWidget(box)
         lay.addStretch()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self._ok)
@@ -83,7 +108,33 @@ class SurveyDialog(QDialog):
         self.survey = None
         self._update_info()
 
+    def _coord_labels(self):
+        geo = self.coord_kind.currentData() == "geo"
+        self.y_label.setText(_("Latitude:") if geo else _("Y (northing):"))
+        self.x_label.setText(_("Longitude:") if geo else _("X (easting):"))
+        for edit in (self.coord_x, self.coord_y):
+            edit.setPlaceholderText(_("e.g. 58° 26' 29.9\" N or -58.4416") if geo else _("e.g. 435050.2"))
+
+    def location(self) -> Location | None:
+        """Location typed in the dialog. Raises ValueError with a message if it is not valid."""
+        if not self.location_box.isChecked():
+            return None
+        kind = self.coord_kind.currentData()
+        x, y = parse_coordinate(self.coord_x.text()), parse_coordinate(self.coord_y.text())
+        if x is None or y is None:
+            raise ValueError(_("Enter both coordinates of the surface location."))
+        if kind == "geo":
+            if abs(y) > 90 or abs(x) > 180:
+                raise ValueError(_("Latitude must be between -90 and 90 and longitude between -180 and 180."))
+            return Location(x, y, geographic=True)
+        return Location(x, y, geographic=False, unit=kind)
+
     def _ok(self):
+        try:
+            location = self.location()
+        except ValueError as e:
+            QMessageBox.warning(self, self.windowTitle(), str(e))
+            return
         elevation = self.elevation.value() if self.has_elevation.isChecked() else None
-        self.doc.set_survey(self.survey, elevation)
+        self.doc.set_survey(self.survey, elevation, location)
         self.accept()

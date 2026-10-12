@@ -41,12 +41,20 @@ Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python w
 - Curve calculator with expressions (`(2.65 - RHOB) / 1.65`, `where(GR > 75, 1, 0)`) evaluated safely (no `eval`).
 - Statistics and histogram per curve and zone (P10/P50/P90).
 - Crossplots colored by a third curve: free, **neutron-density** with lithology lines and **Pickett** with Sw lines.
+- **Base map** with well locations (from the header or entered by hand, X/Y or latitude/longitude,
+  decimal or degrees-minutes-seconds) and survey trajectories; click wells to pick a correlation section.
+- **Multi-well crossplots and histograms**: curves matched by name or family and converted to common
+  units, zones by top name, colored by well, P10/P50/P90 per well.
 - **Multi-well correlation** side by side, in depth or **flattened on a top**, with lines joining tops of the same name.
   **Pick tops by clicking** on each well (same name and color across wells, right-click to add or remove, Ctrl+Z).
 
 **Files**
 - JSON templates (`.ipt.json`): they apply to other wells even when those use different mnemonics. Configurable default template.
 - Projects (`.ipproj`): wells, layouts, tops, parameters and computed curves (stored as formulas).
+- **Autosave and crash recovery**: unsaved work is saved every 2 minutes and offered back after an
+  unexpected exit. Errors are written to a log file and reported without closing the program.
+- **Mnemonic aliases** editable by the user (Template ▸ Mnemonic aliases…), importable/exportable as JSON
+  to share a company's naming.
 - Export the log to **paginated PDF** or **PNG** at scale, with a **log heading** (company, field, service company, depth reference, elevation, survey), **LAS** (including computed curves) and **CSV**.
 
 | Correlation flattened on a top | Neutron-density crossplot |
@@ -60,12 +68,13 @@ Debian 11+, RHEL/Rocky 8+) and **macOS 12+**. No dedicated graphics card needed.
 
 ### Executable (no Python install)
 
-In the repository's **Actions** tab on GitHub, every build produces one `.zip` per system
-(`InnoPetrol-Windows`, `InnoPetrol-Linux`, `InnoPetrol-macOS`). Unzip and run
-`InnoPetrol.exe` (Windows), `InnoPetrol/InnoPetrol` (Linux) or `InnoPetrol.app` (macOS).
+In the repository's **Actions** tab on GitHub, every build produces, per system: a **Windows
+installer** (`…-windows-setup.exe`, no administrator rights needed), a **macOS disk image** (`.dmg`,
+drag to Applications) and a **Linux archive** (`.tar.gz` with `install.sh`), plus plain `.zip` files.
 
-On Windows, SmartScreen may warn the first time that the program is not signed:
-“More info” ▸ “Run anyway”.
+The executables are not signed yet: Windows SmartScreen warns the first time (“More info” ▸
+“Run anyway”) and macOS asks to open it with right-click ▸ Open. See
+[docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) for what signing requires.
 
 To build it by hand on the target machine:
 

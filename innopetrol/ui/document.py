@@ -35,10 +35,12 @@ class _State:
     petro: dict | None
     survey: object
     elevation: float | None
+    location: object = None
 
     def same_as(self, other: _State) -> bool:
         return (self.layout == other.layout and self.tops == other.tops and self.petro == other.petro
                 and self.survey is other.survey and self.elevation == other.elevation
+                and self.location == other.location
                 and list(self.curves) == list(other.curves)
                 and all(c is other.curves[m] for m, c in self.curves.items()))
 
@@ -85,7 +87,8 @@ class WellDocument(QObject):
     # ----------------------------------------------------------------- undo / redo
     def _state(self) -> _State:
         return _State(self.layout.to_dict(), [t.to_dict() for t in self.well.tops], dict(self.well.curves),
-                      self.petro.to_dict() if self.petro else None, self.well.survey, self.well.elevation)
+                      self.petro.to_dict() if self.petro else None, self.well.survey, self.well.elevation,
+                      self.well.location)
 
     def _record(self) -> None:
         """Pushes an undo step if the content changed since the last recorded state."""
@@ -133,6 +136,7 @@ class WellDocument(QObject):
             self.well.tops = [Top.from_dict(t) for t in state.tops]
             self.petro = PetroParams.from_dict(state.petro) if state.petro else None
             self.well.survey, self.well.elevation = state.survey, state.elevation
+            self.well.location = state.location
             if self.depth_reference == "tvdss" and self.well.elevation is None:
                 self.depth_reference = "tvd"
             for mnem in [m for m in self.curve_units if m not in self.well.curves]:
@@ -262,8 +266,11 @@ class WellDocument(QObject):
         self.adopt_layout(_Layout([_Track(curves=[style])]))
         return style
 
-    def set_survey(self, survey, elevation: float | None) -> None:
+    def set_survey(self, survey, elevation: float | None, location=False) -> None:
+        """Survey, elevation and (unless `location` is False) the surface location."""
         with self.undo_step(_("Change survey and elevation")):
+            if location is not False:
+                self.well.location = location
             self._set_survey(survey, elevation)
 
     def _set_survey(self, survey, elevation: float | None) -> None:

@@ -9,7 +9,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QSettings, QStandardPaths, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QUndoGroup
 from PySide6.QtWidgets import (QApplication, QComboBox, QDockWidget, QFileDialog, QLabel, QMainWindow, QMdiArea,
                                QMessageBox, QToolBar)
@@ -28,10 +28,12 @@ from innopetrol.model import units
 from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
+from innopetrol.ui.recovery import Recovery
 from innopetrol.ui.well_tree import WellTree
 from innopetrol.ui.well_view import WellView
 
 MAX_RECENT = 8
+AUTOSAVE_MS = 2 * 60 * 1000  # autosave interval while there are unsaved changes
 # Modifier key as the user sees it: on Mac Qt maps what the code calls "Ctrl" to ⌘.
 MOD = "⌘" if sys.platform == "darwin" else "Ctrl"
 # QSettings identifiers. They are storage keys, not interface text: changing them would lose
@@ -52,6 +54,7 @@ class MainWindow(QMainWindow):
         self.resize(1400, 900)
         self.setAcceptDrops(True)
 
+        self._load_aliases()
         language = self.settings.value("language") or i18n.system_language()
         i18n.set_language(language)
         app = QApplication.instance()
@@ -65,6 +68,11 @@ class MainWindow(QMainWindow):
         self._windows = []  # open non-modal windows (keeps them from being garbage collected)
         # One undo history per well; the group follows the active well window.
         self.undo_group = QUndoGroup(self)
+        self.recovery = Recovery(self.data_dir / "recovery")
+        self.autosave_timer = QTimer(self)
+        self.autosave_timer.setInterval(AUTOSAVE_MS)
+        self.autosave_timer.timeout.connect(self.autosave)
+        self.autosave_timer.start()
 
         self.mdi = QMdiArea()
         self.mdi.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -133,6 +141,7 @@ class MainWindow(QMainWindow):
         self.a_tpl_default = A(self.set_default_template)
         self.a_tpl_reset = A(self.reset_default_template, needs_doc=False)
         self.a_tpl_triple = A(self.rebuild_triple_combo)
+        self.a_aliases = A(self.edit_aliases, needs_doc=False)
 
         self.a_add_track = A(lambda: self._view_call("add_track"), "Ctrl+Shift+T")
         self.a_edit_track = A(lambda: self._view_call("edit_track"), "Ctrl+Shift+E")
@@ -173,6 +182,7 @@ class MainWindow(QMainWindow):
         self.a_nd = A(lambda: self.crossplot("nd"))
         self.a_pickett = A(lambda: self.crossplot("pickett"))
         self.a_corr = A(self.correlation, "Ctrl+R")
+        self.a_map = A(self.base_map, "Ctrl+Shift+M")  # ⌘M minimizes on Mac
         self.a_fit = A(lambda: self._view_call_canvas("fit"), "Ctrl+0")
         self.a_zoom_in = A(lambda: self._zoom_step(1), QKeySequence.ZoomIn)
         self.a_zoom_out = A(lambda: self._zoom_step(-1), QKeySequence.ZoomOut)
@@ -215,7 +225,7 @@ class MainWindow(QMainWindow):
 
         self.m_template = mb.addMenu("")
         for a in (self.a_tpl_save, self.a_tpl_load, None, self.a_tpl_all, self.a_tpl_default, self.a_tpl_reset,
-                  None, self.a_tpl_triple):
+                  None, self.a_tpl_triple, None, self.a_aliases):
             self.m_template.addSeparator() if a is None else self.m_template.addAction(a)
 
         self.m_well = mb.addMenu("")
@@ -225,7 +235,7 @@ class MainWindow(QMainWindow):
             self.m_well.addSeparator() if a is None else self.m_well.addAction(a)
 
         self.m_analysis = mb.addMenu("")
-        for a in (self.a_xplot, self.a_nd, self.a_pickett, None, self.a_corr):
+        for a in (self.a_xplot, self.a_nd, self.a_pickett, None, self.a_corr, self.a_map):
             self.m_analysis.addSeparator() if a is None else self.m_analysis.addAction(a)
 
         self.m_view = mb.addMenu("")
@@ -293,7 +303,7 @@ class MainWindow(QMainWindow):
         for a in (self.a_add_track, self.a_tops, self.a_petro, self.a_calc, self.a_zones):
             tb.addAction(a)
         tb.addSeparator()
-        for a in (self.a_xplot, self.a_corr, self.a_table, self.a_export):
+        for a in (self.a_xplot, self.a_corr, self.a_map, self.a_table, self.a_export):
             tb.addAction(a)
         for a in (self.a_zoom_out, self.a_zoom_in, self.a_undo, self.a_redo):
             button = tb.widgetForAction(a)
@@ -321,11 +331,13 @@ class MainWindow(QMainWindow):
             self.a_tpl_default: (_("Use the active well's layout as the default template"), None, None),
             self.a_tpl_reset: (_("Reset default template (Triple Combo)"), None, None),
             self.a_tpl_triple: (_("Rebuild Triple Combo in the active well"), None, None),
+            self.a_aliases: (_("Mnemonic aliases…"), None,
+                             _("Curve names of your company, recognized when opening wells and applying templates")),
             self.a_add_track: (_("Add track"), _("+ Track"), None),
             self.a_edit_track: (_("Edit selected track…"), None, None),
             self.a_del_track: (_("Remove selected track"), None, None),
             self.a_tops: (_("Formation tops…"), _("Tops"), None),
-            self.a_survey: (_("Deviation survey and elevation…"), None, None),
+            self.a_survey: (_("Deviation survey, elevation and location…"), None, None),
             self.reference_actions["md"]: (_("Measured depth (MD)"), None, None),
             self.reference_actions["tvd"]: (_("True vertical depth (TVD)"), None, None),
             self.reference_actions["tvdss"]: (_("True vertical depth subsea (TVDSS)"), None, None),
@@ -341,6 +353,7 @@ class MainWindow(QMainWindow):
             self.a_nd: (_("Neutron-density crossplot…"), None, None),
             self.a_pickett: (_("Pickett plot…"), None, None),
             self.a_corr: (_("Well correlation…"), _("Correlation"), None),
+            self.a_map: (_("Base map…"), _("Map"), None),
             self.a_fit: (_("Fit to window"), _("Fit"), None),
             self.a_zoom_in: (_("Zoom in"), "+", _("Zoom in to the next standard scale")),
             self.a_zoom_out: (_("Zoom out"), "−", _("Zoom out to the next standard scale")),
@@ -712,7 +725,49 @@ class MainWindow(QMainWindow):
         if path:
             self.open_project(path)
 
-    def open_project(self, path):
+    @property
+    def data_dir(self) -> Path:
+        """Folder for the autosave and the error log. Next to the settings file when the settings are
+        an .ini file (tests, portable use), otherwise the system's application data folder."""
+        if self.settings.format() == QSettings.IniFormat:
+            return Path(self.settings.fileName()).parent
+        return Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
+
+    def _entries(self) -> list[WellEntry]:
+        return [WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit, dict(d.curve_units))
+                for d in self.docs]
+
+    def autosave(self) -> bool:
+        """Saves the open wells for recovery if there are unsaved changes. True if it saved."""
+        if not (self.dirty and self.docs):
+            return False
+        try:
+            self.recovery.save(self._entries(), self.project_path)
+        except OSError:
+            import logging
+
+            logging.getLogger("innopetrol").exception("Autosave failed")
+            return False
+        return True
+
+    def check_recovery(self) -> None:
+        """At startup: offers to restore the work of a session that did not close properly."""
+        if not self.recovery.pending():
+            return
+        saved, project = self.recovery.info()
+        r = QMessageBox.question(
+            self, _("Recover work"),
+            _("InnoPetrol did not close properly last time. Restore the work saved automatically at "
+              "{time}?").format(time=saved) + "\n\n" + _("If you choose No, the saved copy is deleted."),
+            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+        if r == QMessageBox.Yes:
+            self.open_project(self.recovery.path, recovered_from=project)
+        elif r == QMessageBox.No:
+            self.recovery.discard()
+
+    def open_project(self, path, recovered_from: Path | None | bool = False):
+        """Opens a project. `recovered_from` (when restoring an autosave) is the project the autosave
+        belonged to: it becomes the current project, with its changes still unsaved."""
         if self.docs and not self._confirm_discard():
             return
         try:
@@ -724,9 +779,13 @@ class MainWindow(QMainWindow):
         for entry in result.entries:
             self.add_doc(entry.well, entry.layout, entry.petro, entry.depth_reference, entry.display_unit,
                          entry.curve_units)
-        self.project_path = Path(path)
-        self.dirty = False
-        self._add_recent(path)
+        if recovered_from is False:
+            self.project_path = Path(path)
+            self.dirty = False
+            self._add_recent(path)
+        else:
+            self.project_path = recovered_from
+            self.dirty = True  # recovered changes are not in any saved project yet
         self._update_title()
         if result.errors:
             QMessageBox.warning(self, _("Open project"), _("Some items could not be loaded:") + "\n\n"
@@ -744,13 +803,13 @@ class MainWindow(QMainWindow):
                 return False
             path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
         try:
-            save_project(path, [WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit,
-                                          dict(d.curve_units)) for d in self.docs])
+            save_project(path, self._entries())
         except OSError as e:
             QMessageBox.warning(self, _("Save project"), _("Could not save: {error}").format(error=e))
             return False
         self.project_path = path
         self.dirty = False
+        self.recovery.discard()
         self._add_recent(str(path))
         self._update_title()
         self.statusBar().showMessage(_("Project saved to {path}").format(path=path), 5000)
@@ -780,6 +839,7 @@ class MainWindow(QMainWindow):
             return
         self.settings.setValue("geometry", self.saveGeometry())
         self._close_all()
+        self.recovery.discard()  # normal exit: nothing to recover
         e.accept()
 
     # ================================================================== templates
@@ -850,6 +910,27 @@ class MainWindow(QMainWindow):
         self.settings.remove("default_template_name")
         self.tree.set_template_name(None)
 
+    def _load_aliases(self):
+        from innopetrol.model import mnemonics
+
+        text = self.settings.value("mnemonic_aliases")
+        try:
+            mnemonics.set_user_aliases(mnemonics.aliases_from_json(text) if text else {})
+        except ValueError:
+            mnemonics.set_user_aliases({})
+
+    def edit_aliases(self):
+        from innopetrol.model import mnemonics
+        from innopetrol.ui.aliases_dialog import AliasesDialog
+
+        dialog = AliasesDialog(self)
+        if dialog.exec():
+            aliases = dialog.aliases()
+            mnemonics.set_user_aliases(aliases)
+            self.settings.setValue("mnemonic_aliases", mnemonics.aliases_to_json(aliases))
+            self.statusBar().showMessage(_("Aliases saved: they apply to wells opened and templates applied from "
+                                           "now on (Template ▸ Rebuild Triple Combo for an open well)."), 8000)
+
     def rebuild_triple_combo(self):
         doc = self.active_doc()
         if doc:
@@ -897,7 +978,7 @@ class MainWindow(QMainWindow):
         if doc:
             from innopetrol.ui.analysis import StatsDialog
 
-            self._modeless(StatsDialog(doc, curve, self))
+            self._modeless(StatsDialog(doc, curve, self, self.docs))
 
     def data_table(self):
         doc = self.active_doc()
@@ -911,15 +992,30 @@ class MainWindow(QMainWindow):
         if doc:
             from innopetrol.ui.crossplot import CrossplotWindow
 
-            self._modeless(CrossplotWindow(doc, mode, self))
+            self._modeless(CrossplotWindow(doc, mode, self, self.docs))
 
-    def correlation(self):
+    def base_map(self):
+        from innopetrol.ui.base_map import BaseMapWindow
+
+        if not any(d.well.location is not None for d in self.docs):
+            QMessageBox.information(self, _("Base map"), _("None of the open wells has coordinates in its header. "
+                                                           "Enter them in Well ▸ Deviation survey, elevation and "
+                                                           "location…"))
+            return
+        window = BaseMapWindow(self.docs, self)
+        window.correlateRequested.connect(self.correlation)
+        window.wellActivated.connect(self.activate_doc)
+        self._modeless(window)
+
+    def correlation(self, docs=None):
+        """Correlation of the open wells, or of `docs` in that order (a section picked on the map)."""
         from innopetrol.ui.correlation import CorrelationSetup, CorrelationWindow
 
-        if len(self.docs) < 2:
+        docs = list(docs) if docs else self.docs
+        if len(docs) < 2:
             QMessageBox.information(self, _("Correlation"), _("Open at least two wells."))
             return
-        setup = CorrelationSetup(self.docs, self)
+        setup = CorrelationSetup(docs, self)
         if setup.exec():
             docs = setup.selected()
             if len(docs) < 1:

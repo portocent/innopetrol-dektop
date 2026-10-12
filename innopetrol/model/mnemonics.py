@@ -79,7 +79,57 @@ FAMILIES: dict[str, Family] = {f.key: f for f in [
 ]}
 FAMILIES = {k: dataclasses.replace(f, unit=_FAMILY_UNITS.get(k)) for k, f in FAMILIES.items()}
 
-_ALIAS_INDEX = {alias: fam.key for fam in FAMILIES.values() for alias in fam.aliases}
+BUILTIN_ALIAS_INDEX = {alias: fam.key for fam in FAMILIES.values() for alias in fam.aliases}
+_ALIAS_INDEX = dict(BUILTIN_ALIAS_INDEX)
+_USER_ALIASES: dict[str, list[str]] = {}
+ALIASES_FORMAT = "innopetrol-aliases"
+
+
+def normalize_alias(text: str) -> str:
+    return text.strip().upper()
+
+
+def set_user_aliases(aliases: dict[str, list[str]]) -> None:
+    """Adds the user's (company's) mnemonics to the families. A user alias wins over a built-in one,
+    so a mnemonic can also be moved to another family. Unknown families are ignored."""
+    global _ALIAS_INDEX, _USER_ALIASES
+    clean = {fam: sorted({normalize_alias(a) for a in names if normalize_alias(a)})
+             for fam, names in aliases.items() if fam in FAMILIES}
+    _USER_ALIASES = {fam: names for fam, names in clean.items() if names}
+    index = dict(BUILTIN_ALIAS_INDEX)
+    for fam, names in _USER_ALIASES.items():
+        for alias in names:
+            index[alias] = fam
+    _ALIAS_INDEX = index
+
+
+def user_aliases() -> dict[str, list[str]]:
+    return {fam: list(names) for fam, names in _USER_ALIASES.items()}
+
+
+def alias_conflicts(aliases: dict[str, list[str]]) -> list[tuple[str, list[str]]]:
+    """Aliases written in more than one family: (alias, families)."""
+    seen: dict[str, list[str]] = {}
+    for fam, names in aliases.items():
+        for alias in {normalize_alias(a) for a in names if normalize_alias(a)}:
+            seen.setdefault(alias, []).append(fam)
+    return sorted((a, fams) for a, fams in seen.items() if len(fams) > 1)
+
+
+def aliases_to_json(aliases: dict[str, list[str]]) -> str:
+    import json
+
+    return json.dumps({"format": ALIASES_FORMAT, "version": 1, "aliases": aliases}, indent=2, ensure_ascii=False)
+
+
+def aliases_from_json(text: str) -> dict[str, list[str]]:
+    """Reads an aliases file. Raises ValueError if it is not one."""
+    import json
+
+    data = json.loads(text)
+    if not isinstance(data, dict) or data.get("format") != ALIASES_FORMAT or not isinstance(data.get("aliases"), dict):
+        raise ValueError(_("the file is not an InnoPetrol mnemonic aliases file"))
+    return {str(fam): [str(a) for a in names] for fam, names in data["aliases"].items() if isinstance(names, list)}
 
 
 def family_of(mnemonic: str) -> str | None:

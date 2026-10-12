@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, QRectF, Qt
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QSpinBox, QTableView,
                                QVBoxLayout, QWidget)
@@ -15,6 +15,7 @@ from innopetrol.model.scales import log_decades, nice_linear_range
 from innopetrol.model.tops import zones_from_tops
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
+from innopetrol.ui.multiwell import checked_docs, color_of, values_as, well_list, zone_mask, zone_names
 from innopetrol.ui.plotting import Axis, draw_axes, plot_rect
 
 
@@ -32,6 +33,7 @@ class Histogram(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.values = np.array([])
+        self.series: list[tuple[np.ndarray, QColor, str]] = []
         self.log = False
         self.bins = 40
         self.label = ""
@@ -39,10 +41,20 @@ class Histogram(QWidget):
         self.setMinimumSize(420, 280)
 
     def set_data(self, values: np.ndarray, label: str, log: bool, bins: int, color: str):
-        self.values = values[np.isfinite(values)]
-        if log:
-            self.values = self.values[self.values > 0]
-        self.label, self.log, self.bins, self.color = label, log, bins, QColor(color)
+        self.set_series([(values, color, "")], label, log, bins)
+
+    def set_series(self, series: list[tuple[np.ndarray, str, str]], label: str, log: bool, bins: int):
+        """One or more (values, color, name). Several are drawn as outlines so they can be compared."""
+        clean = []
+        for values, color, name in series:
+            v = values[np.isfinite(values)]
+            if log:
+                v = v[v > 0]
+            clean.append((v, QColor(color), name))
+        self.series = clean
+        self.values = np.concatenate([v for v, _color, _name in clean]) if clean else np.array([])
+        self.label, self.log, self.bins = label, log, bins
+        self.color = clean[0][1] if clean else QColor("#2e86c1")
         self.update()
 
     @property
@@ -67,6 +79,10 @@ class Histogram(QWidget):
         xa = self.x_axis
         lo, hi = xa.lo, xa.hi
         edges = np.logspace(np.log10(lo), np.log10(hi), self.bins + 1) if self.log else np.linspace(lo, hi, self.bins + 1)
+        if len(self.series) > 1:
+            self._paint_outlines(p, r, xa, edges)
+            p.end()
+            return
         counts, _edges = np.histogram(self.values, edges)
         freq = counts / counts.sum() * 100
         ymax = max(float(freq.max()) * 1.1, 1)
@@ -87,14 +103,42 @@ class Histogram(QWidget):
         self.paint_overlay(p, r, xa)
         p.end()
 
+    def _paint_outlines(self, p: QPainter, r: QRectF, xa: Axis, edges: np.ndarray) -> None:
+        """Several wells: each histogram as a stepped outline, normalized to its own sample count."""
+        freqs = []
+        for v, _color, _name in self.series:
+            counts, _edges = np.histogram(v, edges)
+            freqs.append(counts / counts.sum() * 100 if counts.sum() else counts.astype(float))
+        ymax = max(max((float(f.max()) for f in freqs), default=1) * 1.1, 1)
+        draw_axes(p, r, xa, Axis(0, ymax, False, _("Frequency (%)")))
+        xs = r.left() + xa.map(edges, r.width())
+        p.setRenderHint(QPainter.Antialiasing)
+        fm = QFontMetricsF(self.font())
+        for i, ((_v, color, name), f) in enumerate(zip(self.series, freqs)):
+            ys = r.bottom() - f / ymax * r.height()
+            path = [QPointF(xs[0], r.bottom())]
+            for k, y in enumerate(ys):
+                path += [QPointF(xs[k], y), QPointF(xs[k + 1], y)]
+            path.append(QPointF(xs[-1], r.bottom()))
+            p.setPen(QPen(color, 2))
+            p.drawPolyline(path)
+            ly = r.top() + 6 + i * (fm.height() + 2)
+            p.drawLine(QPointF(r.right() - 150, ly + fm.height() / 2), QPointF(r.right() - 130, ly + fm.height() / 2))
+            p.setPen(QColor("#2c3e50"))
+            p.drawText(QRectF(r.right() - 125, ly, 120, fm.height()), Qt.AlignLeft | Qt.AlignVCenter,
+                       fm.elidedText(name, Qt.ElideRight, 120))
+
     def paint_overlay(self, p: QPainter, r: QRectF, xa: Axis) -> None:
         """Hook for subclasses that draw on top of the histogram (e.g. parameter picking lines)."""
 
 
 class StatsDialog(QDialog):
-    def __init__(self, doc: WellDocument, curve: str | None = None, parent=None):
+    def __init__(self, doc: WellDocument, curve: str | None = None, parent=None, docs: list | None = None):
         super().__init__(parent)
         self.doc = doc
+        self.docs = list(docs or [doc])
+        if doc not in self.docs:
+            self.docs.insert(0, doc)
         self.setWindowTitle(_("Statistics — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         self.resize(820, 460)
@@ -105,9 +149,9 @@ class StatsDialog(QDialog):
             self.curve.addItem(m, m)
         if curve:
             self.curve.setCurrentIndex(max(self.curve.findData(curve), 0))
+        self.wells = well_list(self.docs, doc) if len(self.docs) > 1 else None
         self.zone = QComboBox()
-        for name, top, base in zone_choices(doc.well):
-            self.zone.addItem(name, (top, base))
+        self._fill_zones()
         self.log = QCheckBox(_("Logarithmic scale"))
         self.bins = QSpinBox()
         self.bins.setRange(5, 200)
@@ -116,6 +160,9 @@ class StatsDialog(QDialog):
         self.stats.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.stats.setAlignment(Qt.AlignTop)
         side.addRow(_("Curve:"), self.curve)
+        if self.wells is not None:
+            side.addRow(_("Wells:"), self.wells)
+            self.wells.itemChanged.connect(self._wells_changed)
         side.addRow(_("Interval:"), self.zone)
         side.addRow(_("Bins:"), self.bins)
         side.addRow(self.log)
@@ -133,6 +180,21 @@ class StatsDialog(QDialog):
         self._initial_log()
         self._update()
 
+    def _fill_zones(self):
+        current = self.zone.currentData()
+        docs = checked_docs(self.wells) if self.wells is not None else [self.doc]
+        self.zone.blockSignals(True)
+        self.zone.clear()
+        self.zone.addItem(_("Whole well"), None)
+        for name in zone_names(docs):
+            self.zone.addItem(name, name)
+        self.zone.setCurrentIndex(max(self.zone.findData(current), 0))
+        self.zone.blockSignals(False)
+
+    def _wells_changed(self):
+        self._fill_zones()
+        self._update()
+
     def _initial_log(self):
         m = self.curve.currentData()
         for t in self.doc.layout.tracks:
@@ -145,9 +207,13 @@ class StatsDialog(QDialog):
         m = self.curve.currentData()
         if not m:
             return
-        top, base = self.zone.currentData()
+        zone = self.zone.currentData()
         curve = self.doc.view.curves[m]  # as displayed (unit chosen by the user)
-        v = curve.values[self.doc.well.interval_mask(top, base)]
+        docs = checked_docs(self.wells) if self.wells is not None else [self.doc]
+        if len(docs) > 1:
+            self._update_wells(m, curve, zone, docs)
+            return
+        v = curve.values[zone_mask(self.doc, zone)]
         f = v[np.isfinite(v)]
         if f.size:
             p10, p50, p90 = np.percentile(f, [10, 50, 90])
@@ -170,6 +236,28 @@ class StatsDialog(QDialog):
         color = next((c.color for t in self.doc.layout.tracks for c in t.curves if c.mnemonic == m), "#2e86c1")
         self.hist.set_data(v, f"{m} ({curve.unit})" if curve.unit else m, self.log.isChecked(),
                            self.bins.value(), color)
+
+    def _update_wells(self, m, curve, zone, docs):
+        """Several wells: one outline per well and a comparison table of P10/P50/P90."""
+        series, rows = [], []
+        for d in docs:
+            values = values_as(d, m, self.doc)
+            if values is None:
+                rows.append(f"<tr><td>{d.title}</td><td colspan=4>{_('no equivalent curve')}</td></tr>")
+                continue
+            v = values[zone_mask(d, zone)]
+            f = v[np.isfinite(v)]
+            series.append((v, color_of(self.wells, d), d.title))
+            if f.size:
+                p10, p50, p90 = np.percentile(f, [10, 50, 90])
+                rows.append(f"<tr><td>{d.title}</td><td>{f.size}</td><td>{p10:.4g}</td><td>{p50:.4g}</td>"
+                            f"<td>{p90:.4g}</td></tr>")
+            else:
+                rows.append(f"<tr><td>{d.title}</td><td colspan=4>{_('no data in the interval')}</td></tr>")
+        head = "<tr><th align=left>{}</th><th>n</th><th>P10</th><th>P50</th><th>P90</th></tr>".format(_("Well"))
+        self.stats.setText(f"<b>{m}</b> {curve.unit}<br><br><table cellspacing=4>{head}{''.join(rows)}</table>")
+        self.hist.set_series(series, f"{m} ({curve.unit})" if curve.unit else m, self.log.isChecked(),
+                             self.bins.value())
 
 
 # ============================================================================ data table
