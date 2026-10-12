@@ -16,7 +16,7 @@ class ExportDialog(QDialog):
     def __init__(self, doc: WellDocument, visible: tuple[float, float] | None, scale: float | None, parent=None):
         super().__init__(parent)
         self.doc = doc
-        w = doc.well
+        w = doc.view  # depths in the reference and unit being displayed
         self.setWindowTitle(_("Export log — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         form = QFormLayout(self)
@@ -79,10 +79,10 @@ class ExportDialog(QDialog):
             return
         try:
             if kind == "pdf":
-                pages = export_pdf(path, self.doc.well, self.doc.layout, scale, top, base, page=self.page.currentData())
+                pages = export_pdf(path, self.doc.view, self.doc.layout, scale, top, base, page=self.page.currentData())
                 msg = ngettext("PDF saved ({pages} page).", "PDF saved ({pages} pages).", pages).format(pages=pages)
             else:
-                export_png(path, self.doc.well, self.doc.layout, scale, top, base, dpi=self.dpi.value())
+                export_png(path, self.doc.view, self.doc.layout, scale, top, base, dpi=self.dpi.value())
                 msg = _("Image saved.")
         except (ExportError, OSError) as e:
             QMessageBox.warning(self, _("Export"), _("Could not export: {error}").format(error=e))

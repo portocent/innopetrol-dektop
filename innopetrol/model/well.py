@@ -11,6 +11,7 @@ import lasio
 import numpy as np
 
 from innopetrol.i18n import _, ngettext
+from innopetrol.model.survey import Survey
 from innopetrol.model.tops import Top
 
 FEET_UNITS = {"F", "FT", "FEET", "FOOT", "FT.", "FEET."}
@@ -61,6 +62,17 @@ class Well:
     curves: dict[str, Curve] = field(default_factory=dict)
     tops: list[Top] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)  # data fixes made while loading, shown to the user
+    survey: Survey | None = None
+    elevation: float | None = None  # elevation of the depth reference (KB/DF/GL) above sea level
+    source: str | None = None  # frame name inside a multi-frame file (DLIS)
+
+    def __post_init__(self):
+        if self.elevation is None:
+            self.elevation = elevation_from_header(self.header, self.depth_unit)
+
+    def tvd(self) -> np.ndarray:
+        """True vertical depth of every sample (the well is assumed vertical without a survey)."""
+        return self.depth.copy() if self.survey is None else self.survey.tvd_at(self.depth)
 
     @classmethod
     def from_las(cls, path: str | Path) -> Well:
@@ -182,6 +194,41 @@ class Well:
             writer.writerow(names)
             for row in columns:
                 writer.writerow(["" if np.isnan(v) else f"{v:.5f}" for v in row])
+
+
+# Header items holding the elevation of the log depth reference, in order of preference.
+# LMF ("log measured from") says which one applies when present.
+_ELEVATION_KEYS = {"KB": ("EKB", "KB", "ELKB", "KBE"), "DF": ("EDF", "DF", "ELDF"), "GL": ("EGL", "GL", "ELGL")}
+_ELEVATION_FALLBACK = ("ELZ", "EREF", "EKB", "EDF", "KB", "DF", "ELEV", "EGL", "GL")
+
+
+def elevation_from_header(header: list[HeaderItem], depth_unit: str) -> float | None:
+    by_name = {h.mnemonic.strip().upper(): h for h in header}
+    keys = _ELEVATION_FALLBACK
+    lmf = by_name.get("LMF") or by_name.get("DMF")
+    if lmf:
+        ref = str(lmf.value).strip().upper()
+        for code, names in _ELEVATION_KEYS.items():
+            if ref.startswith(code) or ref in names:
+                keys = names + keys
+                break
+    for key in keys:
+        item = by_name.get(key)
+        if item is None:
+            continue
+        try:
+            value = float(str(item.value).replace(",", "."))
+        except ValueError:
+            continue
+        if not np.isfinite(value) or value in NULL_MARKERS:
+            continue
+        unit = item.unit.strip().upper()
+        if unit in FEET_UNITS and depth_unit == "m":
+            value *= 0.3048
+        elif unit in ("M", "METER", "METERS", "METRES") and depth_unit == "ft":
+            value /= 0.3048
+        return value
+    return None
 
 
 def detect_encoding(path: str | Path) -> str:

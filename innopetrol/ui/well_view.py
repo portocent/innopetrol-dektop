@@ -72,9 +72,9 @@ class WellView(QWidget):
             self.canvas.x_offset = v
             self.canvas.update()
 
-    def _cursor_moved(self, depth: float):
-        if not math.isnan(depth):
-            self.statusMessage.emit(self.canvas.readout(depth))
+    def _cursor_moved(self, md: float):
+        if not math.isnan(md):
+            self.statusMessage.emit(self.canvas.readout(md))
 
     # ------------------------------------------------------------------ track actions
 
@@ -139,11 +139,16 @@ class WellView(QWidget):
             self.doc.layoutChanged.emit()
 
     def add_top_at(self, depth: float):
-        name, ok = QInputDialog.getText(self, _("New top"), _("Name of the top at {depth} {unit}:").format(
-            depth=f"{depth:.2f}", unit=self.doc.well.depth_unit))
+        """Adds a top at a display depth; tops are always stored in measured depth."""
+        view = self.doc.view
+        md = float(view.to_md(depth))
+        label = f"{view.depth_mnemonic} {depth:.2f} {view.depth_unit}"
+        if view.reference != "md" or view.depth_unit != self.doc.well.depth_unit:
+            label += f" (MD {md:.2f} {self.doc.well.depth_unit})"
+        name, ok = QInputDialog.getText(self, _("New top"), _("Name of the top at {depth}:").format(depth=label))
         if ok and name.strip():
             tops = list(self.doc.well.tops)
-            tops.append(Top(name.strip(), round(depth, 2), PALETTE[len(tops) % len(PALETTE)]))
+            tops.append(Top(name.strip(), round(md, 2), PALETTE[len(tops) % len(PALETTE)]))
             self.doc.set_tops(tops)
 
     # ------------------------------------------------------------------ context menu

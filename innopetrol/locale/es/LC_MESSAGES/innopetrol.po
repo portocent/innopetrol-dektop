@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 21:58-0500\n"
+"POT-Creation-Date: 2026-10-11 22:07-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -263,6 +263,9 @@ msgstr "Curvas, fila {row}"
 msgid "Cutoffs (net reservoir / net pay)"
 msgstr "Cortes (net reservoir / net pay)"
 
+msgid "DLIS support is not available on this platform (the dlisio package is not installed)"
+msgstr "La lectura de DLIS no está disponible en esta plataforma (el paquete dlisio no está instalado)"
+
 msgid "Dash-dot"
 msgstr "Guion-punto"
 
@@ -333,6 +336,9 @@ msgstr "Profundidad"
 msgctxt "track title"
 msgid "Depth"
 msgstr "Prof."
+
+msgid "Depth reference:"
+msgstr "Referencia de profundidad:"
 
 msgid "Depth track"
 msgstr "Track de profundidad"
@@ -513,8 +519,8 @@ msgid "InnoPetrol — Well Viewer {version}"
 msgstr "InnoPetrol — Visor de Pozos {version}"
 
 #, python-brace-format
-msgid "Interval {top} – {bottom} {unit}"
-msgstr "Intervalo {top} – {bottom} {unit}"
+msgid "Interval {reference} {top} – {bottom} {unit}"
+msgstr "Intervalo {reference} {top} – {bottom} {unit}"
 
 msgid "Interval:"
 msgstr "Intervalo:"
@@ -526,9 +532,6 @@ msgstr "Intervalo: {start} – {stop} {unit} (paso {step})"
 #, python-brace-format
 msgid "LAS exported: {path}"
 msgstr "LAS exportado: {path}"
-
-msgid "LAS files (*.las *.LAS);;All files (*)"
-msgstr "Archivos LAS (*.las *.LAS);;Todos los archivos (*)"
 
 msgid "Label"
 msgstr "Etiqueta"
@@ -599,8 +602,8 @@ msgstr "Máximo: {value}"
 msgid "Mean: {value}"
 msgstr "Media: {value}"
 
-msgid "Measured depth (not flattened)"
-msgstr "Profundidad medida (sin aplanar)"
+msgid "Measured depth (MD)"
+msgstr "Profundidad medida (MD)"
 
 msgid "Medium resistivity"
 msgstr "Resistividad media"
@@ -629,8 +632,8 @@ msgid "Name"
 msgstr "Nombre"
 
 #, python-brace-format
-msgid "Name of the top at {depth} {unit}:"
-msgstr "Nombre del tope a {depth} {unit}:"
+msgid "Name of the top at {depth}:"
+msgstr "Nombre del tope a {depth}:"
 
 msgid "Name:"
 msgstr "Nombre:"
@@ -679,6 +682,9 @@ msgstr "Nuevo tope"
 msgid "No data in the interval"
 msgstr "Sin datos en el intervalo"
 
+msgid "No flattening (depth)"
+msgstr "Sin aplanar (profundidad)"
+
 msgid "No grid"
 msgstr "Sin grilla"
 
@@ -694,9 +700,6 @@ msgstr ""
 
 msgid "Open LAS"
 msgstr "Abrir LAS"
-
-msgid "Open LAS files"
-msgstr "Abrir archivos LAS"
 
 msgid "Open LAS…"
 msgstr "Abrir LAS…"
@@ -715,6 +718,9 @@ msgstr "Abrir proyecto…"
 
 msgid "Open recent"
 msgstr "Abrir reciente"
+
+msgid "Open well files"
+msgstr "Abrir archivos de pozo"
 
 #, python-brace-format
 msgid "Operators: {operators}"
@@ -1003,6 +1009,12 @@ msgstr "Track {number}"
 msgid "Tracks of each well:"
 msgstr "Tracks de cada pozo:"
 
+msgid "True vertical depth (TVD)"
+msgstr "Profundidad vertical verdadera (TVD)"
+
+msgid "True vertical depth subsea (TVDSS)"
+msgstr "Profundidad vertical bajo el nivel del mar (TVDSS)"
+
 msgid "Type the scale as 1:500 or 500."
 msgstr "Escriba la escala como 1:500 o 500."
 
@@ -1081,6 +1093,11 @@ msgstr ""
 "Visualización de registros de pozo en formato LAS para ingenieros de petróleo: tracks "
 "configurables, escalas lineales y logarítmicas, rellenos, topes, petrofísica básica, crossplots, "
 "correlación entre pozos y exportación a PDF/PNG/LAS."
+
+msgid "Well logs (*.las *.LAS *.dlis *.DLIS);;LAS (*.las *.LAS);;DLIS (*.dlis *.DLIS);;All files (*)"
+msgstr ""
+"Registros de pozo (*.las *.LAS *.dlis *.DLIS);;LAS (*.las *.LAS);;DLIS (*.dlis *.DLIS);;Todos los"
+" archivos (*)"
 
 msgid "Well tree"
 msgstr "Árbol de pozos"
@@ -1164,11 +1181,21 @@ msgstr "Alejar a la siguiente escala estándar"
 msgid "a curve named {name} already exists"
 msgstr "ya existe una curva llamada {name}"
 
+#, python-brace-format
+msgid "array channel not supported yet, skipped: {channels}"
+msgid_plural "array channels not supported yet, skipped: {channels}"
+msgstr[0] "canal de arreglo aún no soportado, omitido: {channels}"
+msgstr[1] "canales de arreglo aún no soportados, omitidos: {channels}"
+
 msgid "automatic Triple Combo"
 msgstr "Triple Combo automático"
 
 msgid "comparison not allowed"
 msgstr "comparación no permitida"
+
+#, python-brace-format
+msgid "could not find MD, inclination and azimuth columns in the header: {header}"
+msgstr "no se encontraron columnas de MD, inclinación y azimut en el encabezado: {header}"
 
 #, python-brace-format
 msgid "could not read the project: {error}"
@@ -1195,8 +1222,15 @@ msgid "flattened on “{top}”"
 msgstr "aplanado en «{top}»"
 
 #, python-brace-format
+msgid "frames not indexed by depth were skipped: {frames}"
+msgstr "se omitieron frames no indexados por profundidad: {frames}"
+
+#, python-brace-format
 msgid "function not allowed: {function}"
 msgstr "función no permitida: {function}"
+
+msgid "inclinations must be between 0 and 180 degrees"
+msgstr "las inclinaciones deben estar entre 0 y 180 grados"
 
 #, python-brace-format
 msgid "invalid arguments for {function}()"
@@ -1210,14 +1244,17 @@ msgstr "plantilla con formato inválido: {error}"
 msgid "layout of {well}"
 msgstr "layout de {well}"
 
-msgid "measured depth"
-msgstr "profundidad medida"
+msgid "measured depth (MD)"
+msgstr "profundidad medida (MD)"
 
 msgid "meters (m)"
 msgstr "metros (m)"
 
 msgid "no data in the interval"
 msgstr "sin datos en el intervalo"
+
+msgid "no numeric survey stations were found"
+msgstr "no se encontraron estaciones numéricas en el survey"
 
 msgid "number"
 msgstr "número"
@@ -1247,6 +1284,12 @@ msgstr "el archivo no contiene curvas"
 msgid "the file contains no data"
 msgstr "el archivo no contiene datos"
 
+msgid "the file has no depth-indexed data"
+msgstr "el archivo no tiene datos indexados por profundidad"
+
+msgid "the file is empty"
+msgstr "el archivo está vacío"
+
 msgid "the file is not an InnoPetrol project"
 msgstr "el archivo no es un proyecto de InnoPetrol"
 
@@ -1264,11 +1307,20 @@ msgstr "la imagen tendría {height} px de alto; use PDF, un intervalo menor o un
 msgid "the result does not have the size of the curves"
 msgstr "el resultado no tiene el tamaño de las curvas"
 
+msgid "the survey has no valid stations"
+msgstr "el survey no tiene estaciones válidas"
+
 msgid "the template was created with a newer version of the program"
 msgstr "la plantilla fue creada con una versión más nueva del programa"
 
 msgid "too many curves for the page height"
 msgstr "demasiadas curvas para el alto de la página"
+
+msgid "true vertical depth (TVD)"
+msgstr "profundidad vertical verdadera (TVD)"
+
+msgid "true vertical depth subsea (TVDSS)"
+msgstr "profundidad vertical bajo el nivel del mar (TVDSS)"
 
 #, python-brace-format
 msgid "unknown curve: {name}"
@@ -1372,6 +1424,10 @@ msgstr "{well}: no se pudo recalcular {curve}: {error}"
 #, python-brace-format
 msgid "{well}: curves not found: {curves}"
 msgstr "{well}: curvas no encontradas: {curves}"
+
+#, python-brace-format
+msgid "{well}: invalid survey: {error}"
+msgstr "{well}: survey inválido: {error}"
 
 #, python-brace-format
 msgid "{well}: missing {curves}"

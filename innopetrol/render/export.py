@@ -30,7 +30,9 @@ def _title_lines(well, scale_ratio: float, top: float, bottom: float) -> list[st
         if v:
             info.append(f"{label}: {v}")
     scale = _("Vertical scale 1:{scale}").format(scale=f"{scale_ratio:g}")
-    interval = _("Interval {top} – {bottom} {unit}").format(top=f"{top:g}", bottom=f"{bottom:g}", unit=unit)
+    reference = getattr(well, "reference", "md").upper()  # MD, TVD or TVDSS when drawing a DepthView
+    interval = _("Interval {reference} {top} – {bottom} {unit}").format(
+        reference=reference, top=f"{top:g}", bottom=f"{bottom:g}", unit=unit)
     return ["   ·   ".join(info), f"{scale}   ·   {interval}   ·   InnoPetrol {__version__}"]
 
 

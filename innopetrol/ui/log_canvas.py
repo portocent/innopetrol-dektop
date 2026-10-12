@@ -44,7 +44,7 @@ class LogCanvas(QWidget):
         self.doc = doc
         self.show_top_labels = show_top_labels
         self.ppu = 1.0
-        self.top = doc.well.start
+        self.top = doc.view.start
         self.x_offset = 0.0
         self.fit_mode = True
         self.depth_shift = 0.0  # for correlation: added to the displayed depth
@@ -80,7 +80,8 @@ class LogCanvas(QWidget):
 
     @property
     def well(self):
-        return self.doc.well
+        """The well as drawn (display depth reference and unit); data stays in MD in doc.well."""
+        return self.doc.view
 
     @property
     def header_h(self) -> float:
@@ -454,7 +455,7 @@ class LogCanvas(QWidget):
         self.setCursor(Qt.SplitHCursor if self._edge_at(x) >= 0 else Qt.ArrowCursor)
         if y > self._header_h and self.track_at(x) >= 0:
             self._set_cursor_y(y)
-            self.doc.cursorMoved.emit(self.depth_at(y))
+            self.doc.cursorMoved.emit(float(self.well.to_md(self.depth_at(y))))
         else:
             self._set_cursor_y(None)
             self.doc.cursorMoved.emit(math.nan)
@@ -504,30 +505,37 @@ class LogCanvas(QWidget):
         depth = self.depth_at(e.pos().y()) if e.pos().y() > self._header_h else math.nan
         self.contextRequested.emit(idx, depth, e.globalPos())
 
-    def _external_cursor(self, depth: float):
+    def _external_cursor(self, md: float):
         """Cursor moved from another view of the same well (e.g. the data table)."""
         if self.underMouse():
             return
-        self._set_cursor_y(None if math.isnan(depth) else self.y_of(depth))
+        self._set_cursor_y(None if math.isnan(md) else self.y_of(float(self.well.to_display(md))))
 
     def visible_depth_range(self) -> tuple[float, float]:
         tf = self.transform()
         return tf.depth(0), tf.depth(self.body_h)
 
-    def readout(self, depth: float) -> str:
-        """Text with the values of the visible curves at a depth."""
-        parts = [f"{self.well.depth_mnemonic} {depth:.2f} {self.well.depth_unit}"]
+    def readout(self, md: float) -> str:
+        """Text with the depth (MD, plus TVD/TVDSS when known) and visible curve values at a depth."""
+        well = self.doc.well
+        unit = well.depth_unit
+        parts = [f"MD {md:.2f} {unit}"]
+        if well.survey is not None or self.doc.depth_reference != "md":
+            tvd = float(np.interp(md, well.depth, well.tvd()))
+            parts.append(f"TVD {tvd:.2f} {unit}")
+            if well.elevation is not None:
+                parts.append(f"TVDSS {tvd - well.elevation:.2f} {unit}")
         seen = set()
         for t in self.doc.layout.tracks:
             for c in t.curves:
-                if c.visible and c.mnemonic in self.well.curves and c.mnemonic not in seen:
+                if c.visible and c.mnemonic in well.curves and c.mnemonic not in seen:
                     seen.add(c.mnemonic)
-                    v = self.well.value_at(c.mnemonic, depth)
+                    v = well.value_at(c.mnemonic, md)
                     if np.isfinite(v):
-                        unit = self.well.curves[c.mnemonic].unit
-                        parts.append(f"{c.mnemonic} {v:.4g}{(' ' + unit) if unit else ''}")
-        for top in reversed(self.well.tops):
-            if top.depth <= depth:
+                        curve_unit = well.curves[c.mnemonic].unit
+                        parts.append(f"{c.mnemonic} {v:.4g}{(' ' + curve_unit) if curve_unit else ''}")
+        for top in sorted(well.tops, key=lambda t: t.depth, reverse=True):
+            if top.depth <= md:
                 parts.insert(1, _("Zone: {name}").format(name=top.name))
                 break
         return "   |   ".join(parts)

@@ -37,8 +37,18 @@ class CorrelationSetup(QDialog):
             self.list.addItem(item)
         self.list.setDragDropMode(QListWidget.InternalMove)
         lay.addWidget(self.list)
+        self.reference = QComboBox()
+        self.reference.addItem(_("Measured depth (MD)"), "md")
+        self.reference.addItem(_("True vertical depth (TVD)"), "tvd")
+        if all(d.well.elevation is not None for d in docs):
+            self.reference.addItem(_("True vertical depth subsea (TVDSS)"), "tvdss")
+        if any(d.well.survey is not None for d in docs):
+            # Deviated wells must be compared vertically, not along the hole.
+            self.reference.setCurrentIndex(self.reference.count() - 1)
+        lay.addWidget(QLabel(_("Depth reference:")))
+        lay.addWidget(self.reference)
         self.datum = QComboBox()
-        self.datum.addItem(_("Measured depth (not flattened)"), DEPTH_DATUM)
+        self.datum.addItem(_("No flattening (depth)"), DEPTH_DATUM)
         names = sorted({t.name for d in docs for t in d.well.tops})
         for n in names:
             self.datum.addItem(_("Flatten on top: {name}").format(name=n), n)
@@ -91,20 +101,23 @@ class TopConnector(QWidget):
         p.end()
 
 
-def compact_doc(doc: WellDocument, n_tracks: int, parent) -> WellDocument:
-    """Reduced view of a well for correlation: shares the well but has fewer tracks."""
-    if not n_tracks:
-        return doc
+def compact_doc(doc: WellDocument, n_tracks: int, parent, reference: str = "md") -> WellDocument:
+    """View of a well for correlation: shares the well data, with its own tracks and depth reference
+    (so changing them here never alters the well's own window)."""
     layout = doc.layout.copy()
-    layout.tracks = layout.tracks[:n_tracks]
+    if n_tracks:
+        layout.tracks = layout.tracks[:n_tracks]
     view = WellDocument(doc.well, layout, parent=parent)
+    view.depth_reference = reference
+    view.display_unit = doc.display_unit
     doc.topsChanged.connect(view.layoutChanged)  # tops edited in the well show up in the correlation
     doc.layoutChanged.connect(view.layoutChanged)
     return view
 
 
 class CorrelationWindow(QDialog):
-    def __init__(self, docs: list[WellDocument], datum: str, parent=None, n_tracks: int = 3):
+    def __init__(self, docs: list[WellDocument], datum: str, parent=None, n_tracks: int = 3,
+                 reference: str = "md"):
         super().__init__(parent)
         self.setWindowTitle(_("Correlation — {wells}").format(wells=" · ".join(d.title for d in docs)))
         self.setWindowIcon(app_icon())
@@ -112,7 +125,7 @@ class CorrelationWindow(QDialog):
         self.resize(1200, 760)
         self.datum = datum
         self._sync = False
-        docs = [compact_doc(d, n_tracks, self) for d in docs]
+        docs = [compact_doc(d, n_tracks, self, reference) for d in docs]
 
         root = QVBoxLayout(self)
         bar = QHBoxLayout()
@@ -123,7 +136,9 @@ class CorrelationWindow(QDialog):
             self.scale.addItem(f"1:{n}", n)
         self.scale.setCurrentIndex(self.scale.findData(500))
         bar.addWidget(self.scale)
-        info = _("flattened on “{top}”").format(top=datum) if datum != DEPTH_DATUM else _("measured depth")
+        info = reference.upper()
+        if datum != DEPTH_DATUM:
+            info += " · " + _("flattened on “{top}”").format(top=datum)
         bar.addWidget(QLabel("   " + _("Datum: {datum}.   Wheel: scroll · {modifier}+wheel: zoom").format(
             datum=info, modifier="⌘" if sys.platform == "darwin" else "Ctrl")))
         bar.addStretch()
@@ -165,7 +180,7 @@ class CorrelationWindow(QDialog):
     def _shift(self, d: WellDocument) -> float:
         if self.datum == DEPTH_DATUM:
             return 0.0
-        top = next((t for t in d.well.tops if t.name == self.datum), None)
+        top = next((t for t in d.view.tops if t.name == self.datum), None)  # in display depth
         return -top.depth if top else 0.0
 
     @staticmethod

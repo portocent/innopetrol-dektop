@@ -21,7 +21,9 @@ def main() -> int:
     projects = [a for a in args if a.lower().endswith(SUFFIX)]
     if projects:
         window.open_project(projects[0])
-    las = [a for a in args if a.lower().endswith(".las")]
+    from innopetrol.model.io import is_well_file
+
+    las = [a for a in args if is_well_file(a)]
     if las:
         window.open_las(las)
     if "--smoke-test" in sys.argv:

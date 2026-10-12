@@ -9,9 +9,11 @@ from pathlib import Path
 
 from innopetrol.i18n import _
 from innopetrol.model.calculator import evaluate
+from innopetrol.model.io import load_well
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.petro import PetroParams
 from innopetrol.model.tops import Top
+from innopetrol.model.survey import Survey
 from innopetrol.model.well import Curve, Well
 
 FORMAT = "innopetrol-project"
@@ -28,6 +30,8 @@ class WellEntry:
     well: Well
     layout: LogLayout
     petro: PetroParams | None = None
+    depth_reference: str = "md"
+    display_unit: str | None = None
 
 
 @dataclass
@@ -52,6 +56,11 @@ def save_project(path: str | Path, entries: list[WellEntry]) -> None:
                 for c in e.well.curves.values() if c.formula
             ],
             "petro": e.petro.to_dict() if e.petro else None,
+            "source": e.well.source,  # frame inside a DLIS file
+            "survey": e.well.survey.to_dict() if e.well.survey is not None else None,
+            "elevation": e.well.elevation,
+            "depth_reference": e.depth_reference,
+            "display_unit": e.display_unit,
         })
     data = {"format": FORMAT, "version": VERSION, "wells": wells}
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -70,7 +79,7 @@ def load_project(path: str | Path) -> LoadResult:
     for w in data.get("wells", []):
         las_path = (path.parent / w["path"]).resolve()
         try:
-            well = Well.from_las(las_path)
+            well = load_well(las_path, w.get("source"))
         except Exception as e:  # noqa: BLE001 - any read error is reported and loading continues
             result.errors.append(f"{w.get('name', las_path.name)}: {e}")
             continue
@@ -84,8 +93,16 @@ def load_project(path: str | Path) -> LoadResult:
                 continue
             well.add_curve(Curve(c["mnemonic"], c.get("unit", ""), c.get("description", ""), values,
                                  formula=c["formula"]))
+        if w.get("survey"):
+            try:
+                well.survey = Survey.from_dict(w["survey"])
+            except Exception as e:  # noqa: BLE001
+                result.errors.append(_("{well}: invalid survey: {error}").format(well=well.name, error=e))
+        if "elevation" in w:
+            well.elevation = w["elevation"]
         petro = PetroParams.from_dict(w["petro"]) if w.get("petro") else None
-        result.entries.append(WellEntry(well, LogLayout.from_dict(w.get("layout", {})), petro))
+        result.entries.append(WellEntry(well, LogLayout.from_dict(w.get("layout", {})), petro,
+                                        w.get("depth_reference", "md"), w.get("display_unit")))
     return result
 
 

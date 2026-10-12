@@ -24,7 +24,7 @@ from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.model.template import SUFFIX as TEMPLATE_SUFFIX
 from innopetrol.model.template import (TemplateError, apply_template, load_template, save_template,
                                        template_from_json, template_to_json)
-from innopetrol.model.well import Well
+from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.well_tree import WellTree
@@ -376,7 +376,7 @@ class MainWindow(QMainWindow):
         self.activate_doc(doc)
         v = self.views.get(doc)
         if v:
-            v.canvas.center_on(depth)
+            v.canvas.center_on(float(doc.view.to_display(depth)))  # tops are stored in MD
 
     def _show_scale(self, v: WellView):
         if v is not self.active_view():
@@ -387,8 +387,8 @@ class MainWindow(QMainWindow):
         self.scale_combo.blockSignals(False)
         lo, hi = v.canvas.visible_depth_range()
         self.scale_label.setText(_("{well} · scale 1:{scale} · visible {top} – {bottom} {unit}").format(
-            well=v.doc.title, scale=f"{v.canvas.current_scale():.0f}", top=f"{max(lo, v.doc.well.start):.1f}",
-            bottom=f"{min(hi, v.doc.well.stop):.1f}", unit=v.doc.well.depth_unit))
+            well=v.doc.title, scale=f"{v.canvas.current_scale():.0f}", top=f"{max(lo, v.doc.view.start):.1f}",
+            bottom=f"{min(hi, v.doc.view.stop):.1f}", unit=v.doc.view.depth_unit))
 
     def _scale_from_combo(self):
         text = self.scale_combo.currentText().strip()
@@ -421,8 +421,9 @@ class MainWindow(QMainWindow):
 
     def open_las_dialog(self):
         start = self.settings.value("last_dir", str(Path.home()))
-        paths, _filter = QFileDialog.getOpenFileNames(self, _("Open LAS files"), start,
-                                                      _("LAS files (*.las *.LAS);;All files (*)"))
+        paths, _filter = QFileDialog.getOpenFileNames(
+            self, _("Open well files"), start,
+            _("Well logs (*.las *.LAS *.dlis *.DLIS);;LAS (*.las *.LAS);;DLIS (*.dlis *.DLIS);;All files (*)"))
         if paths:
             self.settings.setValue("last_dir", str(Path(paths[0]).parent))
             self.open_las(paths)
@@ -433,20 +434,21 @@ class MainWindow(QMainWindow):
         try:
             for path in paths:
                 try:
-                    well = Well.from_las(path)
+                    wells = load_wells(path)  # LAS: one well; DLIS: one per depth frame
                 except Exception as e:  # noqa: BLE001 - any invalid file is reported
                     errors.append(f"{Path(path).name}: {e}")
                     continue
-                layout, missing = self._default_layout(well)
-                doc = self.add_doc(well, layout)
-                opened.append(doc.title)
                 self._add_recent(path)
-                if missing:
-                    self.statusBar().showMessage(
-                        _("{well}: the default template uses curves that are not in the well: {curves}").format(
-                            well=doc.title, curves=", ".join(missing)), 8000)
-                if well.notes:
-                    corrected.append(f"{doc.title}: " + "; ".join(well.notes))
+                for well in wells:
+                    layout, missing = self._default_layout(well)
+                    doc = self.add_doc(well, layout)
+                    opened.append(doc.title)
+                    if missing:
+                        self.statusBar().showMessage(
+                            _("{well}: the default template uses curves that are not in the well: {curves}").format(
+                                well=doc.title, curves=", ".join(missing)), 8000)
+                    if well.notes:
+                        corrected.append(f"{doc.title}: " + "; ".join(well.notes))
         finally:
             QApplication.restoreOverrideCursor()
         if errors:
@@ -469,8 +471,10 @@ class MainWindow(QMainWindow):
                 pass
         return build_triple_combo(well), []
 
-    def add_doc(self, well, layout, petro=None) -> WellDocument:
+    def add_doc(self, well, layout, petro=None, depth_reference: str = "md",
+                display_unit: str | None = None) -> WellDocument:
         doc = WellDocument(well, layout, petro, self)
+        doc.depth_reference, doc.display_unit = depth_reference, display_unit
         view = WellView(doc)
         sub = self.mdi.addSubWindow(view)
         sub.setWindowIcon(app_icon())
@@ -529,9 +533,9 @@ class MainWindow(QMainWindow):
         projects = [p for p in paths if p.lower().endswith(PROJECT_SUFFIX)]
         if projects:
             self.open_project(projects[0])
-        las = [p for p in paths if p.lower().endswith(".las")]
-        if las:
-            self.open_las(las)
+        wells = [p for p in paths if is_well_file(p)]
+        if wells:
+            self.open_las(wells)
 
     # ================================================================== project
 
@@ -554,7 +558,7 @@ class MainWindow(QMainWindow):
             return
         self._close_all()
         for entry in result.entries:
-            self.add_doc(entry.well, entry.layout, entry.petro)
+            self.add_doc(entry.well, entry.layout, entry.petro, entry.depth_reference, entry.display_unit)
         self.project_path = Path(path)
         self.dirty = False
         self._add_recent(path)
@@ -575,7 +579,8 @@ class MainWindow(QMainWindow):
                 return False
             path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
         try:
-            save_project(path, [WellEntry(d.well, d.layout, d.petro) for d in self.docs])
+            save_project(path, [WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit)
+                                for d in self.docs])
         except OSError as e:
             QMessageBox.warning(self, _("Save project"), _("Could not save: {error}").format(error=e))
             return False
@@ -744,7 +749,8 @@ class MainWindow(QMainWindow):
             docs = setup.selected()
             if len(docs) < 1:
                 return
-            self._modeless(CorrelationWindow(docs, setup.datum.currentData(), self, setup.tracks.currentData()))
+            self._modeless(CorrelationWindow(docs, setup.datum.currentData(), self, setup.tracks.currentData(),
+                                             setup.reference.currentData()))
 
     def _modeless(self, w):
         w.setAttribute(Qt.WA_DeleteOnClose)
