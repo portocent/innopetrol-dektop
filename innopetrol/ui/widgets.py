@@ -2,13 +2,23 @@
 
 from __future__ import annotations
 
+import sys
+
 from PySide6.QtCore import QSize, Signal
-from PySide6.QtGui import QColor, QIcon, QPixmap
-from PySide6.QtWidgets import QColorDialog, QComboBox, QDoubleSpinBox, QPushButton
+from PySide6.QtGui import QColor, QIcon, QKeySequence, QPixmap
+from PySide6.QtWidgets import QColorDialog, QComboBox, QDoubleSpinBox, QHBoxLayout, QPushButton, QWidget
 
 from innopetrol.i18n import _
 from innopetrol.model.layout import FILL_PATTERNS, LINE_STYLE_NAMES, LINE_STYLES
 from innopetrol.resources import icon
+
+# Modifier key as the user sees it: on Mac Qt maps what the code calls "Ctrl" to ⌘.
+MOD = "⌘" if sys.platform == "darwin" else "Ctrl"
+
+
+def key_text(seq) -> str:
+    """Shortcut in the platform's notation: ⌘O on Mac, Ctrl+O on Windows/Linux."""
+    return QKeySequence(seq).toString(QKeySequence.NativeText)
 
 
 def spin(value: float, lo: float, hi: float, step: float = 0.01, decimals: int = 3) -> QDoubleSpinBox:
@@ -19,6 +29,34 @@ def spin(value: float, lo: float, hi: float, step: float = 0.01, decimals: int =
     s.setSingleStep(step)
     s.setValue(value)
     return s
+
+
+def choice_combo(choices: dict[str, str], current: str | None) -> QComboBox:
+    """Combo box of {key: display name marked with N_()}; the key is the item data."""
+    combo = QComboBox()
+    for key, name in choices.items():
+        combo.addItem(_(name), key)
+    combo.setCurrentIndex(max(combo.findData(current), 0))
+    return combo
+
+
+def curve_combo(well, current: str | None, optional: bool = True) -> QComboBox:
+    """Curves of a well with their unit, optionally with "(none)" first; the mnemonic is the data."""
+    combo = QComboBox()
+    if optional:
+        combo.addItem(_("(none)"), None)
+    for m, curve in well.curves.items():
+        combo.addItem(f"{m}  [{curve.unit}]" if curve.unit else m, m)
+    combo.setCurrentIndex(max(combo.findData(current), 0))
+    return combo
+
+
+def row_of(*widgets: QWidget) -> QHBoxLayout:
+    """Horizontal layout with the widgets in order."""
+    row = QHBoxLayout()
+    for w in widgets:
+        row.addWidget(w)
+    return row
 
 
 def fill_zone_combo(combo: QComboBox, zone_names: list[str]) -> None:

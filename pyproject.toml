@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "LGPL-3.0-or-later"
 license-files = ["COPYING", "COPYING.LESSER"]
-authors = [{ name = "portocent" }]
+authors = [{ name = "Jacobo Porto" }]
 # pyside6-essentials: only the Qt modules the program uses (the full pyside6 package is ~1 GB).
 # dlisio has no wheels for Intel Macs: DLIS reading is optional there.
 dependencies = [

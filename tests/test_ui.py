@@ -104,7 +104,8 @@ def test_track_management(win):
 
 
 def test_petro_and_zones(win):
-    from innopetrol.ui.petro_dialog import PetroDialog, ZoneSummaryDialog
+    from innopetrol.ui.petro_dialog import PetroDialog
+    from innopetrol.ui.zone_summary_dialog import ZoneSummaryDialog
 
     doc = win.docs[0]
     doc.set_tops([Top("A", 7790), Top("B", 8040)])
@@ -117,7 +118,7 @@ def test_petro_and_zones(win):
 
 
 def test_calculator_dialog(win):
-    from innopetrol.ui.petro_dialog import CalculatorDialog
+    from innopetrol.ui.calculator_dialog import CalculatorDialog
 
     doc = win.docs[0]
     d = CalculatorDialog(doc, win)

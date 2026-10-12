@@ -381,56 +381,52 @@ class TrackEditor(QDialog):
         t.setCurrentCell(r, 0)
 
     def _read_fills(self) -> tuple[list[FillSpec], list[str]]:
-        t = self.fill_table
+        """Fills in the table, plus one message per problem; rows with problems are left out."""
         out, errors = [], []
-        for r in range(t.rowCount()):
-            row = _("Fills, row {row}").format(row=r + 1)
-            spec = FillSpec(
-                color=t.cellWidget(r, F_COLOR).color(),
-                pattern=t.cellWidget(r, F_PATTERN).value(),
-                label=t.cellWidget(r, F_LABEL).text().strip(),
-                visible=t.cellWidget(r, F_VISIBLE).findChild(QCheckBox).isChecked(),
-                colormap=t.cellWidget(r, F_COLORMAP).currentData(),
-            )
-            ok = True
-            for side, ccol, vcol in (("left", F_LEFT, F_LVAL), ("right", F_RIGHT, F_RVAL)):
-                data = t.cellWidget(r, ccol).currentData()
-                if data == VALUE:
-                    try:
-                        v = parse_float(t.cellWidget(r, vcol).text())
-                    except ValueError:
-                        v = None
-                    if v is None:
-                        errors.append(
-                            (
-                                _("{row}: enter a number for the left bound")
-                                if side == "left"
-                                else _("{row}: enter a number for the right bound")
-                            ).format(row=row)
-                        )
-                        ok = False
-                    setattr(spec, f"{side}_value", v)
-                elif data != EDGE:
-                    setattr(spec, f"{side}_curve", data)
-            if (
-                spec.left_curve is None
-                and spec.right_curve is None
-                and (spec.left_value is not None or spec.right_value is not None)
-            ):
-                if not self._fill_options():
-                    errors.append(
-                        _("{row}: a fixed value needs at least one curve in the track to be placed").format(row=row)
-                    )
-                    ok = False
-            if spec.colormap and not (spec.left_curve or spec.right_curve):
-                errors.append(_("{row}: coloring by value needs a curve as one of the bounds").format(row=row))
-                ok = False
-            if spec.left_curve and spec.left_curve == spec.right_curve:
-                errors.append(_("{row}: both bounds are the same curve").format(row=row))
-                ok = False
-            if ok:
+        for r in range(self.fill_table.rowCount()):
+            spec, row_errors = self._read_fill_row(r)
+            errors += row_errors
+            if not row_errors:
                 out.append(spec)
         return out, errors
+
+    def _read_fill_row(self, r: int) -> tuple[FillSpec, list[str]]:
+        t = self.fill_table
+        row = _("Fills, row {row}").format(row=r + 1)
+        spec = FillSpec(
+            color=t.cellWidget(r, F_COLOR).color(),
+            pattern=t.cellWidget(r, F_PATTERN).value(),
+            label=t.cellWidget(r, F_LABEL).text().strip(),
+            visible=t.cellWidget(r, F_VISIBLE).findChild(QCheckBox).isChecked(),
+            colormap=t.cellWidget(r, F_COLORMAP).currentData(),
+        )
+        errors = []
+        for side, ccol, vcol in (("left", F_LEFT, F_LVAL), ("right", F_RIGHT, F_RVAL)):
+            data = t.cellWidget(r, ccol).currentData()
+            if data == VALUE:
+                try:
+                    value = parse_float(t.cellWidget(r, vcol).text())
+                except ValueError:
+                    value = None
+                if value is None:
+                    message = (
+                        _("{row}: enter a number for the left bound")
+                        if side == "left"
+                        else _("{row}: enter a number for the right bound")
+                    )
+                    errors.append(message.format(row=row))
+                setattr(spec, f"{side}_value", value)
+            elif data != EDGE:
+                setattr(spec, f"{side}_curve", data)
+        has_curve = bool(spec.left_curve or spec.right_curve)
+        has_value = spec.left_value is not None or spec.right_value is not None
+        if not has_curve and has_value and not self._fill_options():
+            errors.append(_("{row}: a fixed value needs at least one curve in the track to be placed").format(row=row))
+        if spec.colormap and not has_curve:
+            errors.append(_("{row}: coloring by value needs a curve as one of the bounds").format(row=row))
+        if spec.left_curve and spec.left_curve == spec.right_curve:
+            errors.append(_("{row}: both bounds are the same curve").format(row=row))
+        return spec, errors
 
     def _add_fill(self):
         opts = self._fill_options()

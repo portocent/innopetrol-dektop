@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
-    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
@@ -32,7 +31,7 @@ from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.multiwell import checked_docs, color_of, values_as, well_list, zone_mask, zone_names
 from innopetrol.ui.plotting import Axis, draw_axes, plot_rect
-from innopetrol.ui.widgets import fill_zone_combo, parse_float
+from innopetrol.ui.widgets import fill_zone_combo, parse_float, spin
 
 # Approximate lithology lines for a limestone-calibrated neutron: (φN, ρb) as a function of φ.
 LITHOLOGY = {
@@ -210,18 +209,31 @@ BY_WELL = "__well__"
 
 
 class CrossplotWindow(QDialog):
+    """Crossplot of two curves (free, neutron-density or Pickett) of one or several wells."""
+
     def __init__(self, doc: WellDocument, mode: str = "free", parent=None, docs: list | None = None):
         super().__init__(parent)
         self.doc = doc
         self.docs = list(docs or [doc])
         if doc not in self.docs:
             self.docs.insert(0, doc)
-        w = doc.well
         self.setWindowTitle(_("Crossplot — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         self.setModal(False)
         self.resize(1000, 640)
         lay = QHBoxLayout(self)
+        side = QWidget()
+        side.setLayout(self._build_controls())
+        side.setMaximumWidth(300)
+        lay.addWidget(side)
+        self.plot = CrossplotWidget()
+        lay.addWidget(self.plot, 1)
+        self._setting_mode = False
+        self._connect_controls()
+        self.mode.setCurrentIndex(max(self.mode.findData(mode), 0))
+        self._mode_changed()
+
+    def _build_controls(self) -> QFormLayout:
         form = QFormLayout()
         self.mode = QComboBox()
         for k, v in (("free", _("Free")), ("nd", _("Neutron - Density")), ("pickett", _("Pickett (φ vs Rt)"))):
@@ -230,11 +242,11 @@ class CrossplotWindow(QDialog):
         self.c.addItem(_("(no color)"), None)
         if len(self.docs) > 1:
             self.c.addItem(_("(by well)"), BY_WELL)
-        for m in w.curves:
+        for m in self.doc.well.curves:
             for combo in (self.x, self.y, self.c):
                 combo.addItem(m, m)
         self.logx, self.logy = QCheckBox(_("Logarithmic X")), QCheckBox(_("Logarithmic Y"))
-        self.wells = well_list(self.docs, doc) if len(self.docs) > 1 else None
+        self.wells = well_list(self.docs, self.doc) if len(self.docs) > 1 else None
         self._n_wells = 1
         self.zone = QComboBox()
         self._fill_zones()
@@ -242,18 +254,17 @@ class CrossplotWindow(QDialog):
         for e in (self.xmin, self.xmax, self.ymin, self.ymax):
             e.setPlaceholderText("auto")
             e.setMaximumWidth(80)
-        pp = doc.petro or PetroParams()
-        self.rw = QDoubleSpinBox(decimals=4, minimum=0.001, maximum=100, value=pp.rw, singleStep=0.005)
-        self.m = QDoubleSpinBox(decimals=2, minimum=1, maximum=4, value=pp.m, singleStep=0.1)
-        self.n = QDoubleSpinBox(decimals=2, minimum=1, maximum=4, value=pp.n, singleStep=0.1)
-        self.a = QDoubleSpinBox(decimals=2, minimum=0.1, maximum=5, value=pp.a, singleStep=0.05)
+        pp = self.doc.petro or PetroParams()
+        self.rw = spin(pp.rw, 0.001, 100, 0.005, 4)
+        self.m = spin(pp.m, 1, 4, 0.1, 2)
+        self.n = spin(pp.n, 1, 4, 0.1, 2)
+        self.a = spin(pp.a, 0.1, 5, 0.05, 2)
         form.addRow(_("Type:"), self.mode)
         form.addRow(_("X axis:"), self.x)
         form.addRow(_("Y axis:"), self.y)
         form.addRow(_("Color:"), self.c)
         if self.wells is not None:
             form.addRow(_("Wells:"), self.wells)
-            self.wells.itemChanged.connect(self._wells_changed)
         form.addRow(_("Interval:"), self.zone)
         form.addRow(self.logx)
         form.addRow(self.logy)
@@ -266,25 +277,21 @@ class CrossplotWindow(QDialog):
         save = QPushButton(_("Save image…"))
         save.clicked.connect(self._save)
         form.addRow(save)
-        side = QWidget()
-        side.setLayout(form)
-        side.setMaximumWidth(300)
-        lay.addWidget(side)
-        self.plot = CrossplotWidget()
-        lay.addWidget(self.plot, 1)
+        return form
 
-        self._setting_mode = False
+    def _connect_controls(self) -> None:
+        """Any change redraws the plot."""
         self.mode.currentIndexChanged.connect(self._mode_changed)
-        for wdg in (self.x, self.y, self.c, self.zone):
-            wdg.currentIndexChanged.connect(self._update)
-        for wdg in (self.logx, self.logy):
-            wdg.toggled.connect(self._update)
-        for e in (self.xmin, self.xmax, self.ymin, self.ymax):
-            e.editingFinished.connect(self._update)
-        for s in (self.rw, self.m, self.n, self.a):
-            s.valueChanged.connect(self._update)
-        self.mode.setCurrentIndex(max(self.mode.findData(mode), 0))
-        self._mode_changed()
+        if self.wells is not None:
+            self.wells.itemChanged.connect(self._wells_changed)
+        for combo in (self.x, self.y, self.c, self.zone):
+            combo.currentIndexChanged.connect(self._update)
+        for check in (self.logx, self.logy):
+            check.toggled.connect(self._update)
+        for edit in (self.xmin, self.xmax, self.ymin, self.ymax):
+            edit.editingFinished.connect(self._update)
+        for box in (self.rw, self.m, self.n, self.a):
+            box.valueChanged.connect(self._update)
 
     def _included(self) -> list[WellDocument]:
         return checked_docs(self.wells) if self.wells is not None else [self.doc]

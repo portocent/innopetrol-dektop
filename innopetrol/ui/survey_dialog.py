@@ -70,10 +70,18 @@ class SurveyDialog(QDialog):
         hint.setStyleSheet("color:#566573")
         lay.addWidget(hint)
 
-        # Surface location, for the base map.
+        lay.addWidget(self._build_location(w.location))
+        lay.addStretch()
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self._ok)
+        buttons.rejected.connect(self.reject)
+        lay.addWidget(buttons)
+        self._update_info()
+
+    def _build_location(self, loc: Location | None) -> QGroupBox:
+        """Surface location, for the base map: latitude/longitude or projected X/Y."""
         box = QGroupBox(_("Surface location"))
         box.setCheckable(True)
-        loc = w.location
         box.setChecked(loc is not None)
         f = QFormLayout(box)
         self.location_box = box
@@ -91,13 +99,7 @@ class SurveyDialog(QDialog):
         f.addRow(self.x_label, self.coord_x)
         self.coord_kind.currentIndexChanged.connect(self._coord_labels)
         self._coord_labels()
-        lay.addWidget(box)
-        lay.addStretch()
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.accepted.connect(self._ok)
-        buttons.rejected.connect(self.reject)
-        lay.addWidget(buttons)
-        self._update_info()
+        return box
 
     def _update_info(self):
         s, w = self.survey, self.doc.well

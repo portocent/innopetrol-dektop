@@ -300,11 +300,12 @@ class CurveTableModel(QAbstractTableModel):
         self._build()
         self.endResetModel()
 
-    def rowCount(self, parent=QModelIndex()):
-        return 0 if parent.isValid() else self.well.depth.size
+    # A flat table: only the invisible root (no parent, or an invalid one) has rows and columns.
+    def rowCount(self, parent: QModelIndex | None = None):
+        return 0 if parent is not None and parent.isValid() else self.well.depth.size
 
-    def columnCount(self, parent=QModelIndex()):
-        return 0 if parent.isValid() else len(self.names) + len(self.depths)
+    def columnCount(self, parent: QModelIndex | None = None):
+        return 0 if parent is not None and parent.isValid() else len(self.names) + len(self.depths)
 
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.DisplayRole:

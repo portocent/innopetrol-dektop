@@ -96,69 +96,54 @@ class WellTree(QTreeWidget):
         item.setText(0, doc.title)
         item.setFont(0, bold)
         item.setToolTip(0, str(w.path) if w.path else doc.title)
+        self._add_info(item, w)
+        self._add_curves(item, doc)
+        self._add_tops(item, doc)
 
-        info = QTreeWidgetItem(item, [_("Well information")])
+    @staticmethod
+    def _add_info(parent: QTreeWidgetItem, w) -> None:
+        """Elevation, survey, corrections made on load, interval and header items."""
+        info = QTreeWidgetItem(parent, [_("Well information")])
         if w.elevation is not None:
-            QTreeWidgetItem(
-                info, [_("Reference elevation: {value} {unit}").format(value=f"{w.elevation:g}", unit=w.depth_unit)]
-            )
+            text = _("Reference elevation: {value} {unit}").format(value=f"{w.elevation:g}", unit=w.depth_unit)
+            QTreeWidgetItem(info, [text])
         if w.survey is not None:
-            QTreeWidgetItem(
-                info,
-                [
-                    _("Deviation survey: {count} stations, max. inclination {inc}°").format(
-                        count=w.survey.md.size, inc=f"{w.survey.max_inclination:.1f}"
-                    )
-                ],
+            text = _("Deviation survey: {count} stations, max. inclination {inc}°").format(
+                count=w.survey.md.size, inc=f"{w.survey.max_inclination:.1f}"
             )
+            QTreeWidgetItem(info, [text])
         if w.notes:
             fixes = QTreeWidgetItem(info, [_("Corrections on load ({count})").format(count=len(w.notes))])
             fixes.setForeground(0, QBrush(QColor("#b9770e")))
             for note in w.notes:
                 QTreeWidgetItem(fixes, [note])
-        QTreeWidgetItem(
-            info,
-            [
-                _("Interval: {start} – {stop} {unit} (step {step})").format(
-                    start=f"{w.start:g}", stop=f"{w.stop:g}", unit=w.depth_unit, step=f"{w.step:g}"
-                )
-            ],
+        interval = _("Interval: {start} – {stop} {unit} (step {step})").format(
+            start=f"{w.start:g}", stop=f"{w.stop:g}", unit=w.depth_unit, step=f"{w.step:g}"
         )
+        QTreeWidgetItem(info, [interval])
         for h in w.header:
-            if h.mnemonic.upper() in ("STRT", "STOP", "STEP"):
-                continue
-            if str(h.value).strip():
+            if h.mnemonic.upper() not in ("STRT", "STOP", "STEP") and str(h.value).strip():
                 child = QTreeWidgetItem(info, [f"{h.mnemonic}: {h.value} {h.unit}".strip()])
                 child.setToolTip(0, h.description)
 
-        curves = QTreeWidgetItem(item, [_("Curves ({count})").format(count=len(w.curves))])
+    @staticmethod
+    def _add_curves(parent: QTreeWidgetItem, doc: WellDocument) -> None:
+        w = doc.well
+        curves = QTreeWidgetItem(parent, [_("Curves ({count})").format(count=len(w.curves))])
         curves.setExpanded(True)
         for m, c in w.curves.items():
-            fam = FAMILIES.get(family_of(m) or "")
-            unit_text = c.unit
-            if m in doc.curve_units:  # displayed converted: show both units
-                unit_text = f"{c.unit or '?'} → {units.label(doc.curve_units[m])}"
-            label = f"{m}" + (f"  [{unit_text}]" if unit_text else "") + (f"  · {_(fam.name)}" if fam else "")
-            if c.formula:
-                label += "  " + _("(computed)")
-            ci = QTreeWidgetItem(curves, [label])
+            ci = QTreeWidgetItem(curves, [_curve_label(doc, m, c)])
             ci.setData(0, ROLE_DOC, doc)
             ci.setData(0, ROLE_KIND, "curve")
             ci.setData(0, ROLE_NAME, m)
             if c.formula:
                 ci.setForeground(0, QBrush(QColor("#1f618d")))
-            tip = [c.description] if c.description else []
-            if c.has_data:
-                tip.append(
-                    _("Min {min} · Max {max} · Mean {mean}").format(
-                        min=f"{c.min:.4g}", max=f"{c.max:.4g}", mean=f"{np.nanmean(c.values):.4g}"
-                    )
-                )
-            if c.formula:
-                tip.append(f"= {c.formula}")
-            ci.setToolTip(0, "\n".join(tip))
+            ci.setToolTip(0, _curve_tooltip(c))
 
-        tops = QTreeWidgetItem(item, [_("Tops ({count})").format(count=len(w.tops))])
+    @staticmethod
+    def _add_tops(parent: QTreeWidgetItem, doc: WellDocument) -> None:
+        w = doc.well
+        tops = QTreeWidgetItem(parent, [_("Tops ({count})").format(count=len(w.tops))])
         tops.setData(0, ROLE_DOC, doc)
         tops.setData(0, ROLE_KIND, "tops")
         for t in w.tops:
@@ -226,3 +211,26 @@ class WellTree(QTreeWidget):
         menu.addAction(_("Show well window")).triggered.connect(lambda: self.docActivated.emit(doc))
         menu.addAction(_("Edit tops…")).triggered.connect(lambda: self.topsRequested.emit(doc))
         menu.exec(self.viewport().mapToGlobal(pos))
+
+
+def _curve_label(doc: WellDocument, mnemonic: str, curve) -> str:
+    """ "RHOB  [G/C3 → kg/m³]  · Density  (computed)": unit (and display unit if converted) and family."""
+    fam = FAMILIES.get(family_of(mnemonic) or "")
+    unit_text = curve.unit
+    if mnemonic in doc.curve_units:
+        unit_text = f"{curve.unit or '?'} → {units.label(doc.curve_units[mnemonic])}"
+    label = mnemonic + (f"  [{unit_text}]" if unit_text else "") + (f"  · {_(fam.name)}" if fam else "")
+    return label + ("  " + _("(computed)") if curve.formula else "")
+
+
+def _curve_tooltip(curve) -> str:
+    tip = [curve.description] if curve.description else []
+    if curve.has_data:
+        tip.append(
+            _("Min {min} · Max {max} · Mean {mean}").format(
+                min=f"{curve.min:.4g}", max=f"{curve.max:.4g}", mean=f"{np.nanmean(curve.values):.4g}"
+            )
+        )
+    if curve.formula:
+        tip.append(f"= {curve.formula}")
+    return "\n".join(tip)

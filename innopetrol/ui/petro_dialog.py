@@ -1,30 +1,23 @@
-"""Calculation dialogs: basic petrophysics, curve calculator and zone summary."""
+"""Petrophysics dialog: parameters (also by zone), graphical picking and computation of the results."""
 
 from __future__ import annotations
 
-import csv
 from dataclasses import replace
 
 import numpy as np
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
-    QFileDialog,
     QFormLayout,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
-    QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QMessageBox,
-    QPlainTextEdit,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -35,100 +28,89 @@ from PySide6.QtWidgets import (
 
 from innopetrol.i18n import _
 from innopetrol.model import petro, units
-from innopetrol.model.calculator import FUNCTIONS, CalculatorError, curve_ref, evaluate
-from innopetrol.model.layout import CurveStyle, FillSpec, LogLayout, TrackSpec
-from innopetrol.model.mnemonics import build_volumes_track, find_curve, make_curve_style
-from innopetrol.model.tops import Zone, zones_from_tops
-from innopetrol.model.well import Curve
+from innopetrol.model.calculator import CalculatorError
+from innopetrol.model.layout import LogLayout
+from innopetrol.model.mnemonics import find_curve
+from innopetrol.model.petro_layout import place_tracks, results_tracks
+from innopetrol.model.tops import zones_from_tops
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
-from innopetrol.ui.widgets import parse_float, spin
-
-
-def _curve_combo(doc: WellDocument, current: str | None, optional=True) -> QComboBox:
-    c = QComboBox()
-    if optional:
-        c.addItem(_("(none)"), None)
-    for m, curve in doc.well.curves.items():
-        c.addItem(f"{m}  [{curve.unit}]" if curve.unit else m, m)
-    c.setCurrentIndex(max(c.findData(current), 0))
-    return c
-
-
-# ============================================================================ petrophysics
+from innopetrol.ui.widgets import choice_combo, curve_combo, parse_float, row_of, spin
 
 
 class PetroDialog(QDialog):
+    """Petrophysics parameters in three tabs (Vsh and porosity, water saturation, parameters by zone),
+    cutoffs, and the computation of the result curves and tracks."""
+
     def __init__(self, doc: WellDocument, parent=None):
         super().__init__(parent)
         self.doc = doc
-        w = doc.well
         p = doc.petro or self._initial_params()
-        self.zones = zones_from_tops(w.tops, w.stop)
+        self.zones = zones_from_tops(doc.well.tops, doc.well.stop)
         self.setWindowTitle(_("Petrophysics — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         lay = QVBoxLayout(self)
         tabs = QTabWidget()
+        tabs.addTab(self._build_vsh_porosity_tab(p), _("Vsh and porosity"))
+        tabs.addTab(self._build_saturation_tab(p), _("Water saturation"))
+        tabs.addTab(self._build_zones_tab(p), _("Parameters by zone"))
         lay.addWidget(tabs)
+        lay.addWidget(self._build_cutoffs(p))
+        self.add_track = QCheckBox(_("Add/update a “Petrophysical results” track"))
+        self.add_track.setChecked(True)
+        lay.addWidget(self.add_track)
+        lay.addWidget(QLabel(_("Curves are computed with formulas shown in the well tree and can be exported to LAS.")))
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.Ok).setText(_("Compute"))
+        buttons.accepted.connect(self._run)
+        buttons.rejected.connect(self.reject)
+        lay.addWidget(buttons)
 
-        # ---------------------------------------------------------------- Vsh and porosity
+        self.sw_model.currentIndexChanged.connect(self._update_enabled)
+        self.temp_mode.currentIndexChanged.connect(self._update_enabled)
+        self.temp_unit.currentIndexChanged.connect(self._temp_unit_changed)
+        self._update_enabled()
+
+    # ---------------------------------------------------------------- construction
+    def _build_vsh_porosity_tab(self, p: petro.PetroParams) -> QWidget:
+        well = self.doc.well
         page = QWidget()
         page_lay = QVBoxLayout(page)
         g1 = QGroupBox(_("Shale volume (Vsh) from gamma ray"))
         f1 = QFormLayout(g1)
-        self.gr = _curve_combo(doc, p.gr_curve)
+        self.gr = curve_combo(well, p.gr_curve)
         self.gr_clean = spin(p.gr_clean, -1000, 10000, 1, 1)
         self.gr_shale = spin(p.gr_shale, -1000, 10000, 1, 1)
-        self.vsh_method = QComboBox()
-        for k, v in petro.VSH_METHODS.items():
-            self.vsh_method.addItem(_(v), k)
-        self.vsh_method.setCurrentIndex(self.vsh_method.findData(p.vsh_method))
-        gr_row = QHBoxLayout()
-        gr_row.addWidget(QLabel(_("Clean GR")))
-        gr_row.addWidget(self.gr_clean)
-        gr_row.addWidget(QLabel(_("Shale GR")))
-        gr_row.addWidget(self.gr_shale)
+        self.vsh_method = choice_combo(petro.VSH_METHODS, p.vsh_method)
         pick_gr = QPushButton(_("Pick on histogram…"))
         pick_gr.clicked.connect(lambda: self._pick_gr(None))
-        gr_row.addWidget(pick_gr)
         f1.addRow(_("GR curve:"), self.gr)
-        f1.addRow(gr_row)
+        f1.addRow(row_of(QLabel(_("Clean GR")), self.gr_clean, QLabel(_("Shale GR")), self.gr_shale, pick_gr))
         f1.addRow(_("Method:"), self.vsh_method)
         page_lay.addWidget(g1)
 
         g2 = QGroupBox(_("Porosity"))
         f2 = QFormLayout(g2)
-        self.rhob = _curve_combo(doc, p.rhob_curve)
-        self.nphi = _curve_combo(doc, p.nphi_curve)
+        self.rhob = curve_combo(well, p.rhob_curve)
+        self.nphi = curve_combo(well, p.nphi_curve)
         self.rho_ma = spin(p.rho_ma, 1, 4)
         self.rho_fl = spin(p.rho_fl, 0.5, 1.5)
-        self.phi_method = QComboBox()
-        for k, v in petro.PHI_METHODS.items():
-            self.phi_method.addItem(_(v), k)
-        self.phi_method.setCurrentIndex(self.phi_method.findData(p.phi_method))
-        rho_row = QHBoxLayout()
-        rho_row.addWidget(QLabel(_("ρ matrix")))
-        rho_row.addWidget(self.rho_ma)
-        rho_row.addWidget(QLabel(_("ρ fluid")))
-        rho_row.addWidget(self.rho_fl)
+        self.phi_method = choice_combo(petro.PHI_METHODS, p.phi_method)
         f2.addRow(_("Density (RHOB):"), self.rhob)
         f2.addRow(_("Neutron (NPHI):"), self.nphi)
-        f2.addRow(rho_row)
+        f2.addRow(row_of(QLabel(_("ρ matrix")), self.rho_ma, QLabel(_("ρ fluid")), self.rho_fl))
         f2.addRow(_("Method:"), self.phi_method)
         page_lay.addWidget(g2)
         page_lay.addStretch()
-        tabs.addTab(page, _("Vsh and porosity"))
+        return page
 
-        # ---------------------------------------------------------------- water saturation
+    def _build_saturation_tab(self, p: petro.PetroParams) -> QWidget:
         page = QWidget()
         page_lay = QVBoxLayout(page)
         g3 = QGroupBox(_("Water saturation"))
         f3 = QGridLayout(g3)
-        self.rt = _curve_combo(doc, p.rt_curve)
-        self.sw_model = QComboBox()
-        for k, v in petro.SW_MODELS.items():
-            self.sw_model.addItem(_(v), k)
-        self.sw_model.setCurrentIndex(max(self.sw_model.findData(p.sw_model), 0))
+        self.rt = curve_combo(self.doc.well, p.rt_curve)
+        self.sw_model = choice_combo(petro.SW_MODELS, p.sw_model)
         self.sw_model.setToolTip(
             _(
                 "Archie is valid in clean rock. In shaly sands the clay conducts "
@@ -154,13 +136,14 @@ class PetroDialog(QDialog):
         pick_rw.clicked.connect(lambda: self._pick_rw(None))
         f3.addWidget(pick_rw, 3, 0, 1, 10, Qt.AlignLeft)
         page_lay.addWidget(g3)
+        page_lay.addWidget(self._build_temperature(p))
+        page_lay.addStretch()
+        return page
 
-        g5 = QGroupBox(_("Rw at formation temperature (Arps)"))
-        f5 = QFormLayout(g5)
-        self.temp_mode = QComboBox()
-        for k, v in petro.TEMP_MODES.items():
-            self.temp_mode.addItem(_(v), k)
-        self.temp_mode.setCurrentIndex(max(self.temp_mode.findData(p.temp_mode), 0))
+    def _build_temperature(self, p: petro.PetroParams) -> QGroupBox:
+        group = QGroupBox(_("Rw at formation temperature (Arps)"))
+        form = QFormLayout(group)
+        self.temp_mode = choice_combo(petro.TEMP_MODES, p.temp_mode)
         self.temp_unit = QComboBox()
         self.temp_unit.addItem("°C", "degC")
         self.temp_unit.addItem("°F", "degF")
@@ -169,20 +152,18 @@ class PetroDialog(QDialog):
         self.rw_temp = spin(p.rw_temp, -50, 500, 1, 1)
         self.surface_temp = spin(p.surface_temp, -50, 200, 1, 1)
         self.gradient = spin(p.gradient, 0, 20, 0.1, 2)
-        self.temp_curve = _curve_combo(doc, p.temp_curve)
+        self.temp_curve = curve_combo(self.doc.well, p.temp_curve)
         self.gradient_label = QLabel()
-        f5.addRow(_("Formation temperature:"), self.temp_mode)
-        f5.addRow(_("Temperature unit:"), self.temp_unit)
-        f5.addRow(_("Rw measured at:"), self.rw_temp)
-        f5.addRow(_("Surface temperature:"), self.surface_temp)
-        f5.addRow(self.gradient_label, self.gradient)
-        f5.addRow(_("Temperature curve:"), self.temp_curve)
-        self.temp_form = f5
-        page_lay.addWidget(g5)
-        page_lay.addStretch()
-        tabs.addTab(page, _("Water saturation"))
+        form.addRow(_("Formation temperature:"), self.temp_mode)
+        form.addRow(_("Temperature unit:"), self.temp_unit)
+        form.addRow(_("Rw measured at:"), self.rw_temp)
+        form.addRow(_("Surface temperature:"), self.surface_temp)
+        form.addRow(self.gradient_label, self.gradient)
+        form.addRow(_("Temperature curve:"), self.temp_curve)
+        self.temp_form = form
+        return group
 
-        # ---------------------------------------------------------------- zones
+    def _build_zones_tab(self, p: petro.PetroParams) -> QWidget:
         page = QWidget()
         page_lay = QVBoxLayout(page)
         zone_hint = QLabel(
@@ -196,56 +177,41 @@ class PetroDialog(QDialog):
         self.zone_table = QTableWidget(len(self.zones), len(petro.ZONE_PARAMS))
         self.zone_table.setHorizontalHeaderLabels([_(v) for v in petro.ZONE_PARAMS.values()])
         self.zone_table.setVerticalHeaderLabels([f"{z.name}  ({z.top:g}–{z.base:g})" for z in self.zones])
-        self.zone_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.zone_table.horizontalHeader().setMinimumSectionSize(52)
-        self.zone_table.horizontalHeader().setStretchLastSection(True)
+        header = self.zone_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setMinimumSectionSize(52)
+        header.setStretchLastSection(True)
         for r, z in enumerate(self.zones):
             for c, key in enumerate(petro.ZONE_PARAMS):
                 value = p.zones.get(z.name, {}).get(key)
                 self.zone_table.setItem(r, c, QTableWidgetItem("" if value is None else f"{value:g}"))
         page_lay.addWidget(self.zone_table, 1)
-        zone_buttons = QHBoxLayout()
         self.zone_pick_gr = QPushButton(_("Pick GR for the selected zone…"))
         self.zone_pick_gr.clicked.connect(lambda: self._pick_gr(self._selected_zone()))
         self.zone_pick_rw = QPushButton(_("Pick Rw for the selected zone…"))
         self.zone_pick_rw.clicked.connect(lambda: self._pick_rw(self._selected_zone()))
         clear = QPushButton(_("Clear the selected zone"))
         clear.clicked.connect(self._clear_zone)
-        for b in (self.zone_pick_gr, self.zone_pick_rw, clear):
-            zone_buttons.addWidget(b)
-        zone_buttons.addStretch()
-        page_lay.addLayout(zone_buttons)
+        buttons = row_of(self.zone_pick_gr, self.zone_pick_rw, clear)
+        buttons.addStretch()
+        page_lay.addLayout(buttons)
         if not self.zones:
             no_tops = QLabel(_("Define formation tops first (Well ▸ Formation tops…)."))
             no_tops.setStyleSheet("color: #b9770e")
             page_lay.addWidget(no_tops)
             page.setEnabled(False)
-        tabs.addTab(page, _("Parameters by zone"))
+        return page
 
-        g4 = QGroupBox(_("Cutoffs (net reservoir / net pay)"))
-        f4 = QHBoxLayout(g4)
+    def _build_cutoffs(self, p: petro.PetroParams) -> QGroupBox:
+        group = QGroupBox(_("Cutoffs (net reservoir / net pay)"))
+        row = QHBoxLayout(group)
         self.vsh_cut = spin(p.vsh_cut, 0, 1)
         self.phi_cut = spin(p.phi_cut, 0, 1)
         self.sw_cut = spin(p.sw_cut, 0, 1)
         for lbl, box in (("Vsh ≤", self.vsh_cut), ("φe ≥", self.phi_cut), ("Sw ≤", self.sw_cut)):
-            f4.addWidget(QLabel(lbl))
-            f4.addWidget(box)
-        lay.addWidget(g4)
-
-        self.add_track = QCheckBox(_("Add/update a “Petrophysical results” track"))
-        self.add_track.setChecked(True)
-        lay.addWidget(self.add_track)
-        lay.addWidget(QLabel(_("Curves are computed with formulas shown in the well tree and can be exported to LAS.")))
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText(_("Compute"))
-        buttons.accepted.connect(self._run)
-        buttons.rejected.connect(self.reject)
-        lay.addWidget(buttons)
-
-        self.sw_model.currentIndexChanged.connect(self._update_enabled)
-        self.temp_mode.currentIndexChanged.connect(self._update_enabled)
-        self.temp_unit.currentIndexChanged.connect(self._temp_unit_changed)
-        self._update_enabled()
+            row.addWidget(QLabel(lbl))
+            row.addWidget(box)
+        return group
 
     def _initial_params(self) -> petro.PetroParams:
         """First-time parameters guessed from the well's curves."""
@@ -494,343 +460,7 @@ class PetroDialog(QDialog):
         self.accept()
 
     def _update_results_track(self, names: list[str]):
-        w = self.doc.well
-        styles = [make_curve_style(w, m) for m in ("VSH", "PHIE", "SW") if m in names]
-        track = TrackSpec(title=_("Petrophysical results"), width=220, curves=styles)
-        if "VSH" in names:
-            track.fills.append(
-                FillSpec(left_value=0, right_curve="VSH", color="#a0522d", pattern="dense3", label="Vsh")
-            )
-        if "PHIE" in names:
-            track.fills.append(FillSpec(left_curve="PHIE", right_value=0, color="#5dade2", pattern="solid", label="φe"))
-        flags = [m for m in ("RES_FLAG", "PAY_FLAG") if m in names]
-        flag_track = None
-        if flags:
-            flag_track = TrackSpec(
-                title=_("Net res / pay"),
-                width=70,
-                grid="none",
-                curves=[
-                    CurveStyle(m, color=c, left=0, right=1, visible=False)
-                    for m, c in zip(flags, ("#27ae60", "#c0392b")[: len(flags)], strict=True)
-                ],
-            )
-            colors = {"RES_FLAG": "#82e0aa", "PAY_FLAG": "#e74c3c"}
-            for m in flags:
-                flag_track.fills.append(
-                    FillSpec(
-                        left_value=0,
-                        right_curve=m,
-                        color=colors[m],
-                        label=_("Reservoir") if m == "RES_FLAG" else _("Pay"),
-                    )
-                )
-        volumes = build_volumes_track(w)
-        if volumes is not None:
-            self.doc.adopt_layout(LogLayout([volumes]))  # in the units the curves are displayed in
-        tracks = self.doc.layout.tracks
-
-        # Tracks are found by the curves they contain, never by title: titles depend on the
-        # language that was active when the layout was created.
-        def find(mnemonics=(), families=(), kind="curves"):
-            for i, t in enumerate(tracks):
-                if t.kind == kind and any(
-                    c.mnemonic in mnemonics or (c.family and c.family in families) for c in t.curves
-                ):
-                    return i
-            return None
-
-        # Placed next to the density-neutron track (or resistivity) so they are visible right away.
-        anchor = find(families=("density", "neutron"))
-        if anchor is None:
-            anchor = find(families=("deep_res",))
-        if anchor is None:
-            anchor = len(tracks) - 1
-        for new, owned in (
-            (track, ("VSH", "PHIE", "SW")),
-            (flag_track, ("RES_FLAG", "PAY_FLAG")),
-            (volumes, ("VMAT",)),
-        ):
-            if new is None:
-                continue
-            idx = find(mnemonics=owned, kind=new.kind)
-            if idx is None:
-                anchor += 1
-                tracks.insert(anchor, new)
-            else:
-                tracks[idx] = new
-                anchor = idx
+        tracks = results_tracks(self.doc.well, names)
+        self.doc.adopt_layout(LogLayout(tracks))  # scales in the units the curves are displayed in
+        place_tracks(self.doc.layout, tracks)
         self.doc.layoutChanged.emit()
-
-
-# ============================================================================ calculator
-
-
-class CalculatorDialog(QDialog):
-    def __init__(self, doc: WellDocument, parent=None):
-        super().__init__(parent)
-        self.doc = doc
-        self.setWindowTitle(_("Curve calculator — {well}").format(well=doc.title))
-        self.setWindowIcon(app_icon())
-        self.resize(640, 440)
-        lay = QHBoxLayout(self)
-        left = QVBoxLayout()
-        form = QFormLayout()
-        self.name = QLineEdit(_("NEW"))
-        self.unit = QLineEdit()
-        self.descr = QLineEdit()
-        form.addRow(_("Name:"), self.name)
-        form.addRow(_("Unit:"), self.unit)
-        form.addRow(_("Description:"), self.descr)
-        left.addLayout(form)
-        left.addWidget(QLabel(_("Expression:")))
-        self.expr = QPlainTextEdit()
-        self.expr.setPlaceholderText(
-            _("E.g.: (2.65 - RHOB) / (2.65 - 1.0)") + "\n     where(GR > 75, 1, 0)\n     log10(LLD)"
-        )
-        left.addWidget(self.expr, 1)
-        help_text = "\n".join(
-            [
-                _("Operators: {operators}").format(operators="+ - * / ** < > <= >= == & |"),
-                _("Functions: {functions}").format(functions=", ".join(sorted(FUNCTIONS))),
-                _("Constants: pi, e, nan. Curves with special names: [K-3104]"),
-                _("DEPTH and TVD: depth of each sample (measured and true vertical, in the file's depth unit)."),
-            ]
-        )
-        hl = QLabel(help_text)
-        hl.setWordWrap(True)
-        hl.setStyleSheet("color: #566573")
-        left.addWidget(hl)
-        self.preview = QLabel(" ")
-        left.addWidget(self.preview)
-        row = QHBoxLayout()
-        test = QPushButton(_("Test"))
-        test.clicked.connect(self._test)
-        row.addWidget(test)
-        row.addStretch()
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText(_("Create curve"))
-        buttons.accepted.connect(self._ok)
-        buttons.rejected.connect(self.reject)
-        row.addWidget(buttons)
-        left.addLayout(row)
-        lay.addLayout(left, 1)
-
-        right = QVBoxLayout()
-        right.addWidget(QLabel(_("Curves (double-click to insert):")))
-        unit_hint = QLabel(_("Values are used in the file's units, shown in brackets."))
-        unit_hint.setWordWrap(True)
-        unit_hint.setStyleSheet("color: #566573")
-        right.addWidget(unit_hint)
-        self.list = QListWidget()
-        for m in doc.well.curves:
-            unit = doc.well.curves[m].unit
-            item = QListWidgetItem(f"{m}  [{unit}]" if unit else m)
-            item.setData(Qt.UserRole, m)
-            self.list.addItem(item)
-        self.list.itemDoubleClicked.connect(lambda it: self.expr.insertPlainText(curve_ref(it.data(Qt.UserRole))))
-        right.addWidget(self.list)
-        lay.addLayout(right)
-
-    def _evaluate(self) -> np.ndarray | None:
-        try:
-            return evaluate(self.expr.toPlainText(), self.doc.well.formula_env())
-        except CalculatorError as e:
-            self.preview.setText("<span style='color:#c0392b'>{}</span>".format(_("Error: {error}").format(error=e)))
-            return None
-
-    def _test(self):
-        v = self._evaluate()
-        if v is not None:
-            n = int(np.isfinite(v).sum())
-            if n:
-                self.preview.setText(
-                    _("Valid: {count} samples · min {min} · max {max} · mean {mean}").format(
-                        count=n, min=f"{np.nanmin(v):.4g}", max=f"{np.nanmax(v):.4g}", mean=f"{np.nanmean(v):.4g}"
-                    )
-                )
-            else:
-                self.preview.setText(_("Valid, but the result has no values (all NaN)"))
-
-    def _ok(self):
-        name = self.name.text().strip().upper()
-        if not name or not name.replace("_", "").isalnum():
-            QMessageBox.warning(self, _("Calculator"), _("Use a name made of letters, digits or _."))
-            return
-        v = self._evaluate()
-        if v is None:
-            return
-        if name in self.doc.well.curves and self.doc.well.curves[name].formula is None:
-            QMessageBox.warning(
-                self, _("Calculator"), _("{name} is an original LAS curve; choose another name.").format(name=name)
-            )
-            return
-        formula = " ".join(self.expr.toPlainText().split())
-        with self.doc.undo_step(_("Create curve {name}").format(name=name)):
-            self.doc.add_curves(
-                [
-                    Curve(
-                        name,
-                        self.unit.text().strip(),
-                        self.descr.text().strip() or _("Computed curve"),
-                        v,
-                        formula=formula,
-                    )
-                ]
-            )
-        self.accept()
-
-
-# ============================================================================ zone summary
-
-
-class ZoneSummaryDialog(QDialog):
-    def __init__(self, doc: WellDocument, parent=None):
-        super().__init__(parent)
-        self.doc = doc
-        w = doc.well
-        p = doc.petro or petro.PetroParams()
-        self.setWindowTitle(_("Zone summary — {well}").format(well=doc.title))
-        self.setWindowIcon(app_icon())
-        self.resize(900, 420)
-        lay = QVBoxLayout(self)
-        row = QHBoxLayout()
-        self.vsh = _curve_combo(doc, "VSH" if "VSH" in w.curves else find_curve(w, "vsh"))
-        self.phi = _curve_combo(doc, "PHIE" if "PHIE" in w.curves else find_curve(w, "effective_porosity"))
-        self.sw = _curve_combo(doc, "SW" if "SW" in w.curves else find_curve(w, "sw"))
-        self.vsh_cut = spin(p.vsh_cut, 0, 1)
-        self.phi_cut = spin(p.phi_cut, 0, 1)
-        self.sw_cut = spin(p.sw_cut, 0, 1)
-        for lbl, wdg in (
-            ("Vsh", self.vsh),
-            ("≤", self.vsh_cut),
-            ("φ", self.phi),
-            ("≥", self.phi_cut),
-            ("Sw", self.sw),
-            ("≤", self.sw_cut),
-        ):
-            row.addWidget(QLabel(lbl))
-            row.addWidget(wdg)
-        calc = QPushButton(_("Compute"))
-        calc.clicked.connect(self._calc)
-        row.addWidget(calc)
-        lay.addLayout(row)
-        self.note = QLabel()
-        lay.addWidget(self.note)
-        self.table = QTableWidget(0, 10)
-        u = w.depth_unit
-        self.table.setHorizontalHeaderLabels(
-            [
-                _("Zone"),
-                _("Top ({unit})").format(unit=u),
-                _("Base ({unit})").format(unit=u),
-                _("Gross ({unit})").format(unit=u),
-                _("Net res. ({unit})").format(unit=u),
-                _("Net pay ({unit})").format(unit=u),
-                "N/G",
-                _("Avg φ"),
-                _("Avg Sw"),
-                _("Avg Vsh"),
-            ]
-        )
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)  # zone names
-        lay.addWidget(self.table, 1)
-        out = QHBoxLayout()
-        copy_btn = QPushButton(_("Copy (for Excel)"))
-        copy_btn.clicked.connect(self._copy)
-        save_btn = QPushButton(_("Save CSV…"))
-        save_btn.clicked.connect(self._save)
-        out.addWidget(copy_btn)
-        out.addWidget(save_btn)
-        out.addStretch()
-        close = QDialogButtonBox(QDialogButtonBox.Close)
-        close.rejected.connect(self.reject)
-        out.addWidget(close)
-        lay.addLayout(out)
-        self._rows: list[list[str]] = []
-        self._calc()
-
-    def _zones(self) -> list[Zone]:
-        w = self.doc.well
-        if w.tops:
-            zones = zones_from_tops(w.tops, w.stop)
-            first = min(t.depth for t in w.tops)
-            if first > w.start:
-                zones.insert(0, Zone(_("(above the first top)"), w.start, first))
-            return zones
-        return [Zone(_("Whole well"), w.start, w.stop)]
-
-    def _calc(self):
-        cutoffs = {}
-        if self.doc.petro is not None:  # cutoffs set per zone in the petrophysics dialog
-            cutoffs = {
-                z: {k: v for k, v in vals.items() if k in ("vsh_cut", "phi_cut", "sw_cut")}
-                for z, vals in self.doc.petro.zones.items()
-            }
-            cutoffs = {z: v for z, v in cutoffs.items() if v}
-        rows = petro.zone_summary(
-            self.doc.well,
-            self._zones(),
-            self.vsh.currentData(),
-            self.phi.currentData(),
-            self.sw.currentData(),
-            self.vsh_cut.value(),
-            self.phi_cut.value(),
-            self.sw_cut.value(),
-            cutoffs,
-        )
-        notes = []
-        if not self.doc.well.tops:
-            notes.append(_("No tops defined: the whole well is summarized (Well ▸ Formation tops…)."))
-        used = [r.zone for r in rows if r.zone in cutoffs]
-        if used:
-            notes.append(
-                _("Zones with their own cutoffs (from Petrophysics ▸ Parameters by zone): {zones}").format(
-                    zones=", ".join(used)
-                )
-            )
-        self.note.setText("\n".join(notes))
-        self._rows = []
-        self.table.setRowCount(len(rows))
-        for r, z in enumerate(rows):
-            vals = [
-                z.zone,
-                f"{z.top:.1f}",
-                f"{z.base:.1f}",
-                f"{z.gross:.1f}",
-                f"{z.net_reservoir:.1f}",
-                f"{z.net_pay:.1f}",
-                _pct(z.ntg),
-                _num(z.phi_avg),
-                _num(z.sw_avg),
-                _num(z.vsh_avg),
-            ]
-            self._rows.append(vals)
-            for c, v in enumerate(vals):
-                item = QTableWidgetItem(v)
-                item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter if c else Qt.AlignLeft | Qt.AlignVCenter)
-                self.table.setItem(r, c, item)
-
-    def _headers(self):
-        return [self.table.horizontalHeaderItem(i).text() for i in range(self.table.columnCount())]
-
-    def _copy(self):
-        text = "\n".join("\t".join(r) for r in [self._headers(), *self._rows])
-        QGuiApplication.clipboard().setText(text)
-
-    def _save(self):
-        path, _filter = QFileDialog.getSaveFileName(
-            self, _("Save summary"), f"{self.doc.title}_zones.csv", "CSV (*.csv)"
-        )
-        if path:
-            with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel on Windows
-                csv.writer(f).writerows([self._headers(), *self._rows])
-
-
-def _num(v: float) -> str:
-    return "—" if not np.isfinite(v) else f"{v:.3f}"
-
-
-def _pct(v: float) -> str:
-    return "—" if not np.isfinite(v) else f"{v * 100:.0f} %"

@@ -6,10 +6,9 @@ the interface language can be switched at runtime without recreating the window.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QStandardPaths, Qt, QTimer
+from PySide6.QtCore import QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QUndoGroup
 from PySide6.QtWidgets import (
     QApplication,
@@ -24,14 +23,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from innopetrol import __version__, i18n
+from innopetrol import i18n
 from innopetrol.i18n import _
 from innopetrol.model import units
 from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.mnemonics import build_triple_combo
 from innopetrol.model.project import SUFFIX as PROJECT_SUFFIX
-from innopetrol.model.project import ProjectError, WellEntry, load_project, save_project
+from innopetrol.model.project import ProjectError, load_project
 from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.model.template import SUFFIX as TEMPLATE_SUFFIX
 from innopetrol.model.template import (
@@ -44,22 +43,16 @@ from innopetrol.model.template import (
 )
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
-from innopetrol.ui.recovery import Recovery
+from innopetrol.ui.help_dialogs import show_about, show_help
+from innopetrol.ui.session import Session
 from innopetrol.ui.well_tree import WellTree
 from innopetrol.ui.well_view import WellView
+from innopetrol.ui.widgets import key_text
 
-MAX_RECENT = 8
 AUTOSAVE_MS = 2 * 60 * 1000  # autosave interval while there are unsaved changes
-# Modifier key as the user sees it: on Mac Qt maps what the code calls "Ctrl" to ⌘.
-MOD = "⌘" if sys.platform == "darwin" else "Ctrl"
 # QSettings identifiers. They are storage keys, not interface text: changing them would lose
 # existing users' settings (recent files, default template, language).
 SETTINGS_ORG, SETTINGS_APP = "InnoPetrol", "Visor de Pozos"
-
-
-def key_text(seq) -> str:
-    """Shortcut in the platform's notation: ⌘O on Mac, Ctrl+O on Windows/Linux."""
-    return QKeySequence(seq).toString(QKeySequence.NativeText)
 
 
 class MainWindow(QMainWindow):
@@ -79,12 +72,10 @@ class MainWindow(QMainWindow):
 
         self.docs: list[WellDocument] = []
         self.views: dict[WellDocument, WellView] = {}
-        self.project_path: Path | None = None
-        self.dirty = False
+        self.session = Session(self.settings)
         self._windows: list[QWidget] = []  # open non-modal windows (keeps them from being garbage collected)
         # One undo history per well; the group follows the active well window.
         self.undo_group = QUndoGroup(self)
-        self.recovery = Recovery(self.data_dir / "recovery")
         self.autosave_timer = QTimer(self)
         self.autosave_timer.setInterval(AUTOSAVE_MS)
         self.autosave_timer.timeout.connect(self.autosave)
@@ -140,16 +131,7 @@ class MainWindow(QMainWindow):
         self.a_export_las = A(self.export_las)
         self.a_export_csv = A(self.export_csv)
         self.a_quit = A(self.close, QKeySequence.Quit, needs_doc=False)
-        self.a_undo = A(self.undo_group.undo, QKeySequence.Undo, needs_doc=False)
-        self.a_redo = A(self.undo_group.redo, QKeySequence.Redo, needs_doc=False)
-        # Ctrl+Y as well: the usual redo shortcut on Windows besides Ctrl+Shift+Z.
-        self.a_redo.setShortcuts([QKeySequence(QKeySequence.Redo), QKeySequence("Ctrl+Y")])
-        self.a_undo.setEnabled(False)
-        self.a_redo.setEnabled(False)
-        self.undo_group.canUndoChanged.connect(self.a_undo.setEnabled)
-        self.undo_group.canRedoChanged.connect(self.a_redo.setEnabled)
-        self.undo_group.undoTextChanged.connect(lambda _text: self._undo_texts())
-        self.undo_group.redoTextChanged.connect(lambda _text: self._undo_texts())
+        self._build_undo_actions()
 
         self.a_tpl_save = A(self.save_template, "Ctrl+T")
         self.a_tpl_load = A(self.load_template, "Ctrl+L")
@@ -164,32 +146,12 @@ class MainWindow(QMainWindow):
         self.a_del_track = A(lambda: self._view_call("remove_track"))
         self.a_tops = A(lambda: self.edit_tops(self.active_doc()), "Ctrl+Shift+F")
         self.a_survey = A(self.edit_survey)
-        # Depth reference (MD/TVD/TVDSS) and display unit of the active well.
-        self.reference_group = QActionGroup(self)
-        self.reference_actions = {}
-        for code in ("md", "tvd", "tvdss"):
-            a = QAction(self, checkable=True)
-            a.setProperty("needs_doc", True)
-            a.triggered.connect(lambda _checked=False, code=code: self.set_depth_reference(code))
-            self.reference_group.addAction(a)
-            self.reference_actions[code] = a
-        self.system_group = QActionGroup(self)
-        self.system_actions = {}
-        for code in units.SYSTEMS:
-            a = QAction(self, checkable=True)
-            a.triggered.connect(lambda _checked=False, code=code: self.set_unit_system(code))
-            self.system_group.addAction(a)
-            self.system_actions[code] = a
-        self.unit_group = QActionGroup(self)
-        self.unit_actions = {}
-        for code in ("file", "m", "ft"):
-            a = QAction(self, checkable=True)
-            a.setProperty("needs_doc", True)
-            a.triggered.connect(
-                lambda _checked=False, code=code: self.set_display_unit(None if code == "file" else code)
-            )
-            self.unit_group.addAction(a)
-            self.unit_actions[code] = a
+        # Depth reference (MD/TVD/TVDSS) and display unit of the active well; unit system of all wells.
+        self.reference_actions = self._choice_actions(("md", "tvd", "tvdss"), self.set_depth_reference, needs_doc=True)
+        self.unit_actions = self._choice_actions(
+            ("file", "m", "ft"), lambda code: self.set_display_unit(None if code == "file" else code), needs_doc=True
+        )
+        self.system_actions = self._choice_actions(units.SYSTEMS, self.set_unit_system)
         self.a_petro = A(self.petrophysics, "Ctrl+P")
         self.a_calc = A(self.calculator, "Ctrl+K")
         self.a_zones = A(self.zone_summary)
@@ -212,16 +174,37 @@ class MainWindow(QMainWindow):
         self.a_tabs.setCheckable(True)
 
         # Language names are shown in their own language so anyone can find theirs.
-        self.language_group = QActionGroup(self)
-        self.language_actions = {}
+        self.language_actions = self._choice_actions(i18n.LANGUAGES, self.set_language)
         for code, name in i18n.LANGUAGES.items():
-            a = QAction(name, self, checkable=True)
-            a.triggered.connect(lambda _checked=False, code=code: self.set_language(code))
-            self.language_group.addAction(a)
-            self.language_actions[code] = a
+            self.language_actions[code].setText(name)
 
-        self.a_help = A(self.show_help, "F1", needs_doc=False)
-        self.a_about = A(self.show_about, needs_doc=False)
+        self.a_help = A(lambda: show_help(self), "F1", needs_doc=False)
+        self.a_about = A(lambda: show_about(self), needs_doc=False)
+
+    def _build_undo_actions(self):
+        self.a_undo = self._action(self.undo_group.undo, QKeySequence.Undo, needs_doc=False)
+        self.a_redo = self._action(self.undo_group.redo, QKeySequence.Redo, needs_doc=False)
+        # Ctrl+Y as well: the usual redo shortcut on Windows besides Ctrl+Shift+Z.
+        self.a_redo.setShortcuts([QKeySequence(QKeySequence.Redo), QKeySequence("Ctrl+Y")])
+        self.a_undo.setEnabled(False)
+        self.a_redo.setEnabled(False)
+        self.undo_group.canUndoChanged.connect(self.a_undo.setEnabled)
+        self.undo_group.canRedoChanged.connect(self.a_redo.setEnabled)
+        self.undo_group.undoTextChanged.connect(lambda _text: self._undo_texts())
+        self.undo_group.redoTextChanged.connect(lambda _text: self._undo_texts())
+
+    def _choice_actions(self, codes, slot, needs_doc: bool = False) -> dict[str, QAction]:
+        """Mutually exclusive checkable actions, one per code; triggering one calls slot(code).
+        Their texts are set in retranslate()."""
+        group = QActionGroup(self)
+        actions = {}
+        for code in codes:
+            a = QAction(self, checkable=True)
+            a.setProperty("needs_doc", needs_doc)
+            a.triggered.connect(lambda _checked=False, code=code: slot(code))
+            group.addAction(a)
+            actions[code] = a
+        return actions
 
     def _build_menus(self):
         mb = self.menuBar()
@@ -754,20 +737,41 @@ class MainWindow(QMainWindow):
             self.tree.remove_doc(doc)
             self._update_actions()
 
+    # The session keeps this state; these properties keep the window's simple API.
+    @property
+    def dirty(self) -> bool:
+        return self.session.dirty
+
+    @dirty.setter
+    def dirty(self, value: bool) -> None:
+        self.session.dirty = value
+
+    @property
+    def project_path(self) -> Path | None:
+        return self.session.project_path
+
+    @project_path.setter
+    def project_path(self, path: Path | None) -> None:
+        self.session.project_path = path
+
+    @property
+    def recovery(self):
+        return self.session.recovery
+
+    @property
+    def data_dir(self) -> Path:
+        return self.session.data_dir
+
     def _mark_dirty(self):
         self.dirty = True
 
     def _add_recent(self, path):
-        recent = [p for p in (self.settings.value("recent") or []) if p != str(path)]
-        recent.insert(0, str(path))
-        self.settings.setValue("recent", recent[:MAX_RECENT])
+        self.session.add_recent(path)
         self._refresh_recent()
 
     def _refresh_recent(self):
         self.recent_menu.clear()
-        recent = self.settings.value("recent") or []
-        if isinstance(recent, str):
-            recent = [recent]
+        recent = self.session.recent()
         for p in recent:
             a = self.recent_menu.addAction(Path(p).name)
             a.setStatusTip(p)
@@ -802,32 +806,8 @@ class MainWindow(QMainWindow):
         if path:
             self.open_project(path)
 
-    @property
-    def data_dir(self) -> Path:
-        """Folder for the autosave and the error log. Next to the settings file when the settings are
-        an .ini file (tests, portable use), otherwise the system's application data folder."""
-        if self.settings.format() == QSettings.IniFormat:
-            return Path(self.settings.fileName()).parent
-        return Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
-
-    def _entries(self) -> list[WellEntry]:
-        return [
-            WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit, dict(d.curve_units))
-            for d in self.docs
-        ]
-
     def autosave(self) -> bool:
-        """Saves the open wells for recovery if there are unsaved changes. True if it saved."""
-        if not (self.dirty and self.docs):
-            return False
-        try:
-            self.recovery.save(self._entries(), self.project_path)
-        except OSError:
-            import logging
-
-            logging.getLogger("innopetrol").exception("Autosave failed")
-            return False
-        return True
+        return self.session.autosave(self.docs)
 
     def check_recovery(self) -> None:
         """At startup: offers to restore the work of a session that did not close properly."""
@@ -851,17 +831,14 @@ class MainWindow(QMainWindow):
 
     def open_project(self, path) -> None:
         if self._load_project_file(path):
-            self.project_path = Path(path)
-            self.dirty = False
-            self._add_recent(path)
+            self.session.opened(path)
+            self._refresh_recent()
             self._update_title()
 
     def restore_autosave(self) -> None:
         """Opens the autosaved work. It stays attached to the project it came from, still unsaved."""
-        _saved, project = self.recovery.info()
         if self._load_project_file(self.recovery.path):
-            self.project_path = project
-            self.dirty = True
+            self.session.restored()
             self._update_title()
 
     def _load_project_file(self, path) -> bool:
@@ -895,14 +872,11 @@ class MainWindow(QMainWindow):
                 return False
             path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
         try:
-            save_project(path, self._entries())
+            self.session.save(self.docs, path)
         except OSError as e:
             QMessageBox.warning(self, _("Save project"), _("Could not save: {error}").format(error=e))
             return False
-        self.project_path = path
-        self.dirty = False
-        self.recovery.discard()
-        self._add_recent(str(path))
+        self._refresh_recent()
         self._update_title()
         self.statusBar().showMessage(_("Project saved to {path}").format(path=path), 5000)
         return True
@@ -935,7 +909,7 @@ class MainWindow(QMainWindow):
             return
         self.settings.setValue("geometry", self.saveGeometry())
         self._close_all()
-        self.recovery.discard()  # normal exit: nothing to recover
+        self.session.closed_normally()  # nothing to recover
         e.accept()
 
     # ================================================================== templates
@@ -1067,14 +1041,14 @@ class MainWindow(QMainWindow):
     def calculator(self):
         doc = self.active_doc()
         if doc:
-            from innopetrol.ui.petro_dialog import CalculatorDialog
+            from innopetrol.ui.calculator_dialog import CalculatorDialog
 
             CalculatorDialog(doc, self).exec()
 
     def zone_summary(self):
         doc = self.active_doc()
         if doc:
-            from innopetrol.ui.petro_dialog import ZoneSummaryDialog
+            from innopetrol.ui.zone_summary_dialog import ZoneSummaryDialog
 
             ZoneSummaryDialog(doc, self).exec()
 
@@ -1183,82 +1157,3 @@ class MainWindow(QMainWindow):
         self.mdi.setViewMode(QMdiArea.TabbedView if self.a_tabs.isChecked() else QMdiArea.SubWindowView)
         self.mdi.setTabsClosable(True)
         self.mdi.setTabsMovable(True)
-
-    # ================================================================== help
-
-    def show_help(self):
-        k = key_text
-        sections = [
-            (
-                _("Zoom"),
-                [
-                    _(
-                        "<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale "
-                        "({out} / {in_})"
-                    ).format(out=k(QKeySequence.ZoomOut), in_=k(QKeySequence.ZoomIn)),
-                    _("“Fit”: whole well ({shortcut})").format(shortcut=k("Ctrl+0")),
-                    _("{modifier} + wheel or trackpad pinch: continuous zoom at the cursor").format(modifier=MOD),
-                    _("Exact scale: type 1:300 in the “Scale” field"),
-                ],
-            ),
-            (
-                _("Log"),
-                [
-                    _("Wheel: scroll in depth · Shift + wheel: scroll horizontally · PgUp/PgDn, Home/End, arrows"),
-                    _("Drag a track's border: change its width · Double-click a track: edit it"),
-                    _("Right-click: track menu (add, move, remove, add top, scale, export)"),
-                ],
-            ),
-            (
-                _("Well tree"),
-                [
-                    _("Double-click a curve: statistics and histogram · Double-click a top: go to that depth"),
-                ],
-            ),
-            (
-                _("Shortcuts"),
-                [
-                    _(
-                        "{open} open LAS · {save} save project · {export} export · {tsave} / {tload} save / load "
-                        "template"
-                    ).format(
-                        open=k(QKeySequence.Open),
-                        save=k(QKeySequence.Save),
-                        export=k("Ctrl+E"),
-                        tsave=k("Ctrl+T"),
-                        tload=k("Ctrl+L"),
-                    ),
-                    _("{track} add track · {tops} tops · {petro} petrophysics · {calc} calculator").format(
-                        track=k("Ctrl+Shift+T"), tops=k("Ctrl+Shift+F"), petro=k("Ctrl+P"), calc=k("Ctrl+K")
-                    ),
-                    _("{xplot} crossplot · {corr} correlation · {table} data table").format(
-                        xplot=k("Ctrl+X"), corr=k("Ctrl+R"), table=k("Ctrl+D")
-                    ),
-                ],
-            ),
-        ]
-        html = "<br><br>".join(f"<b>{title}</b><br>" + "<br>".join(lines) for title, lines in sections)
-        QMessageBox.information(self, _("Navigation and shortcuts"), html)
-
-    def show_about(self):
-        version = ".".join(map(str, sys.version_info[:2]))
-        QMessageBox.about(
-            self,
-            _("About InnoPetrol"),
-            "<h3>{}</h3><p>{}</p><p>{}</p>".format(
-                _("InnoPetrol — Well Viewer {version}").format(version=__version__),
-                _(
-                    "Well log visualization (LAS format) for petroleum engineers: configurable tracks, linear and "
-                    "logarithmic scales, fills, tops, basic petrophysics, crossplots, well correlation and export "
-                    "to PDF/PNG/LAS."
-                ),
-                _("Original project 2020 · rewritten with Python {version} and PySide6.").format(version=version),
-            )
-            + "<p>{}</p><p>{}</p>".format(
-                _(
-                    "Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; "
-                    "it comes with NO WARRANTY."
-                ),
-                _("Uses Qt for Python (PySide6, LGPLv3), lasio (MIT) and NumPy (BSD)."),
-            ),
-        )

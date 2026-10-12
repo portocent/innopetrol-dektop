@@ -137,6 +137,8 @@ def compact_doc(doc: WellDocument, n_tracks: int, parent, reference: str = "md")
 
 
 class CorrelationWindow(QDialog):
+    """Wells side by side at the same physical scale; tops can be picked by clicking."""
+
     def __init__(self, docs: list[WellDocument], datum: str, parent=None, n_tracks: int = 3, reference: str = "md"):
         super().__init__(parent)
         self.setWindowTitle(_("Correlation — {wells}").format(wells=" · ".join(d.title for d in docs)))
@@ -147,9 +149,25 @@ class CorrelationWindow(QDialog):
         self._sync = False
         self.sources = list(docs)  # the wells' own documents: picked tops are saved there (with undo)
         self._picked: list[WellDocument] = []  # wells changed from this window, for its undo shortcut
-        docs = [compact_doc(d, n_tracks, self, reference) for d in docs]
+        views = [compact_doc(d, n_tracks, self, reference) for d in docs]
 
         root = QVBoxLayout(self)
+        root.addLayout(self._build_toolbar(reference))
+        body = QHBoxLayout()
+        body.addWidget(self._build_columns(views), 1)
+        self.vbar = QScrollBar(Qt.Vertical)
+        body.addWidget(self.vbar)
+        root.addLayout(body, 1)
+        self._refresh_names()
+        self._connect_canvases()
+        self.vbar.valueChanged.connect(self._vbar_moved)
+        self.scale.currentIndexChanged.connect(self._apply_scale)
+        undo = QAction(self)
+        undo.setShortcut(QKeySequence.Undo)
+        undo.triggered.connect(self.undo_pick)
+        self.addAction(undo)
+
+    def _build_toolbar(self, reference: str) -> QHBoxLayout:
         bar = QHBoxLayout()
         bar.addWidget(QLabel(_("Scale:")))
         self.scale = QComboBox()
@@ -159,14 +177,13 @@ class CorrelationWindow(QDialog):
         self.scale.setCurrentIndex(self.scale.findData(500))
         bar.addWidget(self.scale)
         info = reference.upper()
-        if datum != DEPTH_DATUM:
-            info += " · " + _("flattened on “{top}”").format(top=datum)
+        if self.datum != DEPTH_DATUM:
+            info += " · " + _("flattened on “{top}”").format(top=self.datum)
+        modifier = "⌘" if sys.platform == "darwin" else "Ctrl"
         bar.addWidget(
             QLabel(
                 "   "
-                + _("Datum: {datum}.   Wheel: scroll · {modifier}+wheel: zoom").format(
-                    datum=info, modifier="⌘" if sys.platform == "darwin" else "Ctrl"
-                )
+                + _("Datum: {datum}.   Wheel: scroll · {modifier}+wheel: zoom").format(datum=info, modifier=modifier)
             )
         )
         bar.addStretch()
@@ -184,14 +201,10 @@ class CorrelationWindow(QDialog):
         )
         self.pick.toggled.connect(self._pick_toggled)
         bar.addWidget(self.pick)
-        undo = QAction(self)
-        undo.setShortcut(QKeySequence.Undo)
-        undo.triggered.connect(self.undo_pick)
-        self.addAction(undo)
-        root.addLayout(bar)
-        self._refresh_names()
+        return bar
 
-        body = QHBoxLayout()
+    def _build_columns(self, views: list[WellDocument]) -> QScrollArea:
+        """One column per well (title + log), with the top connectors between them."""
         self.area = QScrollArea()
         self.area.setWidgetResizable(True)
         self.area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -200,7 +213,7 @@ class CorrelationWindow(QDialog):
         row.setSpacing(0)
         row.setContentsMargins(0, 0, 0, 0)
         self.canvases: list[LogCanvas] = []
-        for i, d in enumerate(docs):
+        for i, d in enumerate(views):
             c = LogCanvas(d, show_top_labels=True)
             c.clamp_enabled = False
             c.fit_mode = False
@@ -212,20 +225,16 @@ class CorrelationWindow(QDialog):
             row.addWidget(self._column(d.title, c))
         row.addStretch()
         self.area.setWidget(row_widget)
-        body.addWidget(self.area, 1)
-        self.vbar = QScrollBar(Qt.Vertical)
-        body.addWidget(self.vbar)
-        root.addLayout(body, 1)
+        return self.area
 
+    def _connect_canvases(self) -> None:
         header = max(c.natural_header_h() for c in self.canvases)
         for i, c in enumerate(self.canvases):
-            c.min_header_h = header
+            c.min_header_h = header  # same header height, so the bodies line up
             c.viewChanged.connect(lambda c=c: self._propagate(c))
             c.installEventFilter(self)
             c.contextRequested.connect(lambda _track, depth, pos, i=i: self._context_menu(i, depth, pos))
             self.sources[i].topsChanged.connect(lambda i=i: self._tops_changed(i))
-        self.vbar.valueChanged.connect(self._vbar_moved)
-        self.scale.currentIndexChanged.connect(self._apply_scale)
 
     def _shift(self, d: WellDocument) -> float:
         if self.datum == DEPTH_DATUM:

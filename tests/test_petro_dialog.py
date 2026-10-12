@@ -114,7 +114,7 @@ def test_pickett_fit_and_drag(qtbot):
 
 
 def test_zone_summary_uses_zone_cutoffs(dialog, doc, qtbot):
-    from innopetrol.ui.petro_dialog import ZoneSummaryDialog
+    from innopetrol.ui.zone_summary_dialog import ZoneSummaryDialog
 
     zone_cell(dialog, 1, "phi_cut").setText("0.9")
     dialog._run()
