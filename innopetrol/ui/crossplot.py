@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QF
 from innopetrol.model.mnemonics import default_scale, find_curve
 from innopetrol.model.petro import PetroParams
 from innopetrol.model.scales import log_decades, nice_linear_range
-from innopetrol.render.painter import BORDER, fmt
+from innopetrol.render.painter import BORDER, fmt, polygon_from_arrays
 from innopetrol.resources import app_icon
 from innopetrol.ui.analysis import zone_choices
 from innopetrol.ui.document import WellDocument
@@ -24,6 +24,13 @@ LITHOLOGY = {
     "Caliza": (lambda f: f, lambda f: 2.71 - 1.71 * f, "#2471a3"),
     "Dolomita": (lambda f: f + 0.04 + 0.05 * f, lambda f: 2.87 - 1.87 * f, "#7d3c98"),
 }
+
+
+N_LEVELS = 32
+
+
+def _points(x: np.ndarray, y: np.ndarray):
+    return polygon_from_arrays(x, y)
 
 
 class CrossplotWidget(QWidget):
@@ -56,22 +63,7 @@ class CrossplotWidget(QWidget):
         px = r.left() + self.xa.map(self.x, r.width())
         py = r.bottom() - self.ya.map(self.y, r.height())
         ok = np.isfinite(px) & np.isfinite(py)
-        if self.c.size:
-            lo, hi = self.c_range
-            t = (self.c - lo) / (hi - lo) if hi != lo else np.zeros_like(self.c)
-            colors = colormap(t)
-        p.setPen(Qt.NoPen)
-        base = QColor("#2e86c1")
-        base.setAlpha(150)
-        idx = np.flatnonzero(ok)
-        if self.c.size:
-            idx = idx[np.argsort(np.nan_to_num(self.c[idx], nan=-np.inf))]  # valores altos encima
-        for i in idx:
-            col = colors[i] if self.c.size else base
-            if self.c.size and not np.isfinite(self.c[i]):
-                col = QColor(160, 160, 160, 120)
-            p.setBrush(col)
-            p.drawEllipse(QPointF(px[i], py[i]), 2.4, 2.4)
+        self._draw_points(p, px, py, ok)
         self._draw_overlay(p, r)
         p.restore()
         p.setPen(BORDER)
@@ -79,6 +71,32 @@ class CrossplotWidget(QWidget):
                    f"{int(ok.sum())} puntos")
         if self.c.size:
             self._draw_colorbar(p, QRectF(r.right() + 18, r.top(), 16, r.height()), fm)
+
+    def _draw_points(self, p: QPainter, px, py, ok):
+        """Puntos agrupados en niveles de color: una llamada a drawPoints por nivel en vez de
+        un drawEllipse por punto (los niveles altos se dibujan al final, quedan encima)."""
+        pen = QPen(QColor("#2e86c1"), 4.8, Qt.SolidLine, Qt.RoundCap)
+        if not self.c.size:
+            color = QColor("#2e86c1")
+            color.setAlpha(150)
+            pen.setColor(color)
+            p.setPen(pen)
+            p.drawPoints(_points(px[ok], py[ok]))
+            return
+        lo, hi = self.c_range
+        t = (self.c - lo) / (hi - lo) if hi != lo else np.zeros_like(self.c)
+        no_color = ok & ~np.isfinite(t)
+        pen.setColor(QColor(160, 160, 160, 120))
+        p.setPen(pen)
+        p.drawPoints(_points(px[no_color], py[no_color]))
+        levels = np.clip((np.nan_to_num(t) * (N_LEVELS - 1)).round().astype(int), 0, N_LEVELS - 1)
+        palette = colormap(np.linspace(0, 1, N_LEVELS))
+        for lvl in range(N_LEVELS):
+            sel = ok & np.isfinite(t) & (levels == lvl)
+            if sel.any():
+                pen.setColor(palette[lvl])
+                p.setPen(pen)
+                p.drawPoints(_points(px[sel], py[sel]))
 
     def _draw_overlay(self, p, r):
         if self.overlay == "nd":

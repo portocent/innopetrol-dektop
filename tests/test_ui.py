@@ -143,7 +143,7 @@ def test_windows_open(win, qtbot):
     for mode in ("free", "nd", "pickett"):
         x = CrossplotWindow(a, mode, win)
         x.show()
-    s = StatsDialog(a, "SGR", win)
+    StatsDialog(a, "SGR", win).show()
     t = DataTableWindow(a, win)
     t.show()
     a.cursorMoved.emit(8000.0)
@@ -169,3 +169,42 @@ def test_project_and_template(win, tmp_path):
     win.dirty = False
     win.open_project(str(tmp_path / "p.ipproj"))
     assert [d.title for d in win.docs] == ["Test Well 1", "1-5"]
+
+
+def test_cursor_and_scroll_reuse_tiles(win, qtbot, monkeypatch):
+    """Mover el cursor no debe volver a dibujar las curvas; desplazarse sólo dibuja franjas nuevas."""
+    from PySide6.QtCore import QEvent, QPointF, Qt
+    from PySide6.QtGui import QMouseEvent
+
+    c = win.views[win.docs[0]].canvas
+    qtbot.waitExposed(c)
+    c.set_scale(500)
+    c.repaint()
+    renders = []
+    original = c._render_tile
+    monkeypatch.setattr(c, "_render_tile", lambda k: renders.append(k) or original(k))
+    for y in range(int(c.header_h) + 20, int(c.height()) - 20, 15):
+        ev = QMouseEvent(QEvent.MouseMove, QPointF(80, y), QPointF(80, y), Qt.NoButton, Qt.NoButton, Qt.NoModifier)
+        c.mouseMoveEvent(ev)
+        c.repaint()
+    assert renders == []
+    c.scroll_by_px(30)
+    c.repaint()
+    assert len(renders) <= 1
+    c.zoom(1.5)
+    c.repaint()
+    assert len(renders) > 1  # cambiar la escala sí invalida la caché
+
+
+def test_tiles_have_no_horizontal_frame(win, qtbot):
+    """Los tiles no deben llevar borde arriba/abajo: se vería una línea cada 256 px."""
+    from innopetrol.render.painter import BORDER
+
+    c = win.views[win.docs[0]].canvas
+    qtbot.waitExposed(c)
+    c.set_scale(500)
+    img = c._render_tile(30).toImage()
+    x = 40  # dentro del primer track, lejos de los bordes verticales
+    dpr = img.devicePixelRatio()
+    for row in (0, img.height() - 1):
+        assert img.pixelColor(x * dpr, row).name() != BORDER.name()

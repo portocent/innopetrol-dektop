@@ -13,14 +13,15 @@ from __future__ import annotations
 import math
 
 import numpy as np
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen
+from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from innopetrol.model.scales import px_per_unit, scale_ratio
 from innopetrol.render.painter import BORDER, DepthTransform, RenderOptions, header_height
-from innopetrol.render.scene import paint_log, track_edges, total_width
+from innopetrol.render.scene import paint_headers, paint_log, paint_tops_overlay, track_edges, total_width
 from innopetrol.ui.document import WellDocument
+from innopetrol.ui.tile_cache import TILE_H, TileCache
 
 MIN_TRACK_W = 40
 EDGE_GRAB = 4
@@ -47,6 +48,14 @@ class LogCanvas(QWidget):
         self._header_h = 60.0
         self.min_header_h = 0.0  # en correlación todos los pozos usan el mismo alto de encabezado
         self.clamp_enabled = True
+        self._version = 0  # aumenta con cada cambio de layout: invalida la caché
+        self._tiles = TileCache()
+        self._header_pm: QPixmap | None = None
+        self._header_key = None
+        self._prefetch = QTimer(self)
+        self._prefetch.setSingleShot(True)
+        self._prefetch.timeout.connect(self._prefetch_tiles)
+        self.setAttribute(Qt.WA_OpaquePaintEvent)  # pintamos todo el fondo: Qt no necesita borrarlo
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -147,7 +156,13 @@ class LogCanvas(QWidget):
         self.update()
         self.viewChanged.emit()
 
+    def invalidate(self):
+        """Descarta los dibujos en caché (llamar cuando cambia algo que se ve en el registro)."""
+        self._version += 1
+        self.update()
+
     def _layout_changed(self):
+        self._version += 1
         self._update_header_h()
         if self.selected >= len(self.doc.layout.tracks):
             self.selected = -1
@@ -196,15 +211,88 @@ class LogCanvas(QWidget):
 
     def paintEvent(self, e):
         p = QPainter(self)
-        p.fillRect(self.rect(), QColor("#d5d8dc"))
+        p.fillRect(e.rect(), QColor("#d5d8dc"))
         p.setRenderHint(QPainter.TextAntialiasing)
         tf = self.transform()
-        opts = RenderOptions(k=1.0, top_labels=self.show_top_labels)
-        paint_log(p, self.doc.layout, self.well, tf, -self.x_offset, 0, self._header_h, self.body_h, opts,
-                  selected=self.selected)
+        self._paint_header(p)
+        self._paint_body(p, tf)
+        opts = RenderOptions(top_labels=self.show_top_labels)
+        paint_tops_overlay(p, self.doc.layout, self.well, tf, -self.x_offset, self._header_h, self.body_h, opts)
         if self._cursor_y is not None and self._cursor_y > self._header_h:
             self._paint_cursor(p, self._cursor_y)
         p.end()
+        self._prefetch.start(0)
+
+    def _dpr(self) -> float:
+        return self.devicePixelRatioF() or 1.0
+
+    def _paint_header(self, p: QPainter):
+        width = total_width(self.doc.layout)
+        if width <= 0:
+            return
+        dpr = self._dpr()
+        key = (self._version, self.selected, self._header_h, dpr, self.font().key())
+        if key != self._header_key or self._header_pm is None:
+            pm = QPixmap(QSize(math.ceil(width * dpr), math.ceil(self._header_h * dpr)))
+            pm.setDevicePixelRatio(dpr)
+            pm.fill(QColor("#d5d8dc"))
+            hp = QPainter(pm)
+            hp.setFont(self.font())
+            hp.setRenderHint(QPainter.TextAntialiasing)
+            paint_headers(hp, self.doc.layout, self.well, 0, 0, self._header_h, RenderOptions(), self.selected)
+            hp.end()
+            self._header_pm, self._header_key = pm, key
+        p.drawPixmap(QPointF(-self.x_offset, 0), self._header_pm)
+
+    def _tile_range(self, tf: DepthTransform) -> tuple[int, int, float]:
+        base = tf.top * self.ppu  # y absoluta (en píxeles) del borde superior del cuerpo
+        return math.floor(base / TILE_H), math.floor((base + self.body_h) / TILE_H), base
+
+    def _paint_body(self, p: QPainter, tf: DepthTransform):
+        width = total_width(self.doc.layout)
+        if width <= 0:
+            return
+        self._tiles.validate((self._version, self.ppu, self._dpr(), self.font().key()))
+        k0, k1, base = self._tile_range(tf)
+        p.save()
+        p.setClipRect(QRectF(0, self._header_h, self.width(), self.body_h))
+        for k in range(k0, k1 + 1):
+            pm = self._tile(k)
+            p.drawPixmap(QPointF(-self.x_offset, round(self._header_h + k * TILE_H - base)), pm)
+        p.restore()
+
+    def _tile(self, k: int) -> QPixmap:
+        pm = self._tiles.get(k)
+        if pm is None:
+            pm = self._render_tile(k)
+            self._tiles.put(k, pm)
+        return pm
+
+    def _render_tile(self, k: int) -> QPixmap:
+        dpr = self._dpr()
+        width = total_width(self.doc.layout)
+        pm = QPixmap(QSize(math.ceil(width * dpr), math.ceil(TILE_H * dpr)))
+        pm.setDevicePixelRatio(dpr)
+        pm.fill(QColor("#d5d8dc"))
+        tp = QPainter(pm)
+        tp.setFont(self.font())
+        tp.setRenderHint(QPainter.TextAntialiasing)
+        opts = RenderOptions(draw_tops=False, frame_ends=False, dpr=dpr)
+        tf = DepthTransform(k * TILE_H / self.ppu, self.ppu)
+        paint_log(tp, self.doc.layout, self.well, tf, 0, 0, 0, TILE_H, opts, draw_headers=False)
+        tp.end()
+        return pm
+
+    def _prefetch_tiles(self):
+        """Con la aplicación inactiva, dibuja por adelantado el tile de arriba y el de abajo."""
+        if not self.isVisible() or total_width(self.doc.layout) <= 0:
+            return
+        k0, k1, _ = self._tile_range(self.transform())
+        for k in (k1 + 1, k0 - 1):
+            if k not in self._tiles:
+                self._tiles.put(k, self._render_tile(k))
+                self._prefetch.start(0)  # de a uno por vez para no bloquear la interfaz
+                return
 
     def _paint_cursor(self, p: QPainter, y: float):
         w = min(total_width(self.doc.layout) - self.x_offset, self.width())
@@ -277,16 +365,30 @@ class LogCanvas(QWidget):
         if self._drag:
             i, x0, w0 = self._drag
             self.doc.layout.tracks[i].width = int(max(MIN_TRACK_W, w0 + x - x0))
-            self.update()
+            self.invalidate()
             return
         self.setCursor(Qt.SplitHCursor if self._edge_at(x) >= 0 else Qt.ArrowCursor)
         if y > self._header_h and self.track_at(x) >= 0:
-            self._cursor_y = y
+            self._set_cursor_y(y)
             self.doc.cursorMoved.emit(self.depth_at(y))
         else:
-            self._cursor_y = None
+            self._set_cursor_y(None)
             self.doc.cursorMoved.emit(math.nan)
-        self.update()
+
+    def _cursor_rect(self, y: float | None) -> QRect | None:
+        if y is None:
+            return None
+        fm_h = QFontMetricsF(self.font()).height()
+        return QRect(0, int(y - fm_h - 4), self.width(), int(fm_h + 8))
+
+    def _set_cursor_y(self, y: float | None):
+        """Mueve la línea del cursor repintando sólo las franjas afectadas, no todo el widget."""
+        if y == self._cursor_y:
+            return
+        for rect in (self._cursor_rect(self._cursor_y), self._cursor_rect(y)):
+            if rect is not None:
+                self.update(rect)
+        self._cursor_y = y
 
     def mouseReleaseEvent(self, e):
         if self._drag:
@@ -301,9 +403,8 @@ class LogCanvas(QWidget):
             self.trackActivated.emit(idx)
 
     def leaveEvent(self, e):
-        self._cursor_y = None
+        self._set_cursor_y(None)
         self.doc.cursorMoved.emit(math.nan)
-        self.update()
         super().leaveEvent(e)
 
     def contextMenuEvent(self, e):
@@ -319,11 +420,7 @@ class LogCanvas(QWidget):
         """Cursor movido desde otra vista del mismo pozo (p. ej. la tabla de datos)."""
         if self.underMouse():
             return
-        if math.isnan(depth):
-            self._cursor_y = None
-        else:
-            self._cursor_y = self.y_of(depth)
-        self.update()
+        self._set_cursor_y(None if math.isnan(depth) else self.y_of(depth))
 
     def visible_depth_range(self) -> tuple[float, float]:
         tf = self.transform()
