@@ -1,4 +1,4 @@
-"""Punto de entrada: `python -m innopetrol [archivos.las | proyecto.ipproj]` o `innopetrol`."""
+"""Entry point: `python -m innopetrol [files.las | project.ipproj]` or `innopetrol`."""
 
 import sys
 
@@ -30,25 +30,37 @@ def main() -> int:
 
 
 def _smoke_test(app, window, expected: int) -> int:
-    """Verificación del ejecutable empaquetado: abre los LAS, dibuja y sale (código 0 = bien).
+    """Packaged executable check: opens the LAS files, draws and exits (exit code 0 = OK).
 
-    La usa la integración continua en Windows, Linux y macOS: comprueba que el paquete incluye
-    Qt, los iconos y todo lo necesario, sin intervención de nadie.
+    Used by continuous integration on Windows, Linux and macOS to verify that the bundle contains
+    Qt, the icons and everything else it needs, with nobody at the keyboard.
     """
     from PySide6.QtCore import QTimer
 
+    from innopetrol import i18n
     from innopetrol.resources import IMAGES
 
     result = {"code": 1}
 
     def check():
         ok = len(window.docs) == expected and (IMAGES / "d1.png").exists()
+        # The translation catalogs must be bundled too: switching to Spanish must translate.
+        # set_language() persists the choice, so the user's previous setting is restored afterwards.
+        previous_language = window.settings.value("language")
+        current = i18n.current_language()
+        window.set_language("es")
+        ok = ok and window.a_fit.text() == "Ajustar a la ventana"
+        window.set_language(current)
+        if previous_language is None:
+            window.settings.remove("language")
+        else:
+            window.settings.setValue("language", previous_language)
         for view in window.views.values():
             ok = ok and not view.canvas.grab().isNull()
             view.confirm_close = False
         window.dirty = False
         result["code"] = 0 if ok else 1
-        print("smoke-test", "OK" if ok else "FALLÓ", f"({len(window.docs)}/{expected} pozos)", flush=True)
+        print("smoke-test", "OK" if ok else "FAILED", f"({len(window.docs)}/{expected} wells)", flush=True)
         app.quit()
 
     QTimer.singleShot(1500, check)

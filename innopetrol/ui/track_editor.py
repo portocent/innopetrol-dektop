@@ -1,10 +1,10 @@
-"""Editor de un track: curvas (escala, color, estilo) y rellenos.
+"""Track editor: curves (scale, color, style) and fills.
 
-Diferencias con la ventana original (addCurveWindow):
-- filas dinámicas (agregar/quitar/ordenar) en lugar de 16 filas fijas;
-- cada control sabe a qué fila pertenece: no se adivina con QApplication.focusWidget();
-- al elegir una curva se proponen escala, color y tipo (lin/log) según su familia;
-- validación con mensajes por fila y sin excepciones por celdas vacías.
+Differences from the original window (addCurveWindow):
+- dynamic rows (add/remove/reorder) instead of 16 fixed rows;
+- every control knows which row it belongs to: no guessing with QApplication.focusWidget();
+- choosing a curve proposes a scale, color and lin/log type from its family;
+- validation with per-row messages and no exceptions on empty cells.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
                                QFormLayout, QHBoxLayout, QHeaderView, QLineEdit, QMessageBox, QPushButton, QSpinBox,
                                QTableWidget, QTabWidget, QVBoxLayout, QWidget)
 
+from innopetrol.i18n import _
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
 from innopetrol.model.mnemonics import FAMILIES, make_curve_style
 from innopetrol.model.scales import log_decades
@@ -44,7 +45,7 @@ class TrackEditor(QDialog):
         self.doc = doc
         self.index = index
         self.track: TrackSpec = copy.deepcopy(doc.layout.tracks[index])
-        self.setWindowTitle(f"{doc.title} — {self.track.title or f'Track {index + 1}'}")
+        self.setWindowTitle(f"{doc.title} — {self.track.title or _('Track {number}').format(number=index + 1)}")
         self.setWindowIcon(app_icon())
         self.resize(980, 520)
 
@@ -56,8 +57,8 @@ class TrackEditor(QDialog):
         self.width_spin.setSuffix(" px")
         self.width_spin.setValue(self.track.width)
         self.grid_combo = QComboBox()
-        for key, label in (("auto", "Automática (según la primera curva)"), ("linear", "Lineal"),
-                           ("log", "Logarítmica"), ("none", "Sin grilla")):
+        for key, label in (("auto", _("Automatic (from the first curve)")), ("linear", _("Linear")),
+                           ("log", _("Logarithmic")), ("none", _("No grid"))):
             self.grid_combo.addItem(label, key)
         self.grid_combo.setCurrentIndex(max(self.grid_combo.findData(self.track.grid), 0))
         self.div_spin = QSpinBox()
@@ -67,28 +68,25 @@ class TrackEditor(QDialog):
         row.addWidget(self.width_spin)
         row.addWidget(self.grid_combo, 1)
         row.addWidget(self.div_spin)
-        general.addRow("Título:", self.title_edit)
-        general.addRow("Ancho / grilla / divisiones:", row)
+        general.addRow(_("Title:"), self.title_edit)
+        general.addRow(_("Width / grid / divisions:"), row)
         root.addLayout(general)
 
         self.tabs = QTabWidget()
         root.addWidget(self.tabs, 1)
-        self.curve_table = self._make_table(["Curva", "Izquierda", "Derecha", "Log", "Color", "Grosor", "Estilo",
-                                             "Visible"])
-        self.fill_table = self._make_table(["Límite izquierdo", "Valor", "Límite derecho", "Valor", "Color",
-                                            "Patrón", "Etiqueta", "Visible"])
+        self.curve_table = self._make_table([_("Curve"), _("Left"), _("Right"), _("Log"), _("Color"), _("Width"),
+                                             _("Style"), _("Visible")])
+        self.fill_table = self._make_table([_("Left bound"), _("Value"), _("Right bound"), _("Value"), _("Color"),
+                                            _("Pattern"), _("Label"), _("Visible")])
         self.curve_table.horizontalHeader().setSectionResizeMode(C_CURVE, QHeaderView.Stretch)
         self.fill_table.horizontalHeader().setSectionResizeMode(F_LABEL, QHeaderView.Stretch)
         self.tabs.addTab(self._with_buttons(self.curve_table, self._add_curve, self._remove_curve, self._move_curve),
-                         "Curvas")
+                         _("Curves"))
         self.tabs.addTab(self._with_buttons(self.fill_table, self._add_fill, self._remove_fill, self._move_fill),
-                         "Rellenos / sombras")
+                         _("Fills / shading"))
         self.tabs.currentChanged.connect(self._tab_changed)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Apply | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText("Aceptar")
-        buttons.button(QDialogButtonBox.Apply).setText("Aplicar")
-        buttons.button(QDialogButtonBox.Cancel).setText("Cancelar")
         buttons.accepted.connect(self._ok)
         buttons.rejected.connect(self.reject)
         buttons.button(QDialogButtonBox.Apply).clicked.connect(self._apply)
@@ -97,7 +95,7 @@ class TrackEditor(QDialog):
         self._fill_curves(self.track.curves)
         self._fill_fills(self.track.fills)
 
-    # ------------------------------------------------------------------ construcción
+    # ------------------------------------------------------------------ construction
 
     def _make_table(self, headers):
         t = QTableWidget(0, len(headers))
@@ -113,8 +111,8 @@ class TrackEditor(QDialog):
         lay = QHBoxLayout(w)
         lay.addWidget(table, 1)
         col = QVBoxLayout()
-        for text, slot in (("Agregar", add), ("Quitar", remove), ("Subir", lambda: move(-1)),
-                           ("Bajar", lambda: move(1))):
+        for text, slot in ((_("Add"), add), (_("Remove"), remove), (_("Up"), lambda: move(-1)),
+                           (_("Down"), lambda: move(1))):
             b = QPushButton(text)
             b.clicked.connect(slot)
             col.addWidget(b)
@@ -125,7 +123,7 @@ class TrackEditor(QDialog):
     def _curve_names(self) -> list[str]:
         return list(self.doc.well.curves)
 
-    # ------------------------------------------------------------------ tabla de curvas
+    # ------------------------------------------------------------------ curve table
 
     def _fill_curves(self, curves: list[CurveStyle]):
         self.curve_table.setRowCount(0)
@@ -137,15 +135,15 @@ class TrackEditor(QDialog):
         r = t.rowCount()
         t.insertRow(r)
         combo = QComboBox()
-        combo.addItem("— elegir —", None)
+        combo.addItem(_("— choose —"), None)
         for m in self._curve_names():
             curve = self.doc.well.curves[m]
             fam = FAMILIES.get(make_curve_style(self.doc.well, m).family or "")
-            tip = f"{m} ({curve.unit})" + (f" — {fam.name}" if fam else "")
+            tip = f"{m} ({curve.unit})" + (f" — {_(fam.name)}" if fam else "")
             combo.addItem(m, m)
             combo.setItemData(combo.count() - 1, tip, Qt.ToolTipRole)
-        if c.mnemonic and combo.findData(c.mnemonic) < 0:  # curva de plantilla ausente en el pozo
-            combo.addItem(f"{c.mnemonic} (no disponible)", c.mnemonic)
+        if c.mnemonic and combo.findData(c.mnemonic) < 0:  # template curve missing from the well
+            combo.addItem(_("{curve} (not available)").format(curve=c.mnemonic), c.mnemonic)
         combo.setCurrentIndex(max(combo.findData(c.mnemonic), 0))
         left = QLineEdit("" if c.left is None else fmt(c.left))
         right = QLineEdit("" if c.right is None else fmt(c.right))
@@ -164,7 +162,7 @@ class TrackEditor(QDialog):
         visible = QCheckBox()
         visible.setChecked(c.visible)
 
-        def on_curve(_):
+        def on_curve(_index):
             m = combo.currentData()
             if not m or m not in self.doc.well.curves:
                 return
@@ -188,20 +186,20 @@ class TrackEditor(QDialog):
         for r in range(t.rowCount()):
             m = t.cellWidget(r, C_CURVE).currentData()
             log = t.cellWidget(r, C_LOG).findChild(QCheckBox).isChecked()
-            row = f"Curvas, fila {r + 1}"
+            row = _("Curves, row {row}").format(row=r + 1)
             if not m:
-                errors.append(f"{row}: elija una curva")
+                errors.append(_("{row}: choose a curve").format(row=row))
                 continue
             try:
                 left = parse_float(t.cellWidget(r, C_LEFT).text())
                 right = parse_float(t.cellWidget(r, C_RIGHT).text())
             except ValueError:
-                errors.append(f"{row}: los valores de escala deben ser numéricos")
+                errors.append(_("{row}: scale values must be numbers").format(row=row))
                 left = right = None
             if left is not None and right is not None and left == right:
-                errors.append(f"{row}: la escala izquierda y derecha no pueden ser iguales")
+                errors.append(_("{row}: the left and right scale values cannot be equal").format(row=row))
             if log and any(v is not None and v <= 0 for v in (left, right)):
-                errors.append(f"{row}: en escala logarítmica los límites deben ser mayores que cero")
+                errors.append(_("{row}: on a logarithmic scale the limits must be greater than zero").format(row=row))
             if left is None or right is None:
                 d = make_curve_style(self.doc.well, m) if m in self.doc.well.curves else None
                 if d is not None:
@@ -234,14 +232,14 @@ class TrackEditor(QDialog):
 
     def _move_curve(self, delta):
         r = self.curve_table.currentRow()
-        curves, _ = self._read_curves()
+        curves, _errors = self._read_curves()
         if r < 0 or not (0 <= r + delta < len(curves)) or len(curves) != self.curve_table.rowCount():
             return
         curves[r], curves[r + delta] = curves[r + delta], curves[r]
         self._fill_curves(curves)
         self.curve_table.setCurrentCell(r + delta, 0)
 
-    # ------------------------------------------------------------------ tabla de rellenos
+    # ------------------------------------------------------------------ fill table
 
     def _fill_options(self) -> list[str]:
         t = self.curve_table
@@ -251,7 +249,7 @@ class TrackEditor(QDialog):
     def _bound_combo(self, edge_label: str, curve: str | None, value: float | None, value_edit: QLineEdit):
         combo = QComboBox()
         combo.addItem(edge_label, EDGE)
-        combo.addItem("Valor fijo…", VALUE)
+        combo.addItem(_("Fixed value…"), VALUE)
         for n in self._fill_options():
             combo.addItem(n, n)
         if curve is not None:
@@ -262,10 +260,10 @@ class TrackEditor(QDialog):
             combo.setCurrentIndex(1)
         value_edit.setText("" if value is None else fmt(value))
 
-        def sync(_=None):
+        def sync(_index=None):
             is_value = combo.currentData() == VALUE
             value_edit.setEnabled(is_value)
-            value_edit.setPlaceholderText("número" if is_value else "")
+            value_edit.setPlaceholderText(_("number") if is_value else "")
 
         combo.currentIndexChanged.connect(sync)
         sync()
@@ -283,13 +281,13 @@ class TrackEditor(QDialog):
         lval, rval = QLineEdit(), QLineEdit()
         for e in (lval, rval):
             e.setMaximumWidth(80)
-        lcombo = self._bound_combo("Borde izquierdo", f.left_curve, f.left_value, lval)
-        rcombo = self._bound_combo("Borde derecho", f.right_curve, f.right_value, rval)
+        lcombo = self._bound_combo(_("Left edge"), f.left_curve, f.left_value, lval)
+        rcombo = self._bound_combo(_("Right edge"), f.right_curve, f.right_value, rval)
         color = ColorButton(f.color)
         pattern = PatternCombo()
         pattern.set_value(f.pattern)
         label = QLineEdit(f.label)
-        label.setPlaceholderText("(sin leyenda)")
+        label.setPlaceholderText(_("(no legend)"))
         visible = QCheckBox()
         visible.setChecked(f.visible)
         for col, w in ((F_LEFT, lcombo), (F_LVAL, lval), (F_RIGHT, rcombo), (F_RVAL, rval), (F_COLOR, color),
@@ -301,7 +299,7 @@ class TrackEditor(QDialog):
         t = self.fill_table
         out, errors = [], []
         for r in range(t.rowCount()):
-            row = f"Rellenos, fila {r + 1}"
+            row = _("Fills, row {row}").format(row=r + 1)
             spec = FillSpec(color=t.cellWidget(r, F_COLOR).color(), pattern=t.cellWidget(r, F_PATTERN).value(),
                             label=t.cellWidget(r, F_LABEL).text().strip(),
                             visible=t.cellWidget(r, F_VISIBLE).findChild(QCheckBox).isChecked())
@@ -314,17 +312,19 @@ class TrackEditor(QDialog):
                     except ValueError:
                         v = None
                     if v is None:
-                        errors.append(f"{row}: ingrese un valor numérico para el límite {'izquierdo' if side == 'left' else 'derecho'}")
+                        errors.append((_("{row}: enter a number for the left bound") if side == "left" else
+                                       _("{row}: enter a number for the right bound")).format(row=row))
                         ok = False
                     setattr(spec, f"{side}_value", v)
                 elif data != EDGE:
                     setattr(spec, f"{side}_curve", data)
             if spec.left_curve is None and spec.right_curve is None and (spec.left_value is not None or spec.right_value is not None):
                 if not self._fill_options():
-                    errors.append(f"{row}: un valor fijo necesita al menos una curva en el track para ubicarse")
+                    errors.append(_("{row}: a fixed value needs at least one curve in the track to be placed").format(
+                        row=row))
                     ok = False
             if spec.left_curve and spec.left_curve == spec.right_curve:
-                errors.append(f"{row}: los dos límites son la misma curva")
+                errors.append(_("{row}: both bounds are the same curve").format(row=row))
                 ok = False
             if ok:
                 out.append(spec)
@@ -349,19 +349,19 @@ class TrackEditor(QDialog):
         self.fill_table.setCurrentCell(r + delta, 0)
 
     def _tab_changed(self, i):
-        # Las curvas elegidas pueden haber cambiado: se reconstruyen las opciones de los rellenos.
+        # The chosen curves may have changed: rebuild the fill bound options.
         if i == 1:
-            fills, _ = self._read_fills()
+            fills, _errors = self._read_fills()
             self._fill_fills(fills)
 
-    # ------------------------------------------------------------------ aplicar
+    # ------------------------------------------------------------------ apply
 
     def _collect(self) -> TrackSpec | None:
         curves, e1 = self._read_curves()
         fills, e2 = self._read_fills()
         errors = e1 + e2
         if errors:
-            QMessageBox.warning(self, "Revise los datos", "\n".join(errors))
+            QMessageBox.warning(self, _("Check the data"), "\n".join(errors))
             return None
         track = copy.deepcopy(self.track)
         track.title = self.title_edit.text().strip()

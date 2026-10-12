@@ -1,4 +1,8 @@
-"""Ventana principal: menús, barra de herramientas, área MDI y árbol de pozos."""
+"""Main window: menus, toolbar, MDI area and the well tree.
+
+Widgets are created once in ``_build_*`` and every visible text is set in ``retranslate()``, so
+the interface language can be switched at runtime without recreating the window.
+"""
 
 from __future__ import annotations
 
@@ -6,11 +10,12 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence
 from PySide6.QtWidgets import (QApplication, QComboBox, QDockWidget, QFileDialog, QLabel, QMainWindow, QMdiArea,
                                QMessageBox, QToolBar)
 
-from innopetrol import __version__
+from innopetrol import __version__, i18n
+from innopetrol.i18n import _
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.mnemonics import build_triple_combo
 from innopetrol.model.project import SUFFIX as PROJECT_SUFFIX
@@ -25,33 +30,38 @@ from innopetrol.ui.document import WellDocument
 from innopetrol.ui.well_tree import WellTree
 from innopetrol.ui.well_view import WellView
 
-LAS_FILTER = "Archivos LAS (*.las *.LAS);;Todos los archivos (*)"
-PROJECT_FILTER = f"Proyecto InnoPetrol (*{PROJECT_SUFFIX})"
-TEMPLATE_FILTER = f"Plantilla InnoPetrol (*{TEMPLATE_SUFFIX} *.json)"
 MAX_RECENT = 8
-# Tecla modificadora tal como la ve el usuario: Qt usa ⌘ en Mac para lo que en el código es "Ctrl".
+# Modifier key as the user sees it: on Mac Qt maps what the code calls "Ctrl" to ⌘.
 MOD = "⌘" if sys.platform == "darwin" else "Ctrl"
+# QSettings identifiers. They are storage keys, not interface text: changing them would lose
+# existing users' settings (recent files, default template, language).
+SETTINGS_ORG, SETTINGS_APP = "InnoPetrol", "Visor de Pozos"
 
 
 def key_text(seq) -> str:
-    """Atajo con la notación del sistema: ⌘O en Mac, Ctrl+O en Windows/Linux."""
+    """Shortcut in the platform's notation: ⌘O on Mac, Ctrl+O on Windows/Linux."""
     return QKeySequence(seq).toString(QKeySequence.NativeText)
 
 
 class MainWindow(QMainWindow):
     def __init__(self, settings: QSettings | None = None):
         super().__init__()
-        self.settings = settings or QSettings("InnoPetrol", "Visor de Pozos")
-        self.setWindowTitle("InnoPetrol — Visor de Pozos")
+        self.settings = settings or QSettings(SETTINGS_ORG, SETTINGS_APP)
         self.setWindowIcon(app_icon())
         self.resize(1400, 900)
         self.setAcceptDrops(True)
+
+        language = self.settings.value("language") or i18n.system_language()
+        i18n.set_language(language)
+        app = QApplication.instance()
+        if app is not None:
+            i18n.install_qt_translator(app, i18n.current_language())
 
         self.docs: list[WellDocument] = []
         self.views: dict[WellDocument, WellView] = {}
         self.project_path: Path | None = None
         self.dirty = False
-        self._windows = []  # ventanas no modales abiertas (evita que el recolector las cierre)
+        self._windows = []  # open non-modal windows (keeps them from being garbage collected)
 
         self.mdi = QMdiArea()
         self.mdi.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -60,10 +70,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.mdi)
 
         self.tree = WellTree()
-        dock = QDockWidget("Pozos", self)
-        dock.setObjectName("dock_pozos")
-        dock.setWidget(self.tree)
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock)
+        self.dock = QDockWidget(self)
+        self.dock.setObjectName("dock_wells")
+        self.dock.setWidget(self.tree)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock)
         self.tree.docActivated.connect(self.activate_doc)
         self.tree.curveStatsRequested.connect(self.show_stats)
         self.tree.curveDeleteRequested.connect(self._delete_curve)
@@ -73,137 +83,144 @@ class MainWindow(QMainWindow):
 
         self.scale_label = QLabel()
         self.statusBar().addPermanentWidget(self.scale_label)
-        self.statusBar().showMessage(f"Listo. Abra un archivo LAS ({key_text(QKeySequence.Open)}) "
-                                     "o arrástrelo a la ventana.")
         self._build_actions()
         self._build_menus()
         self._build_toolbar()
+        self.retranslate()
         self._update_actions()
         geo = self.settings.value("geometry")
         if geo is not None:
             self.restoreGeometry(geo)
 
-    # ================================================================== acciones y menús
+    # ================================================================== actions and menus
 
-    def _action(self, text, slot, shortcut=None, tip=None, needs_doc=True) -> QAction:
-        a = QAction(text, self)
+    def _action(self, slot, shortcut=None, needs_doc=True) -> QAction:
+        a = QAction(self)
         a.triggered.connect(lambda checked=False: slot())
         if shortcut:
             a.setShortcut(QKeySequence(shortcut))
-        if tip:
-            a.setStatusTip(tip)
         a.setProperty("needs_doc", needs_doc)
         return a
 
     def _build_actions(self):
         A = self._action
-        self.a_open = A("Abrir LAS…", self.open_las_dialog, QKeySequence.Open, "Abrir uno o más archivos LAS", False)
-        self.a_open_proj = A("Abrir proyecto…", self.open_project_dialog, "Ctrl+Shift+O", needs_doc=False)
-        self.a_save_proj = A("Guardar proyecto", self.save_project, QKeySequence.Save)
-        self.a_save_proj_as = A("Guardar proyecto como…", lambda: self.save_project(ask=True), "Ctrl+Shift+S")
-        self.a_export = A("Exportar registro (PDF / PNG)…", self.export_log, "Ctrl+E")
-        self.a_export_las = A("Exportar LAS (con curvas calculadas)…", self.export_las)
-        self.a_export_csv = A("Exportar CSV…", self.export_csv)
-        self.a_quit = A("Salir", self.close, QKeySequence.Quit, needs_doc=False)
+        self.a_open = A(self.open_las_dialog, QKeySequence.Open, needs_doc=False)
+        self.a_open_proj = A(self.open_project_dialog, "Ctrl+Shift+O", needs_doc=False)
+        self.a_save_proj = A(self.save_project, QKeySequence.Save)
+        self.a_save_proj_as = A(lambda: self.save_project(ask=True), "Ctrl+Shift+S")
+        self.a_export = A(self.export_log, "Ctrl+E")
+        self.a_export_las = A(self.export_las)
+        self.a_export_csv = A(self.export_csv)
+        self.a_quit = A(self.close, QKeySequence.Quit, needs_doc=False)
 
-        self.a_tpl_save = A("Guardar plantilla del pozo activo…", self.save_template, "Ctrl+T")
-        self.a_tpl_load = A("Cargar plantilla y aplicar al pozo activo…", self.load_template, "Ctrl+L")
-        self.a_tpl_all = A("Aplicar layout del pozo activo a todos los pozos", self.apply_to_all)
-        self.a_tpl_default = A("Usar layout del pozo activo como plantilla por defecto", self.set_default_template)
-        self.a_tpl_reset = A("Restablecer plantilla por defecto (Triple Combo)", self.reset_default_template,
-                             needs_doc=False)
-        self.a_tpl_triple = A("Reconstruir Triple Combo en el pozo activo", self.rebuild_triple_combo)
+        self.a_tpl_save = A(self.save_template, "Ctrl+T")
+        self.a_tpl_load = A(self.load_template, "Ctrl+L")
+        self.a_tpl_all = A(self.apply_to_all)
+        self.a_tpl_default = A(self.set_default_template)
+        self.a_tpl_reset = A(self.reset_default_template, needs_doc=False)
+        self.a_tpl_triple = A(self.rebuild_triple_combo)
 
-        self.a_add_track = A("Agregar track", lambda: self._view_call("add_track"), "Ctrl+Shift+T")
-        self.a_edit_track = A("Editar track seleccionado…", lambda: self._view_call("edit_track"), "Ctrl+Shift+E")
-        self.a_del_track = A("Eliminar track seleccionado", lambda: self._view_call("remove_track"))
-        self.a_tops = A("Topes de formación…", lambda: self.edit_tops(self.active_doc()), "Ctrl+Shift+F")
-        self.a_petro = A("Petrofísica básica (Vsh, φ, Sw)…", self.petrophysics, "Ctrl+P")
-        self.a_calc = A("Calculadora de curvas…", self.calculator, "Ctrl+K")
-        self.a_zones = A("Resumen por zonas (net pay)…", self.zone_summary)
-        self.a_stats = A("Estadísticas e histograma…", lambda: self.show_stats(self.active_doc()))
-        self.a_table = A("Tabla de datos", self.data_table, "Ctrl+D")
+        self.a_add_track = A(lambda: self._view_call("add_track"), "Ctrl+Shift+T")
+        self.a_edit_track = A(lambda: self._view_call("edit_track"), "Ctrl+Shift+E")
+        self.a_del_track = A(lambda: self._view_call("remove_track"))
+        self.a_tops = A(lambda: self.edit_tops(self.active_doc()), "Ctrl+Shift+F")
+        self.a_petro = A(self.petrophysics, "Ctrl+P")
+        self.a_calc = A(self.calculator, "Ctrl+K")
+        self.a_zones = A(self.zone_summary)
+        self.a_stats = A(lambda: self.show_stats(self.active_doc()))
+        self.a_table = A(self.data_table, "Ctrl+D")
 
-        self.a_xplot = A("Crossplot…", lambda: self.crossplot("free"), "Ctrl+X")
-        self.a_nd = A("Crossplot Neutrón-Densidad…", lambda: self.crossplot("nd"))
-        self.a_pickett = A("Gráfico de Pickett…", lambda: self.crossplot("pickett"))
-        self.a_corr = A("Correlación de pozos…", self.correlation, "Ctrl+R")
-        self.a_fit = A("Ajustar a la ventana", lambda: self._view_call_canvas("fit"), "Ctrl+0")
-        self.a_zoom_in = A("Acercar", lambda: self._zoom_step(1), QKeySequence.ZoomIn,
-                           "Acercar a la siguiente escala estándar")
-        self.a_zoom_out = A("Alejar", lambda: self._zoom_step(-1), QKeySequence.ZoomOut,
-                            "Alejar a la siguiente escala estándar")
-        # Ctrl+= además de Ctrl++: en muchos teclados "+" necesita Shift.
+        self.a_xplot = A(lambda: self.crossplot("free"), "Ctrl+X")
+        self.a_nd = A(lambda: self.crossplot("nd"))
+        self.a_pickett = A(lambda: self.crossplot("pickett"))
+        self.a_corr = A(self.correlation, "Ctrl+R")
+        self.a_fit = A(lambda: self._view_call_canvas("fit"), "Ctrl+0")
+        self.a_zoom_in = A(lambda: self._zoom_step(1), QKeySequence.ZoomIn)
+        self.a_zoom_out = A(lambda: self._zoom_step(-1), QKeySequence.ZoomOut)
+        # Ctrl+= as well as Ctrl++: on many keyboards "+" needs Shift.
         self.a_zoom_in.setShortcuts([QKeySequence(QKeySequence.ZoomIn), QKeySequence("Ctrl+=")])
-        self.a_tile = A("Mosaico", self.mdi.tileSubWindows, needs_doc=False)
-        self.a_cascade = A("Cascada", self.mdi.cascadeSubWindows, needs_doc=False)
-        self.a_tabs = A("Ver como pestañas", self._toggle_tabs, needs_doc=False)
+        self.a_tile = A(self.mdi.tileSubWindows, needs_doc=False)
+        self.a_cascade = A(self.mdi.cascadeSubWindows, needs_doc=False)
+        self.a_tabs = A(self._toggle_tabs, needs_doc=False)
         self.a_tabs.setCheckable(True)
 
-        self.a_help = A("Navegación y atajos", self.show_help, "F1", needs_doc=False)
-        self.a_about = A("Acerca de InnoPetrol", self.show_about, needs_doc=False)
+        # Language names are shown in their own language so anyone can find theirs.
+        self.language_group = QActionGroup(self)
+        self.language_actions = {}
+        for code, name in i18n.LANGUAGES.items():
+            a = QAction(name, self, checkable=True)
+            a.triggered.connect(lambda _checked=False, code=code: self.set_language(code))
+            self.language_group.addAction(a)
+            self.language_actions[code] = a
+
+        self.a_help = A(self.show_help, "F1", needs_doc=False)
+        self.a_about = A(self.show_about, needs_doc=False)
 
     def _build_menus(self):
         mb = self.menuBar()
-        m = mb.addMenu("&Archivo")
-        m.addAction(self.a_open)
-        self.recent_menu = m.addMenu("Abrir reciente")
-        self._refresh_recent()
-        m.addSeparator()
+        self.m_file = mb.addMenu("")
+        self.m_file.addAction(self.a_open)
+        self.recent_menu = self.m_file.addMenu("")
+        self.m_file.addSeparator()
         for a in (self.a_open_proj, self.a_save_proj, self.a_save_proj_as):
-            m.addAction(a)
-        m.addSeparator()
+            self.m_file.addAction(a)
+        self.m_file.addSeparator()
         for a in (self.a_export, self.a_export_las, self.a_export_csv):
-            m.addAction(a)
-        m.addSeparator()
-        m.addAction(self.a_quit)
+            self.m_file.addAction(a)
+        self.m_file.addSeparator()
+        self.m_file.addAction(self.a_quit)
 
-        m = mb.addMenu("&Plantilla")
+        self.m_template = mb.addMenu("")
         for a in (self.a_tpl_save, self.a_tpl_load, None, self.a_tpl_all, self.a_tpl_default, self.a_tpl_reset,
                   None, self.a_tpl_triple):
-            m.addSeparator() if a is None else m.addAction(a)
+            self.m_template.addSeparator() if a is None else self.m_template.addAction(a)
 
-        m = mb.addMenu("P&ozo")
+        self.m_well = mb.addMenu("")
         for a in (self.a_add_track, self.a_edit_track, self.a_del_track, None, self.a_tops, None, self.a_petro,
                   self.a_calc, self.a_zones, None, self.a_stats, self.a_table):
-            m.addSeparator() if a is None else m.addAction(a)
+            self.m_well.addSeparator() if a is None else self.m_well.addAction(a)
 
-        m = mb.addMenu("&Análisis")
+        self.m_analysis = mb.addMenu("")
         for a in (self.a_xplot, self.a_nd, self.a_pickett, None, self.a_corr):
-            m.addSeparator() if a is None else m.addAction(a)
+            self.m_analysis.addSeparator() if a is None else self.m_analysis.addAction(a)
 
-        m = mb.addMenu("&Ver")
-        m.addAction(self.a_zoom_in)
-        m.addAction(self.a_zoom_out)
-        m.addAction(self.a_fit)
-        self.scale_menu = m.addMenu("Escala vertical")
+        self.m_view = mb.addMenu("")
+        self.m_view.addAction(self.a_zoom_in)
+        self.m_view.addAction(self.a_zoom_out)
+        self.m_view.addAction(self.a_fit)
+        self.scale_menu = self.m_view.addMenu("")
         for n in SCALE_PRESETS:
-            self.scale_menu.addAction(f"1:{n}").triggered.connect(lambda _=False, n=n: self._set_scale(n))
-        m.addSeparator()
+            self.scale_menu.addAction(f"1:{n}").triggered.connect(lambda _checked=False, n=n: self._set_scale(n))
+        self.m_view.addSeparator()
         for a in (self.a_tile, self.a_cascade, self.a_tabs):
-            m.addAction(a)
+            self.m_view.addAction(a)
+        self.m_view.addSeparator()
+        self.language_menu = self.m_view.addMenu("")
+        for a in self.language_actions.values():
+            self.language_menu.addAction(a)
 
-        m = mb.addMenu("A&yuda")
-        m.addAction(self.a_help)
-        m.addAction(self.a_about)
+        self.m_help = mb.addMenu("")
+        self.m_help.addAction(self.a_help)
+        self.m_help.addAction(self.a_about)
 
     def _build_toolbar(self):
-        tb = QToolBar("Principal")
-        tb.setObjectName("toolbar_principal")
+        self.toolbar = tb = QToolBar(self)
+        tb.setObjectName("toolbar_main")
         tb.setToolButtonStyle(Qt.ToolButtonTextOnly)
         self.addToolBar(tb)
         tb.addAction(self.a_open)
         tb.addAction(self.a_save_proj)
         tb.addSeparator()
         tb.addAction(self.a_zoom_out)
-        tb.addWidget(QLabel(" Escala "))
+        self.scale_title = QLabel()
+        tb.addWidget(self.scale_title)
         self.scale_combo = QComboBox()
         self.scale_combo.setEditable(True)
         self.scale_combo.setMinimumWidth(110)
-        self.scale_combo.addItem("Ajustar")
+        self.scale_combo.addItem("")  # "Fit", set in retranslate()
         for n in SCALE_PRESETS:
             self.scale_combo.addItem(f"1:{n}")
-        self.scale_combo.activated.connect(lambda _: self._scale_from_combo())
+        self.scale_combo.activated.connect(lambda _index: self._scale_from_combo())
         self.scale_combo.lineEdit().returnPressed.connect(self._scale_from_combo)
         tb.addWidget(self.scale_combo)
         tb.addAction(self.a_zoom_in)
@@ -214,21 +231,6 @@ class MainWindow(QMainWindow):
         tb.addSeparator()
         for a in (self.a_xplot, self.a_corr, self.a_table, self.a_export):
             tb.addAction(a)
-        self.a_add_track.setIconText("+ Track")
-        self.a_tops.setIconText("Topes")
-        self.a_petro.setIconText("Petrofísica")
-        self.a_calc.setIconText("Calculadora")
-        self.a_zones.setIconText("Zonas")
-        self.a_xplot.setIconText("Crossplot")
-        self.a_corr.setIconText("Correlación")
-        self.a_table.setIconText("Datos")
-        self.a_export.setIconText("Exportar")
-        self.a_open.setIconText("Abrir LAS")
-        self.a_zoom_out.setIconText("−")
-        self.a_zoom_in.setIconText("+")
-        self.a_fit.setIconText("Ajustar")
-        for a in (self.a_zoom_out, self.a_zoom_in, self.a_fit):
-            a.setToolTip(f"{a.text()} ({key_text(a.shortcut())})")
         for a in (self.a_zoom_out, self.a_zoom_in):
             button = tb.widgetForAction(a)
             font = button.font()
@@ -236,7 +238,93 @@ class MainWindow(QMainWindow):
             font.setBold(True)
             button.setFont(font)
             button.setMinimumWidth(30)
-        self.a_save_proj.setIconText("Guardar")
+
+    def retranslate(self):
+        """Sets every visible text in the current language."""
+        texts = {
+            # action: (menu text, toolbar text or None, status tip or None)
+            self.a_open: (_("Open LAS…"), _("Open LAS"), _("Open one or more LAS files")),
+            self.a_open_proj: (_("Open project…"), None, None),
+            self.a_save_proj: (_("Save project"), _("Save"), None),
+            self.a_save_proj_as: (_("Save project as…"), None, None),
+            self.a_export: (_("Export log (PDF / PNG)…"), _("Export"), None),
+            self.a_export_las: (_("Export LAS (with computed curves)…"), None, None),
+            self.a_export_csv: (_("Export CSV…"), None, None),
+            self.a_quit: (_("Quit"), None, None),
+            self.a_tpl_save: (_("Save template of the active well…"), None, None),
+            self.a_tpl_load: (_("Load template and apply to the active well…"), None, None),
+            self.a_tpl_all: (_("Apply the active well's layout to all wells"), None, None),
+            self.a_tpl_default: (_("Use the active well's layout as the default template"), None, None),
+            self.a_tpl_reset: (_("Reset default template (Triple Combo)"), None, None),
+            self.a_tpl_triple: (_("Rebuild Triple Combo in the active well"), None, None),
+            self.a_add_track: (_("Add track"), _("+ Track"), None),
+            self.a_edit_track: (_("Edit selected track…"), None, None),
+            self.a_del_track: (_("Remove selected track"), None, None),
+            self.a_tops: (_("Formation tops…"), _("Tops"), None),
+            self.a_petro: (_("Basic petrophysics (Vsh, φ, Sw)…"), _("Petrophysics"), None),
+            self.a_calc: (_("Curve calculator…"), _("Calculator"), None),
+            self.a_zones: (_("Zone summary (net pay)…"), _("Zones"), None),
+            self.a_stats: (_("Statistics and histogram…"), None, None),
+            self.a_table: (_("Data table"), _("Data"), None),
+            self.a_xplot: (_("Crossplot…"), _("Crossplot"), None),
+            self.a_nd: (_("Neutron-density crossplot…"), None, None),
+            self.a_pickett: (_("Pickett plot…"), None, None),
+            self.a_corr: (_("Well correlation…"), _("Correlation"), None),
+            self.a_fit: (_("Fit to window"), _("Fit"), None),
+            self.a_zoom_in: (_("Zoom in"), "+", _("Zoom in to the next standard scale")),
+            self.a_zoom_out: (_("Zoom out"), "−", _("Zoom out to the next standard scale")),
+            self.a_tile: (_("Tile"), None, None),
+            self.a_cascade: (_("Cascade"), None, None),
+            self.a_tabs: (_("Show as tabs"), None, None),
+            self.a_help: (_("Navigation and shortcuts"), None, None),
+            self.a_about: (_("About InnoPetrol"), None, None),
+        }
+        for action, (text, icon_text, tip) in texts.items():
+            action.setText(text)
+            action.setIconText(icon_text or text)
+            action.setStatusTip(tip or "")
+            action.setToolTip(text)
+        for a in (self.a_zoom_out, self.a_zoom_in, self.a_fit):
+            a.setToolTip(f"{a.text()} ({key_text(a.shortcut())})")
+
+        self.m_file.setTitle(_("&File"))
+        self.recent_menu.setTitle(_("Open recent"))
+        self.m_template.setTitle(_("&Template"))
+        self.m_well.setTitle(_("&Well"))
+        self.m_analysis.setTitle(_("&Analysis"))
+        self.m_view.setTitle(_("&View"))
+        self.scale_menu.setTitle(_("Vertical scale"))
+        self.language_menu.setTitle("Language / Idioma")  # bilingual on purpose: findable in any language
+        self.m_help.setTitle(_("&Help"))
+        self.language_actions[i18n.current_language()].setChecked(True)
+
+        self.toolbar.setWindowTitle(_("Main"))
+        self.scale_title.setText(" " + _("Scale") + " ")
+        self.scale_combo.setItemText(0, _("Fit"))
+        self.dock.setWindowTitle(_("Wells"))
+        self.tree.retranslate()
+        self._refresh_recent()
+        self._update_title()
+        self.statusBar().showMessage(_("Ready. Open a LAS file ({shortcut}) or drag it onto the window.").format(
+            shortcut=key_text(QKeySequence.Open)))
+        for view in self.views.values():
+            view.canvas.invalidate()  # texts drawn on the log ("not available", depth unit…)
+        v = self.active_view()
+        if v:
+            self._show_scale(v)
+
+    def set_language(self, code: str):
+        """Switches the interface language at runtime and remembers it."""
+        code = i18n.set_language(code)
+        self.settings.setValue("language", code)
+        app = QApplication.instance()
+        if app is not None:
+            i18n.install_qt_translator(app, code)
+        # Auxiliary windows (crossplot, data table, correlation…) are closed; reopening them
+        # shows them in the new language.
+        for w in list(self._windows):
+            w.close()
+        self.retranslate()
 
     def _update_actions(self):
         has = bool(self.docs)
@@ -246,7 +334,7 @@ class MainWindow(QMainWindow):
         self.a_corr.setEnabled(len(self.docs) >= 2)
         self.scale_combo.setEnabled(has)
 
-    # ================================================================== pozo activo
+    # ================================================================== active well
 
     def active_view(self) -> WellView | None:
         sub = self.mdi.activeSubWindow() or self.mdi.currentSubWindow()
@@ -257,7 +345,7 @@ class MainWindow(QMainWindow):
     def active_doc(self) -> WellDocument | None:
         v = self.active_view()
         if v is None and self.docs:
-            self.statusBar().showMessage("Seleccione la ventana de un pozo.", 4000)
+            self.statusBar().showMessage(_("Select a well window."), 4000)
         return v.doc if v else None
 
     def _view_call(self, method: str):
@@ -293,21 +381,21 @@ class MainWindow(QMainWindow):
     def _show_scale(self, v: WellView):
         if v is not self.active_view():
             return
-        text = "Ajustar" if v.canvas.fit_mode else f"1:{v.canvas.current_scale():.0f}"
+        text = _("Fit") if v.canvas.fit_mode else f"1:{v.canvas.current_scale():.0f}"
         self.scale_combo.blockSignals(True)
         self.scale_combo.setEditText(text)
         self.scale_combo.blockSignals(False)
         lo, hi = v.canvas.visible_depth_range()
-        self.scale_label.setText(f"{v.doc.title} · escala 1:{v.canvas.current_scale():.0f} · "
-                                 f"visible {max(lo, v.doc.well.start):.1f} – {min(hi, v.doc.well.stop):.1f} "
-                                 f"{v.doc.well.depth_unit}")
+        self.scale_label.setText(_("{well} · scale 1:{scale} · visible {top} – {bottom} {unit}").format(
+            well=v.doc.title, scale=f"{v.canvas.current_scale():.0f}", top=f"{max(lo, v.doc.well.start):.1f}",
+            bottom=f"{min(hi, v.doc.well.stop):.1f}", unit=v.doc.well.depth_unit))
 
     def _scale_from_combo(self):
-        text = self.scale_combo.currentText().strip().lower()
+        text = self.scale_combo.currentText().strip()
         v = self.active_view()
         if not v:
             return
-        if text.startswith("aj") or text == "fit":
+        if text.lower() in (_("Fit").lower(), "fit", "ajustar"):
             v.canvas.fit()
             return
         try:
@@ -315,7 +403,7 @@ class MainWindow(QMainWindow):
             if n <= 0:
                 raise ValueError
         except ValueError:
-            self.statusBar().showMessage("Escriba la escala como 1:500 o 500.", 4000)
+            self.statusBar().showMessage(_("Type the scale as 1:500 or 500."), 4000)
             return
         v.canvas.set_scale(n)
 
@@ -329,11 +417,12 @@ class MainWindow(QMainWindow):
         if v:
             v.canvas.set_scale(n)
 
-    # ================================================================== abrir pozos
+    # ================================================================== opening wells
 
     def open_las_dialog(self):
         start = self.settings.value("last_dir", str(Path.home()))
-        paths, _ = QFileDialog.getOpenFileNames(self, "Abrir archivos LAS", start, LAS_FILTER)
+        paths, _filter = QFileDialog.getOpenFileNames(self, _("Open LAS files"), start,
+                                                      _("LAS files (*.las *.LAS);;All files (*)"))
         if paths:
             self.settings.setValue("last_dir", str(Path(paths[0]).parent))
             self.open_las(paths)
@@ -345,7 +434,7 @@ class MainWindow(QMainWindow):
             for path in paths:
                 try:
                     well = Well.from_las(path)
-                except Exception as e:  # noqa: BLE001 - se informa cualquier archivo inválido
+                except Exception as e:  # noqa: BLE001 - any invalid file is reported
                     errors.append(f"{Path(path).name}: {e}")
                     continue
                 layout, missing = self._default_layout(well)
@@ -354,14 +443,14 @@ class MainWindow(QMainWindow):
                 self._add_recent(path)
                 if missing:
                     self.statusBar().showMessage(
-                        f"{doc.title}: la plantilla por defecto usa curvas que no están en el pozo: {', '.join(missing)}",
-                        8000)
+                        _("{well}: the default template uses curves that are not in the well: {curves}").format(
+                            well=doc.title, curves=", ".join(missing)), 8000)
         finally:
             QApplication.restoreOverrideCursor()
         if errors:
-            QMessageBox.warning(self, "Abrir LAS", "No se pudieron abrir:\n\n" + "\n".join(errors))
+            QMessageBox.warning(self, _("Open LAS"), _("Could not open:") + "\n\n" + "\n".join(errors))
         if opened and not errors:
-            self.statusBar().showMessage(f"Cargado: {', '.join(opened)}", 5000)
+            self.statusBar().showMessage(_("Loaded: {wells}").format(wells=", ".join(opened)), 5000)
 
     def _default_layout(self, well) -> tuple[LogLayout, list[str]]:
         text = self.settings.value("default_template_json")
@@ -420,9 +509,9 @@ class MainWindow(QMainWindow):
             a = self.recent_menu.addAction(Path(p).name)
             a.setStatusTip(p)
             if p.lower().endswith(PROJECT_SUFFIX):
-                a.triggered.connect(lambda _=False, p=p: self.open_project(p))
+                a.triggered.connect(lambda _checked=False, p=p: self.open_project(p))
             else:
-                a.triggered.connect(lambda _=False, p=p: self.open_las([p]))
+                a.triggered.connect(lambda _checked=False, p=p: self.open_las([p]))
         self.recent_menu.setEnabled(bool(recent))
 
     def dragEnterEvent(self, e):
@@ -438,11 +527,14 @@ class MainWindow(QMainWindow):
         if las:
             self.open_las(las)
 
-    # ================================================================== proyecto
+    # ================================================================== project
+
+    def _project_filter(self) -> str:
+        return _("InnoPetrol project (*{suffix})").format(suffix=PROJECT_SUFFIX)
 
     def open_project_dialog(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Abrir proyecto", self.settings.value("last_dir", ""),
-                                              PROJECT_FILTER)
+        path, _filter = QFileDialog.getOpenFileName(self, _("Open project"), self.settings.value("last_dir", ""),
+                                                    self._project_filter())
         if path:
             self.open_project(path)
 
@@ -452,7 +544,7 @@ class MainWindow(QMainWindow):
         try:
             result = load_project(path)
         except ProjectError as e:
-            QMessageBox.warning(self, "Abrir proyecto", str(e))
+            QMessageBox.warning(self, _("Open project"), str(e))
             return
         self._close_all()
         for entry in result.entries:
@@ -462,7 +554,7 @@ class MainWindow(QMainWindow):
         self._add_recent(path)
         self._update_title()
         if result.errors:
-            QMessageBox.warning(self, "Abrir proyecto", "Algunos elementos no se pudieron cargar:\n\n"
+            QMessageBox.warning(self, _("Open project"), _("Some items could not be loaded:") + "\n\n"
                                 + "\n".join(result.errors))
 
     def save_project(self, ask: bool = False) -> bool:
@@ -470,26 +562,27 @@ class MainWindow(QMainWindow):
             return False
         path = self.project_path
         if ask or path is None:
-            name, _ = QFileDialog.getSaveFileName(self, "Guardar proyecto", str(path or Path.home() / f"proyecto{PROJECT_SUFFIX}"),
-                                                  PROJECT_FILTER)
+            default = path or Path.home() / (_("project") + PROJECT_SUFFIX)
+            name, _filter = QFileDialog.getSaveFileName(self, _("Save project"), str(default),
+                                                        self._project_filter())
             if not name:
                 return False
             path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
         try:
             save_project(path, [WellEntry(d.well, d.layout, d.petro) for d in self.docs])
         except OSError as e:
-            QMessageBox.warning(self, "Guardar proyecto", f"No se pudo guardar: {e}")
+            QMessageBox.warning(self, _("Save project"), _("Could not save: {error}").format(error=e))
             return False
         self.project_path = path
         self.dirty = False
         self._add_recent(str(path))
         self._update_title()
-        self.statusBar().showMessage(f"Proyecto guardado en {path}", 5000)
+        self.statusBar().showMessage(_("Project saved to {path}").format(path=path), 5000)
         return True
 
     def _update_title(self):
         name = f" — {self.project_path.name}" if self.project_path else ""
-        self.setWindowTitle(f"InnoPetrol — Visor de Pozos{name}")
+        self.setWindowTitle(_("InnoPetrol — Well Viewer") + name)
 
     def _close_all(self):
         for v in list(self.views.values()):
@@ -499,7 +592,7 @@ class MainWindow(QMainWindow):
     def _confirm_discard(self) -> bool:
         if not self.dirty:
             return True
-        r = QMessageBox.question(self, "Cambios sin guardar", "¿Guardar el proyecto actual antes de continuar?",
+        r = QMessageBox.question(self, _("Unsaved changes"), _("Save the current project before continuing?"),
                                  QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
         if r == QMessageBox.Save:
             return self.save_project()
@@ -513,31 +606,34 @@ class MainWindow(QMainWindow):
         self._close_all()
         e.accept()
 
-    # ================================================================== plantillas
+    # ================================================================== templates
+
+    def _template_filter(self) -> str:
+        return _("InnoPetrol template (*{suffix} *.json)").format(suffix=TEMPLATE_SUFFIX)
 
     def save_template(self):
         doc = self.active_doc()
         if not doc:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Guardar plantilla", f"plantilla{TEMPLATE_SUFFIX}",
-                                              TEMPLATE_FILTER)
+        path, _filter = QFileDialog.getSaveFileName(self, _("Save template"), _("template") + TEMPLATE_SUFFIX,
+                                                    self._template_filter())
         if path:
             if not path.lower().endswith(".json"):
                 path += TEMPLATE_SUFFIX
             save_template(path, doc.layout)
-            self.statusBar().showMessage(f"Plantilla guardada: {path}", 5000)
+            self.statusBar().showMessage(_("Template saved: {path}").format(path=path), 5000)
 
     def load_template(self):
         doc = self.active_doc()
         if not doc:
             return
-        path, _ = QFileDialog.getOpenFileName(self, "Cargar plantilla", "", TEMPLATE_FILTER)
+        path, _filter = QFileDialog.getOpenFileName(self, _("Load template"), "", self._template_filter())
         if not path:
             return
         try:
             layout = load_template(path)
         except (TemplateError, OSError) as e:
-            QMessageBox.warning(self, "Cargar plantilla", str(e))
+            QMessageBox.warning(self, _("Load template"), str(e))
             return
         self._apply_layout(doc, layout)
 
@@ -545,7 +641,8 @@ class MainWindow(QMainWindow):
         result, missing = apply_template(layout, doc.well)
         doc.set_layout(result)
         if missing:
-            self.statusBar().showMessage(f"{doc.title}: curvas no encontradas: {', '.join(missing)}", 8000)
+            self.statusBar().showMessage(_("{well}: curves not found: {curves}").format(
+                well=doc.title, curves=", ".join(missing)), 8000)
         return missing
 
     def apply_to_all(self):
@@ -557,17 +654,19 @@ class MainWindow(QMainWindow):
             if other is not doc:
                 missing = self._apply_layout(other, doc.layout)
                 if missing:
-                    report.append(f"{other.title}: faltan {', '.join(missing)}")
-        QMessageBox.information(self, "Aplicar a todos", "Layout aplicado." + ("\n\n" + "\n".join(report) if report else ""))
+                    report.append(_("{well}: missing {curves}").format(well=other.title, curves=", ".join(missing)))
+        QMessageBox.information(self, _("Apply to all"),
+                                _("Layout applied.") + ("\n\n" + "\n".join(report) if report else ""))
 
     def set_default_template(self):
         doc = self.active_doc()
         if not doc:
             return
+        name = _("layout of {well}").format(well=doc.title)
         self.settings.setValue("default_template_json", template_to_json(doc.layout))
-        self.settings.setValue("default_template_name", f"layout de {doc.title}")
-        self.tree.set_template_name(f"layout de {doc.title}")
-        self.statusBar().showMessage("Plantilla por defecto actualizada: se usará al abrir nuevos pozos.", 5000)
+        self.settings.setValue("default_template_name", name)
+        self.tree.set_template_name(name)
+        self.statusBar().showMessage(_("Default template updated: it will be used for newly opened wells."), 5000)
 
     def reset_default_template(self):
         self.settings.remove("default_template_json")
@@ -579,7 +678,7 @@ class MainWindow(QMainWindow):
         if doc:
             doc.set_layout(build_triple_combo(doc.well))
 
-    # ================================================================== herramientas
+    # ================================================================== tools
 
     def edit_tops(self, doc):
         if doc:
@@ -632,7 +731,7 @@ class MainWindow(QMainWindow):
         from innopetrol.ui.correlation import CorrelationSetup, CorrelationWindow
 
         if len(self.docs) < 2:
-            QMessageBox.information(self, "Correlación", "Abra al menos dos pozos.")
+            QMessageBox.information(self, _("Correlation"), _("Open at least two wells."))
             return
         setup = CorrelationSetup(self.docs, self)
         if setup.exec():
@@ -644,11 +743,11 @@ class MainWindow(QMainWindow):
     def _modeless(self, w):
         w.setAttribute(Qt.WA_DeleteOnClose)
         self._windows.append(w)
-        w.destroyed.connect(lambda _=None, w=w: self._windows.remove(w) if w in self._windows else None)
+        w.destroyed.connect(lambda _obj=None, w=w: self._windows.remove(w) if w in self._windows else None)
         w.show()
 
     def _delete_curve(self, doc, name):
-        r = QMessageBox.question(self, "Eliminar curva", f"¿Eliminar la curva calculada {name}?")
+        r = QMessageBox.question(self, _("Delete curve"), _("Delete the computed curve {name}?").format(name=name))
         if r == QMessageBox.Yes:
             doc.remove_curve(name)
 
@@ -664,58 +763,69 @@ class MainWindow(QMainWindow):
         doc = self.active_doc()
         if not doc:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar LAS", f"{doc.title}.las", "LAS (*.las)")
+        path, _filter = QFileDialog.getSaveFileName(self, _("Export LAS"), f"{doc.title}.las", "LAS (*.las)")
         if path:
             try:
                 doc.well.to_las(path)
-                self.statusBar().showMessage(f"LAS exportado: {path}", 5000)
+                self.statusBar().showMessage(_("LAS exported: {path}").format(path=path), 5000)
             except Exception as e:  # noqa: BLE001
-                QMessageBox.warning(self, "Exportar LAS", f"No se pudo exportar: {e}")
+                QMessageBox.warning(self, _("Export LAS"), _("Could not export: {error}").format(error=e))
 
     def export_csv(self):
         doc = self.active_doc()
         if not doc:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar CSV", f"{doc.title}.csv", "CSV (*.csv)")
+        path, _filter = QFileDialog.getSaveFileName(self, _("Export CSV"), f"{doc.title}.csv", "CSV (*.csv)")
         if path:
             try:
                 doc.well.to_csv(path)
-                self.statusBar().showMessage(f"CSV exportado: {path}", 5000)
+                self.statusBar().showMessage(_("CSV exported: {path}").format(path=path), 5000)
             except OSError as e:
-                QMessageBox.warning(self, "Exportar CSV", f"No se pudo exportar: {e}")
+                QMessageBox.warning(self, _("Export CSV"), _("Could not export: {error}").format(error=e))
 
     def _toggle_tabs(self):
         self.mdi.setViewMode(QMdiArea.TabbedView if self.a_tabs.isChecked() else QMdiArea.SubWindowView)
         self.mdi.setTabsClosable(True)
         self.mdi.setTabsMovable(True)
 
-    # ================================================================== ayuda
+    # ================================================================== help
 
     def show_help(self):
         k = key_text
-        QMessageBox.information(self, "Navegación y atajos", f"""<b>Zoom</b><br>
-Botones <b>−</b> y <b>+</b> junto a «Escala»: alejar / acercar a la siguiente escala estándar
-({k(QKeySequence.ZoomOut)} / {k(QKeySequence.ZoomIn)}) · «Ajustar»: pozo completo ({k("Ctrl+0")})<br>
-{MOD} + rueda o pellizco en el trackpad: zoom continuo en el cursor ·
-Escala exacta: escribir 1:300 en el campo «Escala»<br><br>
-<b>Registro</b><br>
-Rueda: desplazar en profundidad · Shift + rueda: desplazar horizontal ·
-RePág/AvPág, Inicio/Fin, flechas<br>
-Arrastrar el borde de un track: cambiar su ancho · Doble clic en un track: editarlo<br>
-Clic derecho: menú del track (agregar, mover, eliminar, agregar tope, escala, exportar)<br><br>
-<b>Árbol de pozos</b><br>
-Doble clic en una curva: estadísticas e histograma · Doble clic en un tope: ir a esa profundidad<br><br>
-<b>Atajos</b><br>
-{k(QKeySequence.Open)} abrir LAS · {k(QKeySequence.Save)} guardar proyecto · {k("Ctrl+E")} exportar ·
-{k("Ctrl+T")} / {k("Ctrl+L")} guardar / cargar plantilla<br>
-{k("Ctrl+Shift+T")} agregar track · {k("Ctrl+Shift+F")} topes · {k("Ctrl+P")} petrofísica ·
-{k("Ctrl+K")} calculadora<br>
-{k("Ctrl+X")} crossplot · {k("Ctrl+R")} correlación · {k("Ctrl+D")} tabla de datos""")
+        sections = [
+            (_("Zoom"), [
+                _("<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale "
+                  "({out} / {in_})").format(out=k(QKeySequence.ZoomOut), in_=k(QKeySequence.ZoomIn)),
+                _("“Fit”: whole well ({shortcut})").format(shortcut=k("Ctrl+0")),
+                _("{modifier} + wheel or trackpad pinch: continuous zoom at the cursor").format(modifier=MOD),
+                _("Exact scale: type 1:300 in the “Scale” field"),
+            ]),
+            (_("Log"), [
+                _("Wheel: scroll in depth · Shift + wheel: scroll horizontally · PgUp/PgDn, Home/End, arrows"),
+                _("Drag a track's border: change its width · Double-click a track: edit it"),
+                _("Right-click: track menu (add, move, remove, add top, scale, export)"),
+            ]),
+            (_("Well tree"), [
+                _("Double-click a curve: statistics and histogram · Double-click a top: go to that depth"),
+            ]),
+            (_("Shortcuts"), [
+                _("{open} open LAS · {save} save project · {export} export · {tsave} / {tload} save / load "
+                  "template").format(open=k(QKeySequence.Open), save=k(QKeySequence.Save), export=k("Ctrl+E"),
+                                     tsave=k("Ctrl+T"), tload=k("Ctrl+L")),
+                _("{track} add track · {tops} tops · {petro} petrophysics · {calc} calculator").format(
+                    track=k("Ctrl+Shift+T"), tops=k("Ctrl+Shift+F"), petro=k("Ctrl+P"), calc=k("Ctrl+K")),
+                _("{xplot} crossplot · {corr} correlation · {table} data table").format(
+                    xplot=k("Ctrl+X"), corr=k("Ctrl+R"), table=k("Ctrl+D")),
+            ]),
+        ]
+        html = "<br><br>".join(f"<b>{title}</b><br>" + "<br>".join(lines) for title, lines in sections)
+        QMessageBox.information(self, _("Navigation and shortcuts"), html)
 
     def show_about(self):
-        QMessageBox.about(self, "Acerca de InnoPetrol", f"""<h3>InnoPetrol — Visor de Pozos {__version__}</h3>
-<p>Visualización de registros de pozo en formato LAS para ingenieros de petróleo:
-tracks configurables, escalas lineales y logarítmicas, rellenos, topes, petrofísica básica,
-crossplots, correlación entre pozos y exportación a PDF/PNG/LAS.</p>
-<p>Proyecto original 2020 · reescrito con Python {'.'.join(map(str, __import__('sys').version_info[:2]))} y PySide6.</p>""")
-
+        version = ".".join(map(str, sys.version_info[:2]))
+        QMessageBox.about(self, _("About InnoPetrol"), "<h3>{}</h3><p>{}</p><p>{}</p>".format(
+            _("InnoPetrol — Well Viewer {version}").format(version=__version__),
+            _("Well log visualization (LAS format) for petroleum engineers: configurable tracks, linear and "
+              "logarithmic scales, fills, tops, basic petrophysics, crossplots, well correlation and export "
+              "to PDF/PNG/LAS."),
+            _("Original project 2020 · rewritten with Python {version} and PySide6.").format(version=version)))

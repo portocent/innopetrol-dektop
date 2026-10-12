@@ -1,4 +1,4 @@
-"""Pruebas de la interfaz en modo offscreen (sin ventana real)."""
+"""User interface tests in offscreen mode (no real window)."""
 
 import math
 
@@ -25,7 +25,7 @@ def win(qtbot, tmp_path, samples):
 
 def test_open_wells(win):
     assert [d.title for d in win.docs] == ["Test Well 1", "1-5"]
-    assert win.tree.topLevelItemCount() == 3  # plantilla + 2 pozos
+    assert win.tree.topLevelItemCount() == 3  # template + 2 wells
 
 
 def test_close_well_updates_tree(win, samples):
@@ -36,7 +36,7 @@ def test_close_well_updates_tree(win, samples):
     assert [d.title for d in win.docs] == ["1-5"]
     texts = [win.tree.topLevelItem(i).text(0) for i in range(win.tree.topLevelItemCount())]
     assert "Test Well 1" not in texts and "1-5" in texts
-    # Reabrir no pisa el ítem del otro pozo (bug del código original)
+    # Reopening does not overwrite the other well's item (bug in the original code)
     win.open_las([str(samples / "Testdata.las")])
     texts = [win.tree.topLevelItem(i).text(0) for i in range(win.tree.topLevelItemCount())]
     assert texts.count("1-5") == 1 and texts.count("Test Well 1") == 1
@@ -81,10 +81,10 @@ def test_track_editor_validation(win, monkeypatch):
 
     warnings = []
     monkeypatch.setattr(track_editor.QMessageBox, "warning", staticmethod(lambda *a: warnings.append(a[2])))
-    ed = track_editor.TrackEditor(win.docs[0], 2, win)  # resistividad (log)
+    ed = track_editor.TrackEditor(win.docs[0], 2, win)  # resistivity (log)
     ed.curve_table.cellWidget(0, track_editor.C_LEFT).setText("-1")
     assert not ed._apply()
-    assert "logarítmica" in warnings[0]
+    assert "logarithmic" in warnings[0]
     ed.curve_table.cellWidget(0, track_editor.C_LEFT).setText("abc")
     assert not ed._apply()
 
@@ -111,9 +111,9 @@ def test_petro_and_zones(win):
     PetroDialog(doc, win)._run()
     assert {"VSH", "PHIE", "SW", "PAY_FLAG"} <= set(doc.well.curves)
     titles = [t.title for t in doc.layout.tracks]
-    assert titles.index("Resultados petrofísicos") == titles.index("Densidad - Neutrón") + 1
+    assert titles.index("Petrophysical results") == titles.index("Density - Neutron") + 1
     z = ZoneSummaryDialog(doc, win)
-    assert [r[0] for r in z._rows] == ["(sobre el primer tope)", "A", "B"]
+    assert [r[0] for r in z._rows] == ["(above the first top)", "A", "B"]
 
 
 def test_calculator_dialog(win):
@@ -128,7 +128,7 @@ def test_calculator_dialog(win):
     d = CalculatorDialog(doc, win)
     d.name.setText("RHOB")
     d.expr.setPlainText("RHOB * 2")
-    d._ok()  # no puede reemplazar una curva original
+    d._ok()  # cannot replace an original curve
     assert doc.well.curves["RHOB"].formula is None
 
 
@@ -154,7 +154,7 @@ def test_windows_open(win, qtbot):
     c._apply_scale()
     ya = c.canvases[0].y_of(7800)
     yb = c.canvases[1].y_of(5550)
-    assert math.isclose(ya, yb, abs_tol=1)  # aplanado: el tope X queda a la misma altura
+    assert math.isclose(ya, yb, abs_tol=1)  # flattened: top X ends up at the same height
 
 
 def test_project_and_template(win, tmp_path):
@@ -172,7 +172,7 @@ def test_project_and_template(win, tmp_path):
 
 
 def test_cursor_and_scroll_reuse_tiles(win, qtbot, monkeypatch):
-    """Mover el cursor no debe volver a dibujar las curvas; desplazarse sólo dibuja franjas nuevas."""
+    """Moving the cursor must not redraw curves; scrolling only draws new strips."""
     from PySide6.QtCore import QEvent, QPointF, Qt
     from PySide6.QtGui import QMouseEvent
 
@@ -193,32 +193,32 @@ def test_cursor_and_scroll_reuse_tiles(win, qtbot, monkeypatch):
     assert len(renders) <= 1
     c.zoom(1.5)
     c.repaint()
-    assert len(renders) > 1  # cambiar la escala sí invalida la caché
+    assert len(renders) > 1  # changing the scale does invalidate the cache
 
 
 def test_tiles_have_no_horizontal_frame(win, qtbot):
-    """Los tiles no deben llevar borde arriba/abajo: se vería una línea cada 256 px."""
+    """Tiles must not have a top/bottom border: a line would show every 256 px."""
     from innopetrol.render.painter import BORDER
 
     c = win.views[win.docs[0]].canvas
     qtbot.waitExposed(c)
     c.set_scale(500)
     img = c._render_tile(30).toImage()
-    x = 40  # dentro del primer track, lejos de los bordes verticales
+    x = 40  # inside the first track, away from the vertical borders
     dpr = img.devicePixelRatio()
     for row in (0, img.height() - 1):
         assert img.pixelColor(x * dpr, row).name() != BORDER.name()
 
 
 def test_slow_machine_uses_previews(win, qtbot, monkeypatch):
-    """Si dibujar es caro, el zoom muestra tiles estirados y el dibujo final llega al detenerse."""
+    """If drawing is expensive, zoom shows stretched tiles and the final drawing arrives when it stops."""
     from innopetrol.ui import log_canvas
 
     c = win.views[win.docs[0]].canvas
     qtbot.waitExposed(c)
     c.set_scale(500)
     c.repaint()
-    c._tile_ms = 50.0  # simula una máquina lenta
+    c._tile_ms = 50.0  # simulates a slow machine
     renders = []
     original = c._render_tile
     monkeypatch.setattr(c, "_render_tile", lambda k: renders.append(k) or original(k))
@@ -228,10 +228,10 @@ def test_slow_machine_uses_previews(win, qtbot, monkeypatch):
     assert c._previewing and renders == []
     qtbot.waitUntil(lambda: not c._previewing, timeout=2000)
     c.repaint()
-    assert renders  # calidad completa al terminar el gesto
+    assert renders  # full quality once the gesture ends
     assert c.current_scale() == pytest.approx(500 / 1.1 ** 5)
 
-    # Arrastre de borde: guía mientras se arrastra, ancho aplicado al soltar
+    # Border drag: guide line while dragging, width applied on release
     from PySide6.QtCore import QEvent, QPointF, Qt
     from PySide6.QtGui import QMouseEvent
 
@@ -262,12 +262,12 @@ def test_zoom_buttons_and_pinch(win, qtbot):
     assert c.current_scale() == pytest.approx(1000)
     win.a_fit.trigger()
     assert c.fit_mode
-    # Desde "Ajustar" (escala no estándar) acercar salta a la estándar más próxima
+    # From "Fit" (non-standard scale) zooming in jumps to the nearest standard scale
     fit_scale = c.current_scale()
     win.a_zoom_in.trigger()
     assert c.current_scale() < fit_scale and round(c.current_scale()) in (10, 20, 25, 50, 100, 200, 240, 500,
                                                                             1000, 2000, 5000)
-    # Pellizco: acerca 10 % y la profundidad bajo los dedos no se mueve
+    # Pinch: zooms in 10 % and the depth under the fingers does not move
     c.set_scale(500)
     y = c.header_h + 200
     depth = c.depth_at(y)

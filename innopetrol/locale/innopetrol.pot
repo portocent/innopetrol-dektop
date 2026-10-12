@@ -1,0 +1,1351 @@
+# Translations template for InnoPetrol.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the InnoPetrol project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: InnoPetrol VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-11 21:26-0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "&Analysis"
+msgstr ""
+
+msgid "&File"
+msgstr ""
+
+msgid "&Help"
+msgstr ""
+
+msgid "&Template"
+msgstr ""
+
+msgid "&View"
+msgstr ""
+
+msgid "&Well"
+msgstr ""
+
+msgid "(above the first top)"
+msgstr ""
+
+msgid "(computed)"
+msgstr ""
+
+msgid "(no color)"
+msgstr ""
+
+msgid "(no legend)"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid "+ Track"
+msgstr ""
+
+msgid "<b>Pickett</b> (Sw lines)"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale ({out} / "
+"{in_})"
+msgstr ""
+
+msgid "About InnoPetrol"
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Add curve track"
+msgstr ""
+
+msgid "Add depth track"
+msgstr ""
+
+#, python-brace-format
+msgid "Add top at {depth}…"
+msgstr ""
+
+msgid "Add track"
+msgstr ""
+
+msgid "Add/update a “Petrophysical results” track"
+msgstr ""
+
+msgid "All tracks"
+msgstr ""
+
+msgid "Apply the active well's layout to all wells"
+msgstr ""
+
+msgid "Apply to all"
+msgstr ""
+
+msgid "Approximate lines (limestone neutron); marks every 10 p.u."
+msgstr ""
+
+msgid "Automatic (from the first curve)"
+msgstr ""
+
+msgid "Avg Sw"
+msgstr ""
+
+msgid "Avg Vsh"
+msgstr ""
+
+msgid "Avg φ"
+msgstr ""
+
+#, python-brace-format
+msgid "Base ({unit})"
+msgstr ""
+
+msgid "Basic petrophysics (Vsh, φ, Sw)…"
+msgstr ""
+
+#, python-brace-format
+msgid "Basic petrophysics — {well}"
+msgstr ""
+
+msgid "Bins:"
+msgstr ""
+
+msgid "Bit size"
+msgstr ""
+
+#, python-brace-format
+msgid "CSV exported: {path}"
+msgstr ""
+
+#, python-brace-format
+msgid "Calculation error: {error}"
+msgstr ""
+
+msgid "Calculator"
+msgstr ""
+
+msgid "Caliper"
+msgstr ""
+
+msgid "Cascade"
+msgstr ""
+
+msgid "Check the data"
+msgstr ""
+
+msgid "Choose color"
+msgstr ""
+
+msgid "Clean GR"
+msgstr ""
+
+msgid "Clean GR must be lower than shale GR."
+msgstr ""
+
+#, python-brace-format
+msgid "Close the well “{name}”?"
+msgstr ""
+
+msgid "Close well"
+msgstr ""
+
+msgid "Color"
+msgstr ""
+
+msgid "Color:"
+msgstr ""
+
+msgid "Company"
+msgstr ""
+
+msgid "Compute"
+msgstr ""
+
+msgid "Computed curve"
+msgstr ""
+
+msgid "Constants: pi, e, nan. Curves with special names: [K-3104]"
+msgstr ""
+
+msgid "Copy (for Excel)"
+msgstr ""
+
+msgid "Correlation"
+msgstr ""
+
+#, python-brace-format
+msgid "Correlation — {wells}"
+msgstr ""
+
+#, python-brace-format
+msgid "Could not export: {error}"
+msgstr ""
+
+msgid "Could not open:"
+msgstr ""
+
+#, python-brace-format
+msgid "Could not save: {error}"
+msgstr ""
+
+msgid "Create curve"
+msgstr ""
+
+msgid "Crossover (possible gas)"
+msgstr ""
+
+msgid "Crossplot"
+msgstr ""
+
+#, python-brace-format
+msgid "Crossplot — {well}"
+msgstr ""
+
+msgid "Crossplot…"
+msgstr ""
+
+msgid "Curve"
+msgstr ""
+
+#, python-brace-format
+msgid "Curve calculator — {well}"
+msgstr ""
+
+msgid "Curve calculator…"
+msgstr ""
+
+msgid "Curve:"
+msgstr ""
+
+msgid "Curves"
+msgstr ""
+
+msgid "Curves (double-click to insert):"
+msgstr ""
+
+#, python-brace-format
+msgid "Curves ({count})"
+msgstr ""
+
+msgid "Curves are computed with formulas shown in the well tree and can be exported to LAS."
+msgstr ""
+
+#, python-brace-format
+msgid "Curves, row {row}"
+msgstr ""
+
+msgid "Cutoffs (net reservoir / net pay)"
+msgstr ""
+
+msgid "Dash-dot"
+msgstr ""
+
+msgid "Dash-dot-dot"
+msgstr ""
+
+msgid "Dashed"
+msgstr ""
+
+msgid "Data"
+msgstr ""
+
+msgid "Data table"
+msgstr ""
+
+#, python-brace-format
+msgid "Data — {well}"
+msgstr ""
+
+msgid "Datum:"
+msgstr ""
+
+#, python-brace-format
+msgid "Datum: {datum}.   Wheel: scroll · {modifier}+wheel: zoom"
+msgstr ""
+
+msgid "Deep resistivity"
+msgstr ""
+
+msgid "Default template updated: it will be used for newly opened wells."
+msgstr ""
+
+#, python-brace-format
+msgid "Default template: {name}"
+msgstr ""
+
+msgid "Delete computed curve"
+msgstr ""
+
+msgid "Delete curve"
+msgstr ""
+
+#, python-brace-format
+msgid "Delete the computed curve {name}?"
+msgstr ""
+
+msgid "Density"
+msgstr ""
+
+msgid "Density (RHOB):"
+msgstr ""
+
+msgid "Density - Neutron"
+msgstr ""
+
+msgid "Density correction"
+msgstr ""
+
+msgid "Density porosity"
+msgstr ""
+
+msgid "Depth"
+msgstr ""
+
+msgctxt "track title"
+msgid "Depth"
+msgstr ""
+
+msgid "Depth track"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Depths in {unit} (log range: {start} – {stop}). You can also add a top by right-clicking on the "
+"log."
+msgstr ""
+
+msgid "Description:"
+msgstr ""
+
+msgid "Dolomite"
+msgstr ""
+
+msgid "Dotted"
+msgstr ""
+
+msgid "Double-click a curve: statistics and histogram · Double-click a top: go to that depth"
+msgstr ""
+
+msgid "Down"
+msgstr ""
+
+msgid "Drag a track's border: change its width · Double-click a track: edit it"
+msgstr ""
+
+msgid "E.g.: (2.65 - RHOB) / (2.65 - 1.0)"
+msgstr ""
+
+msgid "Edit selected track…"
+msgstr ""
+
+msgid "Edit tops…"
+msgstr ""
+
+msgid "Edit track…"
+msgstr ""
+
+msgid "Effective porosity"
+msgstr ""
+
+#, python-brace-format
+msgid "Error: {error}"
+msgstr ""
+
+msgid "Exact scale: type 1:300 in the “Scale” field"
+msgstr ""
+
+msgid "Export"
+msgstr ""
+
+msgid "Export CSV"
+msgstr ""
+
+msgid "Export CSV…"
+msgstr ""
+
+msgid "Export LAS"
+msgstr ""
+
+msgid "Export LAS (with computed curves)…"
+msgstr ""
+
+msgid "Export image / PDF…"
+msgstr ""
+
+msgid "Export log (PDF / PNG)…"
+msgstr ""
+
+#, python-brace-format
+msgid "Export log — {well}"
+msgstr ""
+
+msgid "Export tops"
+msgstr ""
+
+msgid "Export…"
+msgstr ""
+
+msgid "Expression:"
+msgstr ""
+
+msgid "Field"
+msgstr ""
+
+msgid "Fills / shading"
+msgstr ""
+
+#, python-brace-format
+msgid "Fills, row {row}"
+msgstr ""
+
+msgid "First 2 tracks"
+msgstr ""
+
+msgid "First 3 tracks (correlation, depth, resistivity)"
+msgstr ""
+
+msgid "Fit"
+msgstr ""
+
+msgid "Fit to window"
+msgstr ""
+
+msgid "Fixed value…"
+msgstr ""
+
+#, python-brace-format
+msgid "Flatten on top: {name}"
+msgstr ""
+
+msgid "Follow the log cursor"
+msgstr ""
+
+msgid "Format:"
+msgstr ""
+
+#, python-brace-format
+msgid "Formation tops — {well}"
+msgstr ""
+
+msgid "Formation tops…"
+msgstr ""
+
+msgid "Formula:"
+msgstr ""
+
+msgid "Free"
+msgstr ""
+
+msgid "Frequency (%)"
+msgstr ""
+
+#, python-brace-format
+msgid "From ({unit}):"
+msgstr ""
+
+#, python-brace-format
+msgid "Functions: {functions}"
+msgstr ""
+
+msgid "GR curve:"
+msgstr ""
+
+msgid "Gamma ray"
+msgstr ""
+
+#, python-brace-format
+msgid "Gross ({unit})"
+msgstr ""
+
+msgid "Image saved."
+msgstr ""
+
+msgid "Import CSV…"
+msgstr ""
+
+msgid "Import tops"
+msgstr ""
+
+#, python-brace-format
+msgid "InnoPetrol project (*{suffix})"
+msgstr ""
+
+#, python-brace-format
+msgid "InnoPetrol template (*{suffix} *.json)"
+msgstr ""
+
+msgid "InnoPetrol — Well Viewer"
+msgstr ""
+
+#, python-brace-format
+msgid "InnoPetrol — Well Viewer {version}"
+msgstr ""
+
+#, python-brace-format
+msgid "Interval {top} – {bottom} {unit}"
+msgstr ""
+
+msgid "Interval:"
+msgstr ""
+
+#, python-brace-format
+msgid "Interval: {start} – {stop} {unit} (step {step})"
+msgstr ""
+
+#, python-brace-format
+msgid "LAS exported: {path}"
+msgstr ""
+
+msgid "LAS files (*.las *.LAS);;All files (*)"
+msgstr ""
+
+msgid "Label"
+msgstr ""
+
+msgid "Larionov (older rocks)"
+msgstr ""
+
+msgid "Larionov (tertiary rocks)"
+msgstr ""
+
+msgid "Layout applied."
+msgstr ""
+
+msgid "Left"
+msgstr ""
+
+msgid "Left bound"
+msgstr ""
+
+msgid "Left edge"
+msgstr ""
+
+msgid "Limestone"
+msgstr ""
+
+msgid "Linear"
+msgstr ""
+
+msgid "Linear (IGR)"
+msgstr ""
+
+msgid "Load template"
+msgstr ""
+
+msgid "Load template and apply to the active well…"
+msgstr ""
+
+#, python-brace-format
+msgid "Loaded: {wells}"
+msgstr ""
+
+msgid "Location"
+msgstr ""
+
+msgid "Log"
+msgstr ""
+
+msgid "Logarithmic"
+msgstr ""
+
+msgid "Logarithmic X"
+msgstr ""
+
+msgid "Logarithmic Y"
+msgstr ""
+
+msgid "Logarithmic scale"
+msgstr ""
+
+msgid "Main"
+msgstr ""
+
+#, python-brace-format
+msgid "Maximum: {value}"
+msgstr ""
+
+#, python-brace-format
+msgid "Mean: {value}"
+msgstr ""
+
+msgid "Measured depth (not flattened)"
+msgstr ""
+
+msgid "Medium resistivity"
+msgstr ""
+
+msgid "Method:"
+msgstr ""
+
+#, python-brace-format
+msgid "Min {min} · Max {max} · Mean {mean}"
+msgstr ""
+
+#, python-brace-format
+msgid "Minimum: {value}"
+msgstr ""
+
+msgid "Move left"
+msgstr ""
+
+msgid "Move right"
+msgstr ""
+
+msgid "NEW"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+#, python-brace-format
+msgid "Name of the top at {depth} {unit}:"
+msgstr ""
+
+msgid "Name:"
+msgstr ""
+
+msgid "Navigation and shortcuts"
+msgstr ""
+
+#, python-brace-format
+msgid "Net pay ({unit})"
+msgstr ""
+
+msgid "Net pay flag"
+msgstr ""
+
+msgid "Net res / pay"
+msgstr ""
+
+#, python-brace-format
+msgid "Net res. ({unit})"
+msgstr ""
+
+msgid "Net reservoir flag"
+msgstr ""
+
+msgid "Neutron"
+msgstr ""
+
+msgid "Neutron (NPHI):"
+msgstr ""
+
+msgid "Neutron - Density"
+msgstr ""
+
+msgid "Neutron-density (RMS, gas zones)"
+msgstr ""
+
+msgid "Neutron-density (average)"
+msgstr ""
+
+msgid "Neutron-density crossplot…"
+msgstr ""
+
+msgid "New top"
+msgstr ""
+
+msgid "No data in the interval"
+msgstr ""
+
+msgid "No grid"
+msgstr ""
+
+msgid "No tops defined: the whole well is summarized (Well ▸ Formation tops…)."
+msgstr ""
+
+msgid ""
+"No tops were found in the file.\n"
+"Expected format: name, depth[, color] (with or without a header)."
+msgstr ""
+
+msgid "Open LAS"
+msgstr ""
+
+msgid "Open LAS files"
+msgstr ""
+
+msgid "Open LAS…"
+msgstr ""
+
+msgid "Open at least two wells."
+msgstr ""
+
+msgid "Open one or more LAS files"
+msgstr ""
+
+msgid "Open project"
+msgstr ""
+
+msgid "Open project…"
+msgstr ""
+
+msgid "Open recent"
+msgstr ""
+
+#, python-brace-format
+msgid "Operators: {operators}"
+msgstr ""
+
+#, python-brace-format
+msgid "Original project 2020 · rewritten with Python {version} and PySide6."
+msgstr ""
+
+msgid "Other curves"
+msgstr ""
+
+#, python-brace-format
+msgid "P50 (median): {value}"
+msgstr ""
+
+msgid "PDF (paginated, for printing)"
+msgstr ""
+
+#, python-brace-format
+msgid "PDF saved ({pages} page)."
+msgid_plural "PDF saved ({pages} pages)."
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "PNG image"
+msgstr ""
+
+#, python-brace-format
+msgid "Page {page}/{pages}"
+msgstr ""
+
+msgid "Paper (PDF):"
+msgstr ""
+
+msgid "Pattern"
+msgstr ""
+
+msgid "Pay"
+msgstr ""
+
+msgid "Permeability"
+msgstr ""
+
+msgid "Petrophysical results"
+msgstr ""
+
+msgid "Petrophysics"
+msgstr ""
+
+msgid "Photoelectric factor"
+msgstr ""
+
+msgid "Pickett (φ vs Rt)"
+msgstr ""
+
+msgid "Pickett plot…"
+msgstr ""
+
+msgid "Porosity"
+msgstr ""
+
+#, python-brace-format
+msgid "Project saved to {path}"
+msgstr ""
+
+msgid "Quit"
+msgstr ""
+
+#, python-brace-format
+msgid "Ready. Open a LAS file ({shortcut}) or drag it onto the window."
+msgstr ""
+
+msgid "Rebuild Triple Combo in the active well"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Remove selected track"
+msgstr ""
+
+#, python-brace-format
+msgid "Remove the track “{title}” and its settings?"
+msgstr ""
+
+msgid "Remove track"
+msgstr ""
+
+msgid "Rename track"
+msgstr ""
+
+msgid "Rename…"
+msgstr ""
+
+msgid "Reservoir"
+msgstr ""
+
+msgid "Reset default template (Triple Combo)"
+msgstr ""
+
+msgid "Resistivity"
+msgstr ""
+
+msgid "Resistivity Rt:"
+msgstr ""
+
+msgid "Resolution (PNG, dpi):"
+msgstr ""
+
+msgid "Right"
+msgstr ""
+
+msgid "Right bound"
+msgstr ""
+
+msgid "Right edge"
+msgstr ""
+
+msgid "Right-click: track menu (add, move, remove, add top, scale, export)"
+msgstr ""
+
+#, python-brace-format
+msgid "Row {row}: a name and a numeric depth are required"
+msgstr ""
+
+msgid "Sand"
+msgstr ""
+
+msgid "Sandstone"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Save CSV…"
+msgstr ""
+
+msgid "Save as"
+msgstr ""
+
+msgid "Save crossplot"
+msgstr ""
+
+msgid "Save image…"
+msgstr ""
+
+msgid "Save project"
+msgstr ""
+
+msgid "Save project as…"
+msgstr ""
+
+msgid "Save summary"
+msgstr ""
+
+msgid "Save template"
+msgstr ""
+
+msgid "Save template of the active well…"
+msgstr ""
+
+msgid "Save the current project before continuing?"
+msgstr ""
+
+msgid "Scale"
+msgstr ""
+
+msgid "Scale:"
+msgstr ""
+
+msgid "Select a well window."
+msgstr ""
+
+msgid "Select at least the GR or the density curve."
+msgstr ""
+
+msgid "Separation (shale)"
+msgstr ""
+
+msgid "Shale"
+msgstr ""
+
+msgid "Shale GR"
+msgstr ""
+
+msgid "Shale volume"
+msgstr ""
+
+msgid "Shale volume (Vsh) from gamma ray"
+msgstr ""
+
+msgid "Shallow resistivity"
+msgstr ""
+
+msgid "Shortcuts"
+msgstr ""
+
+msgid "Show as tabs"
+msgstr ""
+
+msgid "Show well window"
+msgstr ""
+
+msgid "Solid"
+msgstr ""
+
+msgid "Some items could not be loaded:"
+msgstr ""
+
+msgid "Sonic"
+msgstr ""
+
+msgid "Sonic / PEF"
+msgstr ""
+
+msgid "Spontaneous potential"
+msgstr ""
+
+msgid "Statistics and histogram…"
+msgstr ""
+
+#, python-brace-format
+msgid "Statistics — {well}"
+msgstr ""
+
+#, python-brace-format
+msgid "Std. deviation: {value}"
+msgstr ""
+
+msgid "Style"
+msgstr ""
+
+#, python-brace-format
+msgid "Template saved: {path}"
+msgstr ""
+
+msgid "Test"
+msgstr ""
+
+msgid "Tile"
+msgstr ""
+
+msgid "Title:"
+msgstr ""
+
+#, python-brace-format
+msgid "To ({unit}):"
+msgstr ""
+
+msgid "To flatten, define tops with the same name in every well (Well ▸ Tops)."
+msgstr ""
+
+#, python-brace-format
+msgid "Top ({unit})"
+msgstr ""
+
+#, python-brace-format
+msgid "Top {number}"
+msgstr ""
+
+msgid "Tops"
+msgstr ""
+
+msgid "Tops (*.csv *.txt);;All files (*)"
+msgstr ""
+
+#, python-brace-format
+msgid "Tops ({count})"
+msgstr ""
+
+#, python-brace-format
+msgid "Total porosity - {method}"
+msgstr ""
+
+msgid "Track title…"
+msgstr ""
+
+#, python-brace-format
+msgid "Track {number}"
+msgstr ""
+
+msgid "Tracks of each well:"
+msgstr ""
+
+msgid "Type the scale as 1:500 or 500."
+msgstr ""
+
+msgid "Type:"
+msgstr ""
+
+msgid "Unit:"
+msgstr ""
+
+msgid "Unsaved changes"
+msgstr ""
+
+msgid "Up"
+msgstr ""
+
+msgid "Use a name made of letters, digits or _."
+msgstr ""
+
+msgid "Use the active well's layout as the default template"
+msgstr ""
+
+#, python-brace-format
+msgid "Valid samples: {valid} of {total}"
+msgstr ""
+
+msgid "Valid, but the result has no values (all NaN)"
+msgstr ""
+
+#, python-brace-format
+msgid "Valid: {count} samples · min {min} · max {max} · mean {mean}"
+msgstr ""
+
+msgid "Value"
+msgstr ""
+
+msgid "Vertical scale"
+msgstr ""
+
+#, python-brace-format
+msgid "Vertical scale 1:{scale}"
+msgstr ""
+
+msgid "Vertical scale:"
+msgstr ""
+
+msgid "Visible"
+msgstr ""
+
+#, python-brace-format
+msgid "Vsh - {method}"
+msgstr ""
+
+msgid "Water saturation"
+msgstr ""
+
+msgid "Water saturation — Archie"
+msgstr ""
+
+msgid "Well correlation"
+msgstr ""
+
+msgid "Well correlation…"
+msgstr ""
+
+msgid "Well information"
+msgstr ""
+
+msgid ""
+"Well log visualization (LAS format) for petroleum engineers: configurable tracks, linear and "
+"logarithmic scales, fills, tops, basic petrophysics, crossplots, well correlation and export to "
+"PDF/PNG/LAS."
+msgstr ""
+
+msgid "Well tree"
+msgstr ""
+
+#, python-brace-format
+msgid "Well: {name}"
+msgstr ""
+
+msgid "Wells"
+msgstr ""
+
+msgid "Wells to correlate (in order):"
+msgstr ""
+
+msgid "What is visible on screen"
+msgstr ""
+
+msgid "Wheel: scroll in depth · Shift + wheel: scroll horizontally · PgUp/PgDn, Home/End, arrows"
+msgstr ""
+
+msgid "Whole well"
+msgstr ""
+
+msgid "Width"
+msgstr ""
+
+msgid "Width / grid / divisions:"
+msgstr ""
+
+msgid "X axis:"
+msgstr ""
+
+msgid "X min / max:"
+msgstr ""
+
+msgid "Y axis:"
+msgstr ""
+
+msgid "Y min / max:"
+msgstr ""
+
+msgid "Zone"
+msgstr ""
+
+msgid "Zone summary (net pay)…"
+msgstr ""
+
+#, python-brace-format
+msgid "Zone summary — {well}"
+msgstr ""
+
+#, python-brace-format
+msgid "Zone {name}"
+msgstr ""
+
+#, python-brace-format
+msgid "Zone: {name}"
+msgstr ""
+
+msgid "Zones"
+msgstr ""
+
+msgid "Zoom"
+msgstr ""
+
+msgid "Zoom in"
+msgstr ""
+
+msgid "Zoom in to the next standard scale"
+msgstr ""
+
+msgid "Zoom out"
+msgstr ""
+
+msgid "Zoom out to the next standard scale"
+msgstr ""
+
+#, python-brace-format
+msgid "a curve named {name} already exists"
+msgstr ""
+
+msgid "automatic Triple Combo"
+msgstr ""
+
+msgid "comparison not allowed"
+msgstr ""
+
+#, python-brace-format
+msgid "could not read the project: {error}"
+msgstr ""
+
+msgid "could not save the image"
+msgstr ""
+
+#, python-brace-format
+msgid "element not allowed in the expression: {element}"
+msgstr ""
+
+msgid "expression too long"
+msgstr ""
+
+msgid "feet (ft)"
+msgstr ""
+
+#, python-brace-format
+msgid "flattened on “{top}”"
+msgstr ""
+
+#, python-brace-format
+msgid "function not allowed: {function}"
+msgstr ""
+
+#, python-brace-format
+msgid "invalid arguments for {function}()"
+msgstr ""
+
+#, python-brace-format
+msgid "invalid template format: {error}"
+msgstr ""
+
+#, python-brace-format
+msgid "layout of {well}"
+msgstr ""
+
+msgid "measured depth"
+msgstr ""
+
+msgid "meters (m)"
+msgstr ""
+
+msgid "no data in the interval"
+msgstr ""
+
+msgid "number"
+msgstr ""
+
+msgid "only numbers are allowed"
+msgstr ""
+
+msgid "project"
+msgstr ""
+
+#, python-brace-format
+msgid "syntax error near column {column}"
+msgstr ""
+
+msgid "template"
+msgstr ""
+
+msgid "the curve does not have the same number of samples as the depth"
+msgstr ""
+
+msgid "the expression does not use any curve"
+msgstr ""
+
+msgid "the file contains no curves"
+msgstr ""
+
+msgid "the file contains no data"
+msgstr ""
+
+msgid "the file is not an InnoPetrol project"
+msgstr ""
+
+msgid "the file is not an InnoPetrol template"
+msgstr ""
+
+#, python-brace-format
+msgid "the file is not valid JSON ({message}, line {line})"
+msgstr ""
+
+#, python-brace-format
+msgid "the image would be {height} px tall; use PDF, a shorter interval or a smaller scale"
+msgstr ""
+
+msgid "the result does not have the size of the curves"
+msgstr ""
+
+msgid "the template was created with a newer version of the program"
+msgstr ""
+
+msgid "too many curves for the page height"
+msgstr ""
+
+#, python-brace-format
+msgid "unknown curve: {name}"
+msgstr ""
+
+msgid "usage: curve(\"NAME\")"
+msgstr ""
+
+#, python-brace-format
+msgid "{count} points"
+msgstr ""
+
+#, python-brace-format
+msgid "{curve} (not available)"
+msgstr ""
+
+#, python-brace-format
+msgid "{curve} — not available"
+msgstr ""
+
+#, python-brace-format
+msgid "{modifier} + wheel or trackpad pinch: continuous zoom at the cursor"
+msgstr ""
+
+#, python-brace-format
+msgid "{name} is an original LAS curve; choose another name."
+msgstr ""
+
+#, python-brace-format
+msgid "{open} open LAS · {save} save project · {export} export · {tsave} / {tload} save / load template"
+msgstr ""
+
+#, python-brace-format
+msgid "{row}: a fixed value needs at least one curve in the track to be placed"
+msgstr ""
+
+#, python-brace-format
+msgid "{row}: both bounds are the same curve"
+msgstr ""
+
+#, python-brace-format
+msgid "{row}: choose a curve"
+msgstr ""
+
+#, python-brace-format
+msgid "{row}: enter a number for the left bound"
+msgstr ""
+
+#, python-brace-format
+msgid "{row}: enter a number for the right bound"
+msgstr ""
+
+#, python-brace-format
+msgid "{row}: on a logarithmic scale the limits must be greater than zero"
+msgstr ""
+
+#, python-brace-format
+msgid "{row}: scale values must be numbers"
+msgstr ""
+
+#, python-brace-format
+msgid "{row}: the left and right scale values cannot be equal"
+msgstr ""
+
+#, python-brace-format
+msgid "{track} add track · {tops} tops · {petro} petrophysics · {calc} calculator"
+msgstr ""
+
+#, python-brace-format
+msgid "{well} - log 1:{scale}"
+msgstr ""
+
+#, python-brace-format
+msgid "{well} · scale 1:{scale} · visible {top} – {bottom} {unit}"
+msgstr ""
+
+#, python-brace-format
+msgid "{well}: could not recompute {curve}: {error}"
+msgstr ""
+
+#, python-brace-format
+msgid "{well}: curves not found: {curves}"
+msgstr ""
+
+#, python-brace-format
+msgid "{well}: missing {curves}"
+msgstr ""
+
+#, python-brace-format
+msgid "{well}: the default template uses curves that are not in the well: {curves}"
+msgstr ""
+
+#, python-brace-format
+msgid "{xplot} crossplot · {corr} correlation · {table} data table"
+msgstr ""
+
+msgid "ρ fluid"
+msgstr ""
+
+msgid "ρ matrix"
+msgstr ""
+
+msgid "ρ matrix and ρ fluid cannot be equal."
+msgstr ""
+
+msgid "— choose —"
+msgstr ""
+
+#, python-brace-format
+msgid "“Fit”: whole well ({shortcut})"
+msgstr ""
+
+msgid "“To” must be greater than “From”."
+msgstr ""
+

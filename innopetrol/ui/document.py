@@ -1,4 +1,4 @@
-"""WellDocument: un pozo abierto + su layout, con señales para que las vistas se actualicen."""
+"""WellDocument: an open well plus its layout, with signals so views can update themselves."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ class WellDocument(QObject):
     layoutChanged = Signal()
     curvesChanged = Signal()
     topsChanged = Signal()
-    cursorMoved = Signal(float)  # profundidad bajo el cursor (NaN = fuera)
+    cursorMoved = Signal(float)  # depth under the cursor (NaN = outside)
 
     def __init__(self, well: Well, layout: LogLayout, petro: PetroParams | None = None, parent=None):
         super().__init__(parent)

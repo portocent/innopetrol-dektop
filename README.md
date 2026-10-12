@@ -1,114 +1,134 @@
-# InnoPetrol — Visor de Pozos
+# InnoPetrol — Well Viewer
 
-Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, escrito en Python con PySide6.
+Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python with PySide6.
 
-![Registro con resultados petrofísicos](docs/captura-registro.png)
+*English · [Español](README.es.md)*
 
-## Funciones
+![Log with petrophysical results](docs/screenshot-log.png)
 
-**Visualización**
-- Varios pozos abiertos a la vez (ventanas o pestañas), árbol lateral con cabecera, curvas y topes.
-- Plantilla automática **Triple Combo** al abrir un LAS: correlación (GR/SP/CALI con relleno arena-arcilla), profundidad, resistividades (log), densidad-neutrón con cruce de gas, sónico/PEF, petrofísica y permeabilidad.
-- Reconoce unos 125 mnemónicos (17 familias de curvas) de distintas compañías de servicio (GR/SGR/GRC, NPHI/TNPH, LLD/ILD/AT90…) y propone escala, color y tipo lineal/log.
-- Escalas verticales reales (1:200, 1:500, 1:1000…) o ajuste a la ventana.
-- Tracks configurables: curvas, escala lineal o logarítmica, color, grosor, estilo, rellenos entre curvas o contra un valor fijo con 10 patrones.
-- Agregar, quitar, mover, renombrar y cambiar el ancho de tracks (arrastrando el borde).
+## Features
 
-**Navegación** (en Mac, ⌘ en lugar de Ctrl)
-- Zoom: botones **−** / **+** junto a «Escala» (o Ctrl − / Ctrl +) saltan entre escalas estándar; «Ajustar» muestra el pozo completo (Ctrl 0); en el campo «Escala» se puede escribir una exacta, p. ej. `1:300`.
-- Zoom continuo en el cursor: Ctrl + rueda o pellizco en el trackpad.
-- Rueda: desplazar · Shift + rueda: horizontal · RePág/AvPág, Inicio/Fin.
-- Cursor con lectura de profundidad, zona y valor de todas las curvas en la barra de estado.
-- Tabla de datos sincronizada con el cursor.
+**Display**
+- Several wells open at once (windows or tabs), side tree with header info, curves and tops.
+- Automatic **Triple Combo** template when a LAS file is opened: correlation (GR/SP/CALI with sand/shale fill), depth, resistivities (log), density-neutron with gas crossover, sonic/PEF, petrophysics and permeability.
+- Recognizes about 125 mnemonics (17 curve families) from different service companies (GR/SGR/GRC, NPHI/TNPH, LLD/ILD/AT90…) and proposes scale, color and linear/log type.
+- True vertical scales (1:200, 1:500, 1:1000…) or fit to window.
+- Configurable tracks: curves, linear or logarithmic scale, color, width, style, fills between curves or against a fixed value with 10 patterns.
+- Add, remove, move, rename and resize tracks (by dragging their border).
+- Interface in **English or Spanish**, switched live from **View ▸ Language / Idioma** (the first start uses the system language).
 
-**Interpretación**
-- Topes de formación: agregar con clic derecho, editar en tabla, importar/exportar CSV (columnas en español o inglés).
-- Petrofísica básica: Vsh (lineal, Larionov), porosidad densidad y neutrón-densidad, porosidad efectiva, Sw Archie, banderas de reservorio y pago.
-- Resumen por zonas: espesor bruto, neto de reservorio, neto de pago, N/G, φ, Sw y Vsh promedio (copiar a Excel o CSV).
-- Calculadora de curvas con expresiones (`(2.65 - RHOB) / 1.65`, `where(GR > 75, 1, 0)`) evaluadas de forma segura.
-- Estadísticas e histograma por curva y zona (P10/P50/P90).
-- Crossplots con color por una tercera curva: libre, **neutrón-densidad** con líneas de litología y **Pickett** con líneas de Sw.
-- **Correlación multi-pozo** lado a lado, en profundidad o **aplanada en un tope**, con líneas que unen topes del mismo nombre.
+**Navigation** (on Mac, ⌘ instead of Ctrl)
+- Zoom: the **−** / **+** buttons next to “Scale” (or Ctrl − / Ctrl +) step through standard scales; “Fit” shows the whole well (Ctrl 0); an exact scale can be typed in the “Scale” field, e.g. `1:300`.
+- Continuous zoom at the cursor: Ctrl + wheel or trackpad pinch.
+- Wheel: scroll · Shift + wheel: horizontal · PgUp/PgDn, Home/End.
+- Cursor readout of depth, zone and every curve value in the status bar.
+- Data table synchronized with the cursor.
 
-**Archivos**
-- Plantillas en JSON (`.ipt.json`): se aplican a otros pozos aunque usen otros mnemónicos. Plantilla por defecto configurable.
-- Proyectos (`.ipproj`): pozos, layouts, topes, parámetros y curvas calculadas (guardadas como fórmulas).
-- Exportar el registro a **PDF paginado** o **PNG** a escala, **LAS** (con curvas calculadas) y **CSV**.
+**Interpretation**
+- Formation tops: add with right-click, edit in a table, import/export CSV (English or Spanish column names).
+- Basic petrophysics: Vsh (linear, Larionov), density and neutron-density porosity, effective porosity, Archie Sw, reservoir and pay flags.
+- Zone summary: gross, net reservoir and net pay thickness, N/G, average φ, Sw and Vsh (copy to Excel or CSV).
+- Curve calculator with expressions (`(2.65 - RHOB) / 1.65`, `where(GR > 75, 1, 0)`) evaluated safely (no `eval`).
+- Statistics and histogram per curve and zone (P10/P50/P90).
+- Crossplots colored by a third curve: free, **neutron-density** with lithology lines and **Pickett** with Sw lines.
+- **Multi-well correlation** side by side, in depth or **flattened on a top**, with lines joining tops of the same name.
 
-| Correlación aplanada en un tope | Crossplot neutrón-densidad |
+**Files**
+- JSON templates (`.ipt.json`): they apply to other wells even when those use different mnemonics. Configurable default template.
+- Projects (`.ipproj`): wells, layouts, tops, parameters and computed curves (stored as formulas).
+- Export the log to **paginated PDF** or **PNG** at scale, **LAS** (including computed curves) and **CSV**.
+
+| Correlation flattened on a top | Neutron-density crossplot |
 |---|---|
-| ![Correlación](docs/captura-correlacion.png) | ![Crossplot](docs/captura-crossplot.png) |
+| ![Correlation](docs/screenshot-correlation.png) | ![Crossplot](docs/screenshot-crossplot.png) |
 
-## Instalación y uso
+## Installation and usage
 
-Funciona en **Windows 10/11**, **Linux** (distribuciones con glibc 2.28 o más nueva: Ubuntu 20.04+,
-Debian 11+, RHEL/Rocky 8+) y **macOS 12+**. No necesita tarjeta gráfica dedicada.
+Runs on **Windows 10/11**, **Linux** (distributions with glibc 2.28 or newer: Ubuntu 20.04+,
+Debian 11+, RHEL/Rocky 8+) and **macOS 12+**. No dedicated graphics card needed.
 
-### Ejecutable (sin instalar Python)
+### Executable (no Python install)
 
-En la pestaña **Actions** del repositorio en GitHub, cada versión genera un `.zip` por sistema
-(`InnoPetrol-Windows`, `InnoPetrol-Linux`, `InnoPetrol-macOS`). Descomprimir y ejecutar
-`InnoPetrol.exe` (Windows), `InnoPetrol/InnoPetrol` (Linux) o `InnoPetrol.app` (macOS).
+In the repository's **Actions** tab on GitHub, every build produces one `.zip` per system
+(`InnoPetrol-Windows`, `InnoPetrol-Linux`, `InnoPetrol-macOS`). Unzip and run
+`InnoPetrol.exe` (Windows), `InnoPetrol/InnoPetrol` (Linux) or `InnoPetrol.app` (macOS).
 
-En Windows, la primera vez SmartScreen puede advertir que el programa no está firmado:
-«Más información» ▸ «Ejecutar de todas formas».
+On Windows, SmartScreen may warn the first time that the program is not signed:
+“More info” ▸ “Run anyway”.
 
-Para generarlo a mano en la máquina de destino:
+To build it by hand on the target machine:
 
 ```bash
 uv sync --group build
-uv run --group build python packaging/build.py     # resultado en dist/
+uv run --group build python packaging/build.py     # output in dist/
 ```
 
-### Desde el código fuente
+### From source
 
-Requiere [uv](https://docs.astral.sh/uv/), que instala Python y las dependencias automáticamente:
+Requires [uv](https://docs.astral.sh/uv/), which installs Python and the dependencies automatically:
 
 ```bash
 uv sync
-uv run innopetrol                          # abre la aplicación
-uv run innopetrol samples/Testdata.las     # abre directamente uno o más LAS
+uv run innopetrol                          # start the application
+uv run innopetrol samples/Testdata.las     # open one or more LAS files directly
 ```
 
-En Windows (PowerShell) se instala uv con `irm https://astral.sh/uv/install.ps1 | iex`.
+On Windows (PowerShell) uv is installed with `irm https://astral.sh/uv/install.ps1 | iex`.
 
-En Linux, Qt necesita algunas librerías del sistema que suelen estar instaladas en escritorios;
-en una instalación mínima de Ubuntu/Debian:
+On Linux, Qt needs a few system libraries that desktop installs usually have; on a minimal
+Ubuntu/Debian install:
 
 ```bash
 sudo apt install libegl1 libgl1 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libfontconfig1 libdbus-1-3
 ```
 
-También se pueden arrastrar archivos `.las` o `.ipproj` a la ventana. En `samples/` hay cuatro pozos de ejemplo.
+`.las` and `.ipproj` files can also be dragged onto the window. `samples/` contains four example wells.
 
-### Equipos de menor potencia
+### Lower-powered machines
 
-La aplicación mide cuánto tarda en dibujar en cada máquina. Si un dibujo completo es lento, durante el
-zoom, el cambio de tamaño de la ventana o el arrastre del borde de un track muestra una vista previa
-liviana y dibuja con calidad completa al terminar el gesto. Mover el cursor y desplazarse reutilizan
-lo ya dibujado, así que se mantienen fluidos también en equipos modestos.
+The application measures how long drawing takes on each machine. If a full redraw is slow, zooming,
+resizing the window or dragging a track border show a lightweight preview and the full-quality drawing
+happens when the gesture ends. Moving the cursor and scrolling reuse what has already been drawn, so they
+stay smooth on modest hardware too.
 
-## Pruebas
+## Tests
 
 ```bash
 uv run pytest
 ```
 
-Las pruebas de interfaz corren sin abrir ventanas (modo *offscreen*). GitHub Actions las ejecuta en
-Windows, Linux y macOS en cada cambio, y además construye y prueba el ejecutable de cada sistema
+Interface tests run without opening windows (*offscreen* mode). GitHub Actions runs them on
+Windows, Linux and macOS on every change, and also builds and tests each system's executable
 (`.github/workflows/ci.yml`).
 
-## Estructura
+## Adding a language
+
+Interface texts are written in English in the code and marked with `_()`; translations are standard
+gettext catalogs in `innopetrol/locale/<language>/LC_MESSAGES/innopetrol.po`.
+
+```bash
+uv run python tools/i18n.py init fr     # create the catalog for a new language (e.g. French)
+# translate innopetrol/locale/fr/LC_MESSAGES/innopetrol.po with a text editor or Poedit
+uv run python tools/i18n.py compile     # compile .po -> .mo
+```
+
+Then add the language to `LANGUAGES` in `innopetrol/i18n.py`. After changing interface texts in the code,
+`tools/i18n.py update` refreshes every catalog; the test suite fails if any text is left untranslated,
+if a translation drops a `{placeholder}`, or if the compiled `.mo` is out of date.
+
+## Layout
 
 ```
 innopetrol/
-  model/     datos y cálculos puros (sin Qt): pozo, escalas, layout, plantillas, mnemónicos,
-             calculadora, petrofísica, topes, proyecto
-  render/    dibujo con QPainter, compartido por la pantalla y la exportación PDF/PNG
-  ui/        ventanas y diálogos PySide6
-tests/       pruebas automáticas (pytest + pytest-qt)
-packaging/   construcción del ejecutable con PyInstaller
-samples/     archivos LAS de ejemplo
+  model/     pure data and calculations (no Qt): well, scales, layout, templates, mnemonics,
+             calculator, petrophysics, tops, project
+  render/    QPainter drawing, shared by the screen and the PDF/PNG export
+  ui/        PySide6 windows and dialogs
+  locale/    interface translations (gettext: editable .po + compiled .mo)
+tests/       automated tests (pytest + pytest-qt)
+packaging/   executable build with PyInstaller
+samples/     example LAS files
 ```
 
-Para la historia del proyecto y qué cambió respecto de la versión de 2020, ver [CAMBIOS.md](CAMBIOS.md).
+The project's history and what changed from the 2020 version are described (in Spanish) in
+[CAMBIOS.md](CAMBIOS.md).

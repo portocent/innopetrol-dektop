@@ -1,7 +1,7 @@
-"""Petrofísica básica: Vsh, porosidad, saturación de agua (Archie), net pay y resumen por zonas.
+"""Basic petrophysics: Vsh, porosity, water saturation (Archie), net pay and zone summaries.
 
-Cada resultado se genera como una *fórmula* de la calculadora de curvas, así queda
-documentado cómo se obtuvo y se puede recalcular al reabrir un proyecto.
+Every result is produced as a curve calculator *formula*, which documents how it was obtained
+and lets it be recomputed when a project is reopened.
 """
 
 from __future__ import annotations
@@ -10,11 +10,12 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from innopetrol.i18n import N_, _
 from innopetrol.model.calculator import curve_ref, evaluate
 from innopetrol.model.tops import Zone
 from innopetrol.model.well import Curve
 
-# ---------------------------------------------------------------- funciones de referencia (numpy)
+# ---------------------------------------------------------------- reference functions (numpy)
 
 
 def gr_index(gr, gr_clean, gr_shale):
@@ -41,12 +42,13 @@ def sw_archie(rt, phi, rw, a=1.0, m=2.0, n=2.0):
     return np.clip(sw, 0, 1)
 
 
-# ---------------------------------------------------------------- parámetros y fórmulas
+# ---------------------------------------------------------------- parameters and formulas
 
-VSH_METHODS = {"linear": "Lineal (IGR)", "larionov_tertiary": "Larionov (rocas terciarias)",
-               "larionov_older": "Larionov (rocas antiguas)"}
-PHI_METHODS = {"density": "Densidad", "nd_average": "Neutrón-densidad (promedio)",
-               "nd_rms": "Neutrón-densidad (RMS, zonas con gas)"}
+# Display names, translated with _() when shown.
+VSH_METHODS = {"linear": N_("Linear (IGR)"), "larionov_tertiary": N_("Larionov (tertiary rocks)"),
+               "larionov_older": N_("Larionov (older rocks)")}
+PHI_METHODS = {"density": N_("Density"), "nd_average": N_("Neutron-density (average)"),
+               "nd_rms": N_("Neutron-density (RMS, gas zones)")}
 
 
 @dataclass
@@ -92,7 +94,7 @@ def _neutron_in_percent(well, mnem: str) -> bool:
 
 
 def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
-    """Fórmulas en orden de dependencia según las curvas de entrada disponibles."""
+    """Formulas in dependency order, depending on which input curves are available."""
     out: list[FormulaSpec] = []
     has_vsh = has_phi = False
 
@@ -103,7 +105,7 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
             "larionov_tertiary": f"clip(0.083 * (2 ** (3.7 * {igr}) - 1), 0, 1)",
             "larionov_older": f"clip(0.33 * (2 ** (2 * {igr}) - 1), 0, 1)",
         }[p.vsh_method]
-        out.append(FormulaSpec("VSH", "v/v", f"Vsh - {VSH_METHODS[p.vsh_method]}", vsh))
+        out.append(FormulaSpec("VSH", "v/v", _("Vsh - {method}").format(method=_(VSH_METHODS[p.vsh_method])), vsh))
         has_vsh = True
 
     if p.rhob_curve and p.rhob_curve in well.curves:
@@ -112,18 +114,19 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
             phin = curve_ref(p.nphi_curve)
             if _neutron_in_percent(well, p.nphi_curve):
                 phin = f"({phin} / 100)"
-            out.append(FormulaSpec("PHID", "v/v", "Porosidad densidad", f"clip({phid}, -0.15, 0.6)"))
+            out.append(FormulaSpec("PHID", "v/v", _("Density porosity"), f"clip({phid}, -0.15, 0.6)"))
             if p.phi_method == "nd_average":
                 phit = f"(PHID + {phin}) / 2"
             else:
                 phit = f"sqrt((PHID ** 2 + {phin} ** 2) / 2)"
-            method = PHI_METHODS[p.phi_method]
+            method_key = p.phi_method
         else:
             phit = phid
-            method = PHI_METHODS["density"]
-        out.append(FormulaSpec("PHIT", "v/v", f"Porosidad total - {method}", f"clip({phit}, 0, 0.6)"))
+            method_key = "density"
+        method = _(PHI_METHODS[method_key])
+        out.append(FormulaSpec("PHIT", "v/v", _("Total porosity - {method}").format(method=method), f"clip({phit}, 0, 0.6)"))
         phie = "clip(PHIT * (1 - VSH), 0, 0.6)" if has_vsh else "PHIT"
-        out.append(FormulaSpec("PHIE", "v/v", "Porosidad efectiva", phie))
+        out.append(FormulaSpec("PHIE", "v/v", _("Effective porosity"), phie))
         has_phi = True
 
     if has_phi and p.rt_curve and p.rt_curve in well.curves:
@@ -136,16 +139,16 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
         cond = f"(PHIE >= {p.phi_cut:g})"
         if has_vsh:
             cond = f"(VSH <= {p.vsh_cut:g}) & {cond}"
-        out.append(FormulaSpec("RES_FLAG", "", "Bandera de reservorio neto",
+        out.append(FormulaSpec("RES_FLAG", "", _("Net reservoir flag"),
                                f"where(isnan(PHIE), nan, where({cond}, 1, 0))"))
         if any(f.mnemonic == "SW" for f in out):
-            out.append(FormulaSpec("PAY_FLAG", "", "Bandera de pago neto",
+            out.append(FormulaSpec("PAY_FLAG", "", _("Net pay flag"),
                                    f"where(isnan(SW), nan, where((RES_FLAG > 0) & (SW <= {p.sw_cut:g}), 1, 0))"))
     return out
 
 
 def compute(well, p: PetroParams) -> list[Curve]:
-    """Evalúa las fórmulas; cada resultado queda disponible para la siguiente."""
+    """Evaluates the formulas; each result is available to the following ones."""
     env = {m: c.values for m, c in well.curves.items()}
     curves = []
     for spec in build_formulas(well, p):
@@ -155,7 +158,7 @@ def compute(well, p: PetroParams) -> list[Curve]:
     return curves
 
 
-# ---------------------------------------------------------------- resumen por zonas
+# ---------------------------------------------------------------- zone summary
 
 
 @dataclass
@@ -178,9 +181,9 @@ def sample_thickness(depth: np.ndarray) -> np.ndarray:
 
 def zone_summary(well, zones: list[Zone], vsh: str | None, phi: str | None, sw: str | None,
                  vsh_cut: float, phi_cut: float, sw_cut: float) -> list[ZoneSummary]:
-    """Espesor bruto, neto de reservorio, neto de pago, N/G y promedios por zona.
+    """Gross, net reservoir and net pay thickness, N/G and averages per zone.
 
-    Promedios: φ ponderado por espesor sobre reservorio neto; Sw ponderado por φ·h sobre pago neto.
+    Averages: φ weighted by thickness over net reservoir; Sw weighted by φ·h over net pay.
     """
     h = sample_thickness(well.depth)
     nan = np.full(well.depth.shape, np.nan)

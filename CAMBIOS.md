@@ -181,6 +181,44 @@ sólo se usan QtCore, QtGui y QtWidgets) y sin pandas, que sólo se usaba para e
 (~85 MB). GitHub Actions corre las pruebas en Windows, Linux y macOS y construye el ejecutable de cada
 uno. Además lo arranca con `--smoke-test`, que abre un LAS, dibuja y sale con código 0 si todo funcionó.
 
+### 3.3 Código en inglés e interfaz en varios idiomas
+
+Para poder compartir el proyecto, todo el código (comentarios, docstrings, mensajes) quedó en inglés y la
+interfaz se puede usar en inglés o español, cambiando el idioma en vivo desde **Ver ▸ Language / Idioma**.
+
+**Cómo funciona (gettext, el estándar de Python).** Los textos se escriben en inglés en el código y se
+marcan con `_()`:
+
+```python
+QMessageBox.warning(self, _("Export"), _("Could not export: {error}").format(error=e))
+```
+
+`innopetrol/i18n.py` busca la traducción en el catálogo del idioma activo
+(`innopetrol/locale/es/LC_MESSAGES/innopetrol.po`, compilado a `.mo`). La búsqueda se hace en cada llamada,
+por eso el cambio de idioma afecta a todo lo que se dibuja después. Los diálogos propios de Qt
+(Aceptar/Cancelar, selector de archivos) se traducen con los catálogos que ya trae PySide6.
+
+**Reglas que conviene saber:**
+- *Placeholders con nombre*, nunca f-strings dentro de `_()`: el traductor necesita poder mover
+  `{well}` de lugar ("Curvas no encontradas en {well}") y una f-string ya llega armada.
+- *Frases completas*: `_("left")` + `_("bound")` no se traduce bien; `_("Left bound")` sí.
+- *`_` no puede usarse como variable descartable* (`for _ in range(4)`, `path, _ = QFileDialog...`).
+  Es una costumbre muy común en Python, pero si `_` es la función de traducción, esa variable la tapa y
+  el programa falla al traducir. Se renombraron 30 casos y hay una prueba que revisa el código con `ast`
+  para que no vuelva a pasar.
+- *Constantes a nivel de módulo* (nombres de familias de curvas, métodos de Vsh) se marcan con `N_()`
+  y se traducen recién al mostrarse, porque cuando se carga el módulo todavía no se sabe el idioma.
+- *Lo que es dato del usuario no se traduce*: títulos de tracks ya creados, nombres de topes,
+  descripciones de curvas calculadas guardadas en proyectos.
+
+**Un error que apareció gracias a la traducción.** El diálogo de petrofísica buscaba los tracks por su
+título ("Densidad - Neutrón", "Resultados petrofísicos"). Con la interfaz en inglés esos títulos son otros
+y el programa habría duplicado los tracks de resultados. Ahora los busca por las curvas que contienen.
+
+**Pruebas.** Fallan si algún texto del código no tiene traducción, si una traducción pierde un
+`{placeholder}`, si el `.mo` quedó desactualizado respecto del `.po`, o si `_` se usa como variable.
+También verifican el cambio de idioma en vivo y que la elección se recuerde al reiniciar.
+
 ## 4. Arquitectura
 
 ```

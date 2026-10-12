@@ -1,4 +1,4 @@
-"""Topes de formación (marcadores) y zonas entre topes."""
+"""Formation tops (markers) and the zones between them."""
 
 from __future__ import annotations
 
@@ -30,16 +30,17 @@ class Zone:
     base: float
 
 
+# Column headers accepted in English and Spanish (tops files come from both kinds of projects).
 _NAME_COLS = ("name", "nombre", "top", "tope", "marker", "formation", "formacion", "formación", "surface")
 _DEPTH_COLS = ("depth", "md", "profundidad", "prof", "tvd")
 _WELL_COLS = ("well", "pozo", "uwi", "well_name")
 
 
 def load_tops_csv(path: str | Path, well_name: str | None = None) -> list[Top]:
-    """Lee topes desde CSV/TXT. Acepta encabezados en español o inglés y separador , ; o tab.
+    """Reads tops from CSV/TXT. Accepts English or Spanish headers and , ; or tab separators.
 
-    Si el archivo tiene columna de pozo y se pasa `well_name`, se filtran sus filas.
-    Sin encabezado se asume: nombre, profundidad[, color].
+    If the file has a well column and `well_name` is given, only that well's rows are kept.
+    Without a header the columns are assumed to be: name, depth[, color].
     """
     text = Path(path).read_text(encoding="utf-8-sig", errors="replace")
     try:
@@ -78,7 +79,7 @@ def load_tops_csv(path: str | Path, well_name: str | None = None) -> list[Top]:
 
 
 def save_tops_csv(path: str | Path, tops: list[Top]) -> None:
-    with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel en Windows
+    with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel on Windows
         w = csv.writer(f)
         w.writerow(["name", "depth", "color"])
         for t in sorted(tops, key=lambda t: t.depth):
@@ -86,7 +87,7 @@ def save_tops_csv(path: str | Path, tops: list[Top]) -> None:
 
 
 def zones_from_tops(tops: list[Top], bottom: float) -> list[Zone]:
-    """Cada tope define una zona hasta el siguiente tope (o hasta el fondo del registro)."""
+    """Each top starts a zone that ends at the next top (or at the bottom of the log)."""
     ordered = sorted(tops, key=lambda t: t.depth)
     zones = []
     for i, t in enumerate(ordered):

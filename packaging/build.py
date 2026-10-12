@@ -1,9 +1,9 @@
-"""Genera el ejecutable de InnoPetrol para el sistema operativo actual.
+"""Builds the InnoPetrol executable for the current operating system.
 
     uv run --group build python packaging/build.py
 
-Resultado en dist/InnoPetrol/ (Windows y Linux) o dist/InnoPetrol.app (macOS), más un .zip
-listo para distribuir. Hay que ejecutarlo en cada sistema: PyInstaller no compila de forma cruzada.
+Output in dist/InnoPetrol/ (Windows and Linux) or dist/InnoPetrol.app (macOS), plus a .zip ready
+to distribute. It must run on each system: PyInstaller does not cross-compile.
 """
 
 import platform
@@ -21,15 +21,16 @@ def main() -> None:
     args = [
         str(ROOT / "packaging" / "innopetrol_app.py"),
         "--name", NAME,
-        "--windowed",  # sin consola
+        "--windowed",  # no console
         "--noconfirm",
         "--clean",
         "--icon", str(ROOT / "innopetrol" / "statics" / "images" / "logo-08.png"),
         "--add-data", f"{ROOT / 'innopetrol' / 'statics'}:innopetrol/statics",
+        "--add-data", f"{ROOT / 'innopetrol' / 'locale'}:innopetrol/locale",  # interface translations
         "--distpath", str(ROOT / "dist"),
         "--workpath", str(ROOT / "build"),
         "--specpath", str(ROOT / "build"),
-        # módulos que PyInstaller arrastra por dependencias opcionales y la app no usa
+        # modules PyInstaller pulls in through optional dependencies that the app does not use
         "--exclude-module", "tkinter",
         "--exclude-module", "pandas",
         "--exclude-module", "matplotlib",
@@ -45,7 +46,7 @@ def main() -> None:
     target = ROOT / "dist" / (f"{NAME}.app" if sys.platform == "darwin" else NAME)
     archive = ROOT / "dist" / f"{NAME}-{system}-{platform.machine().lower()}"
     shutil.make_archive(str(archive), "zip", target.parent, target.name)
-    print(f"\nListo: {target}\nZip:   {archive}.zip")
+    print(f"\nDone: {target}\nZip:  {archive}.zip")
 
 
 if __name__ == "__main__":

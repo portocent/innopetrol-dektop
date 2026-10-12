@@ -30,13 +30,13 @@ def test_log_grid():
 
 
 def test_physical_scale():
-    # 1:1000 en metros → 1 m = 1 mm; a 25.4 dpi → 1 px por metro
+    # 1:1000 in meters → 1 m = 1 mm; at 25.4 dpi → 1 px per meter
     assert scales.px_per_unit(1000, 25.4, "m") == pytest.approx(1.0)
     assert scales.scale_ratio(scales.px_per_unit(500, 96, "ft"), 96, "ft") == pytest.approx(500)
 
 
 def test_depth_ticks_no_float_drift():
-    # Con paso 0.1 sumando floats, 7700.0 no se alcanzaba exactamente; aquí siempre aparece.
+    # Adding 0.1 steps as floats never hit 7700.0 exactly; here it always appears.
     t = scales.depth_ticks(7614.3, 8738.0, ppu=2.0)
     assert 7700.0 in t.labels or 7700.0 in t.major
     assert np.allclose(t.labels % t.label_interval, 0)
@@ -45,9 +45,9 @@ def test_depth_ticks_no_float_drift():
 
 @pytest.mark.parametrize("current,direction,expected", [
     (500, 1, 240), (500, -1, 1000), (240, 1, 200),
-    (437, 1, 240), (437, -1, 500),       # escala no estándar (zoom con rueda)
-    (5769, 1, 5000), (5769, -1, 5000),   # "Ajustar" más allá del último preset
-    (10, 1, 10), (5000, -1, 5000),       # extremos
+    (437, 1, 240), (437, -1, 500),       # non-standard scale (wheel zoom)
+    (5769, 1, 5000), (5769, -1, 5000),   # "Fit" beyond the last preset
+    (10, 1, 10), (5000, -1, 5000),       # limits
 ])
 def test_next_preset(current, direction, expected):
     assert scales.next_preset(current, direction) == expected

@@ -1,6 +1,6 @@
-# Pruebas y ejecutables para Windows, Linux y macOS.
-# Cada push corre las pruebas en los tres sistemas; los ejecutables quedan como artefactos
-# descargables en la pestaña "Actions" de GitHub.
+# Tests and executables for Windows, Linux and macOS.
+# Every push runs the tests on the three systems; the executables are uploaded as artifacts
+# that can be downloaded from the GitHub "Actions" tab.
 name: CI
 
 on:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: Pruebas (${{ matrix.os }})
+    name: Tests (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -21,14 +21,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Librerías de sistema para Qt (Linux)
+      - name: System libraries for Qt (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
       - run: uv sync
       - run: uv run pytest -v
 
   build:
-    name: Ejecutable (${{ matrix.os }})
+    name: Executable (${{ matrix.os }})
     needs: test
     strategy:
       fail-fast: false
@@ -38,25 +38,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Librerías de sistema para Qt (Linux)
+      - name: System libraries for Qt (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
       - run: uv sync --group build
       - run: uv run --group build python packaging/build.py
 
-      # Verifica que el ejecutable empaquetado arranca, abre un LAS y dibuja.
-      - name: Probar ejecutable (Windows)
+      # Checks that the packaged executable starts, opens a LAS file and draws it.
+      - name: Test executable (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $p = Start-Process -FilePath dist\InnoPetrol\InnoPetrol.exe -ArgumentList '--smoke-test', "$PWD\samples\Testdata.las" -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "smoke-test falló con código $($p.ExitCode)" }
-      - name: Probar ejecutable (Linux)
+          if ($p.ExitCode -ne 0) { throw "smoke-test failed with exit code $($p.ExitCode)" }
+      - name: Test executable (Linux)
         if: runner.os == 'Linux'
         env:
           QT_QPA_PLATFORM: offscreen
         run: ./dist/InnoPetrol/InnoPetrol --smoke-test "$PWD/samples/Testdata.las"
-      - name: Probar ejecutable (macOS)
+      - name: Test executable (macOS)
         if: runner.os == 'macOS'
         run: ./dist/InnoPetrol.app/Contents/MacOS/InnoPetrol --smoke-test "$PWD/samples/Testdata.las"
 

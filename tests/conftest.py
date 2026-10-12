@@ -21,8 +21,19 @@ def testdata_well():
 
 
 @pytest.fixture(autouse=True)
+def english(monkeypatch):
+    """Tests run in English regardless of the machine's language."""
+    from innopetrol import i18n
+
+    monkeypatch.setattr(i18n, "system_language", lambda: "en")
+    i18n.set_language("en")
+    yield
+    i18n.set_language("en")
+
+
+@pytest.fixture(autouse=True)
 def no_modal_boxes(monkeypatch):
-    """Los QMessageBox modales bloquearían las pruebas: se responden automáticamente."""
+    """Modal QMessageBoxes would block the tests, so they are answered automatically."""
     from PySide6.QtWidgets import QMessageBox
 
     calls = []

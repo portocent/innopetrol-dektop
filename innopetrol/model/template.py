@@ -1,7 +1,7 @@
-"""Plantillas en JSON: guardar, cargar y aplicar un layout a cualquier pozo.
+"""JSON templates: save, load and apply a layout to any well.
 
-Reemplaza las plantillas con pickle: JSON es legible, se puede editar a mano, no ejecuta
-código al abrirlo y no se rompe cuando cambian las clases internas.
+Replaces the pickle templates: JSON is readable, can be edited by hand, does not execute
+code when opened and does not break when internal classes change.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from innopetrol.i18n import _
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.mnemonics import default_scale, family_of, resolve_curve
 
@@ -23,7 +24,7 @@ class TemplateError(Exception):
 
 def template_to_json(layout: LogLayout) -> str:
     data = layout.to_dict()
-    # Se guarda la familia de cada curva para poder encontrar su equivalente en otro pozo.
+    # Store each curve family so the equivalent curve can be found in another well.
     for t in data["tracks"]:
         for c in t["curves"]:
             c["family"] = c.get("family") or family_of(c["mnemonic"])
@@ -34,15 +35,16 @@ def template_from_json(text: str) -> LogLayout:
     try:
         data = json.loads(text)
     except json.JSONDecodeError as e:
-        raise TemplateError(f"el archivo no es JSON válido ({e.msg}, línea {e.lineno})") from e
+        raise TemplateError(_("the file is not valid JSON ({message}, line {line})").format(
+            message=e.msg, line=e.lineno)) from e
     if not isinstance(data, dict) or data.get("format") != FORMAT:
-        raise TemplateError("el archivo no es una plantilla de InnoPetrol")
+        raise TemplateError(_("the file is not an InnoPetrol template"))
     if data.get("version", 0) > VERSION:
-        raise TemplateError("la plantilla fue creada con una versión más nueva del programa")
+        raise TemplateError(_("the template was created with a newer version of the program"))
     try:
         return LogLayout.from_dict(data)
     except (TypeError, ValueError, KeyError) as e:
-        raise TemplateError(f"plantilla con formato inválido: {e}") from e
+        raise TemplateError(_("invalid template format: {error}").format(error=e)) from e
 
 
 def save_template(path: str | Path, layout: LogLayout) -> None:
@@ -54,10 +56,10 @@ def load_template(path: str | Path) -> LogLayout:
 
 
 def apply_template(layout: LogLayout, well) -> tuple[LogLayout, list[str]]:
-    """Adapta la plantilla al pozo. Devuelve (layout, curvas que no se encontraron).
+    """Adapts a template to a well. Returns (layout, curves that were not found).
 
-    Las curvas que no existen en el pozo se quitan; los rellenos que dependían de ellas también.
-    Escalas vacías (automáticas) se completan con la escala por defecto del pozo.
+    Curves missing from the well are removed, along with the fills that depended on them.
+    Empty (automatic) scales are filled with the well's default scale.
     """
     result = layout.copy()
     missing: list[str] = []

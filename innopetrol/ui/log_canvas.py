@@ -1,11 +1,11 @@
-"""LogCanvas: widget interactivo que dibuja un pozo completo (encabezados + tracks).
+"""LogCanvas: interactive widget that draws a whole well (headers + tracks).
 
-Navegación:
-  rueda            desplaza en profundidad
-  Ctrl/⌘ + rueda   zoom alrededor del cursor (también pellizco en el trackpad)
-  Shift + rueda    desplaza horizontalmente
-  RePág/AvPág, Inicio/Fin, flechas
-  arrastrar el borde de un track cambia su ancho; doble clic en un track lo edita.
+Navigation:
+  wheel             scroll in depth
+  Ctrl/⌘ + wheel    zoom around the cursor (also trackpad pinch)
+  Shift + wheel     scroll horizontally
+  PgUp/PgDn, Home/End, arrows
+  dragging a track's border changes its width; double-clicking a track edits it.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimer, Si
 from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from innopetrol.i18n import _
 from innopetrol.model.scales import next_preset, px_per_unit, scale_ratio
 from innopetrol.render.painter import BORDER, DepthTransform, RenderOptions, header_height
 from innopetrol.render.scene import paint_headers, paint_log, paint_tops_overlay, track_edges, total_width
@@ -26,8 +27,8 @@ from innopetrol.ui.tile_cache import TILE_H, TileCache
 
 MIN_TRACK_W = 40
 EDGE_GRAB = 4
-# Si dibujar una pantalla completa cuesta más que esto, durante zoom/redimensionado/arrastre se muestra
-# una vista previa barata y el dibujo de calidad se hace cuando el gesto se detiene (equipos lentos).
+# If drawing a full screen costs more than this, zoom/resize/drag show a cheap preview and the
+# full-quality drawing happens once the gesture stops (slow machines).
 FRAME_BUDGET_MS = 30
 SETTLE_MS = 160
 
@@ -35,7 +36,7 @@ SETTLE_MS = 160
 class LogCanvas(QWidget):
     viewChanged = Signal()
     trackActivated = Signal(int)
-    contextRequested = Signal(int, float, object)  # índice de track (-1 = ninguno), profundidad, pos global
+    contextRequested = Signal(int, float, object)  # track index (-1 = none), depth, global position
     selectionChanged = Signal(int)
 
     def __init__(self, doc: WellDocument, parent=None, show_top_labels: bool = True):
@@ -46,27 +47,27 @@ class LogCanvas(QWidget):
         self.top = doc.well.start
         self.x_offset = 0.0
         self.fit_mode = True
-        self.depth_shift = 0.0  # para correlación: se suma a la profundidad mostrada
+        self.depth_shift = 0.0  # for correlation: added to the displayed depth
         self.selected = -1
         self._cursor_y: float | None = None
-        self._drag: tuple[int, float, int] | None = None  # (track, x inicial, ancho inicial)
+        self._drag: tuple[int, float, int] | None = None  # (track, start x, start width)
         self._header_h = 60.0
-        self.min_header_h = 0.0  # en correlación todos los pozos usan el mismo alto de encabezado
+        self.min_header_h = 0.0  # in correlation every well uses the same header height
         self.clamp_enabled = True
-        self._version = 0  # aumenta con cada cambio de layout: invalida la caché
+        self._version = 0  # increases with every layout change: invalidates the cache
         self._tiles = TileCache()
         self._header_pm: QPixmap | None = None
         self._header_key = None
         self._prefetch = QTimer(self)
         self._prefetch.setSingleShot(True)
         self._prefetch.timeout.connect(self._prefetch_tiles)
-        self._tile_ms = 0.0  # costo medido de dibujar un tile (promedio móvil)
+        self._tile_ms = 0.0  # measured cost of drawing a tile (moving average)
         self._previewing = False
         self._settle = QTimer(self)
         self._settle.setSingleShot(True)
         self._settle.timeout.connect(self._end_preview)
-        self._drag_pending: tuple[int, int] | None = None  # (track, ancho) mientras se arrastra en modo guía
-        self.setAttribute(Qt.WA_OpaquePaintEvent)  # pintamos todo el fondo: Qt no necesita borrarlo
+        self._drag_pending: tuple[int, int] | None = None  # (track, width) while dragging in guide mode
+        self.setAttribute(Qt.WA_OpaquePaintEvent)  # we paint the whole background: Qt need not clear it
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -75,7 +76,7 @@ class LogCanvas(QWidget):
         doc.layoutChanged.connect(self._layout_changed)
         doc.cursorMoved.connect(self._external_cursor)
 
-    # ------------------------------------------------------------------ geometría y escala
+    # ------------------------------------------------------------------ geometry and scale
 
     @property
     def well(self):
@@ -123,25 +124,25 @@ class LogCanvas(QWidget):
         self._set_ppu(self.ppu * factor, anchor_depth)
 
     def zoom_step(self, direction: int) -> None:
-        """Acercar (+1) o alejar (-1) a la siguiente escala estándar, manteniendo el centro visible."""
+        """Zoom in (+1) or out (-1) to the next standard scale, keeping the visible center."""
         self.set_scale(next_preset(self.current_scale(), direction))
 
     def _pinch(self, value: float, y: float) -> None:
-        """Pellizco del trackpad: value es el cambio relativo (0.1 = 10 % más cerca)."""
+        """Trackpad pinch: value is the relative change (0.1 = 10 % closer)."""
         anchor = self.depth_at(y) + self.depth_shift if y > self._header_h else None
         self.zoom(1 + value, anchor, interactive=True)
 
     def event(self, e):
-        # macOS (y Wayland) envían el pellizco como gesto nativo; en Windows llega como Ctrl + rueda.
+        # macOS (and Wayland) deliver pinch as a native gesture; on Windows it arrives as Ctrl + wheel.
         if e.type() == QEvent.NativeGesture and e.gestureType() == Qt.ZoomNativeGesture:
             self._pinch(e.value(), e.position().y())
             return True
         return super().event(e)
 
-    # ------------------------------------------------------------------ dibujo adaptativo
+    # ------------------------------------------------------------------ adaptive drawing
 
     def frame_cost_ms(self) -> float:
-        """Costo estimado de dibujar toda la vista desde cero, según lo medido en esta máquina."""
+        """Estimated cost of drawing the whole view from scratch, as measured on this machine."""
         return self._tile_ms * (math.ceil(self.body_h / TILE_H) + 1)
 
     def _begin_preview(self):
@@ -165,14 +166,14 @@ class LogCanvas(QWidget):
         self._changed()
 
     def scroll_range(self) -> tuple[float, float]:
-        """Rango permitido para la profundidad superior visible."""
+        """Allowed range for the top visible depth."""
         pad = 20 / self.ppu
         lo = self.well.start - pad + self.depth_shift
         hi = max(lo, self.well.stop + pad - self.body_h / self.ppu + self.depth_shift)
         return lo, hi
 
     def set_view(self, top: float, ppu: float) -> None:
-        """Fija vista sin recalcular anclas (usado para sincronizar varios pozos)."""
+        """Sets the view without anchoring (used to keep several wells in sync)."""
         self.fit_mode = False
         self.top, self.ppu = top, ppu
         self._clamp()
@@ -201,7 +202,7 @@ class LogCanvas(QWidget):
         self.viewChanged.emit()
 
     def invalidate(self):
-        """Descarta los dibujos en caché (llamar cuando cambia algo que se ve en el registro)."""
+        """Drops cached drawings (call when anything visible in the log changes)."""
         self._version += 1
         self.update()
 
@@ -217,7 +218,7 @@ class LogCanvas(QWidget):
             self._changed()
 
     def transform(self) -> DepthTransform:
-        # depth_shift desplaza el pozo (aplanar en un tope durante la correlación)
+        # depth_shift moves the well (flattening on a top during correlation)
         return DepthTransform(self.top - self.depth_shift, self.ppu)
 
     def depth_at(self, y: float) -> float:
@@ -233,13 +234,13 @@ class LogCanvas(QWidget):
         return -1
 
     def _edge_at(self, x: float) -> int:
-        """Índice del track cuyo borde derecho está bajo x (para redimensionar)."""
+        """Index of the track whose right border is under x (for resizing)."""
         for i, (tx, w) in enumerate(track_edges(self.doc.layout)):
             if abs(tx + w - self.x_offset - x) <= EDGE_GRAB:
                 return i
         return -1
 
-    # ------------------------------------------------------------------ eventos Qt
+    # ------------------------------------------------------------------ Qt events
 
     def showEvent(self, e):
         super().showEvent(e)
@@ -293,7 +294,7 @@ class LogCanvas(QWidget):
         p.drawPixmap(QPointF(-self.x_offset, 0), self._header_pm)
 
     def _tile_range(self, tf: DepthTransform) -> tuple[int, int, float]:
-        base = tf.top * self.ppu  # y absoluta (en píxeles) del borde superior del cuerpo
+        base = tf.top * self.ppu  # absolute y (in pixels) of the top of the body
         return math.floor(base / TILE_H), math.floor((base + self.body_h) / TILE_H), base
 
     def _paint_body(self, p: QPainter, tf: DepthTransform):
@@ -316,7 +317,7 @@ class LogCanvas(QWidget):
         p.restore()
 
     def _paint_preview(self, p: QPainter, tf: DepthTransform, old_ppu: float):
-        """Vista previa durante el gesto: los tiles de la escala anterior, estirados a la nueva."""
+        """Preview during a gesture: tiles from the previous scale stretched to the new one."""
         p.save()
         p.setClipRect(QRectF(0, self._header_h, self.width(), self.body_h))
         ratio = self.ppu / old_ppu
@@ -361,14 +362,14 @@ class LogCanvas(QWidget):
         return pm
 
     def _prefetch_tiles(self):
-        """Con la aplicación inactiva, dibuja por adelantado el tile de arriba y el de abajo."""
+        """While the application is idle, pre-renders the tiles above and below the view."""
         if not self.isVisible() or total_width(self.doc.layout) <= 0:
             return
-        k0, k1, _ = self._tile_range(self.transform())
+        k0, k1, _base = self._tile_range(self.transform())
         for k in (k1 + 1, k0 - 1):
             if k not in self._tiles:
                 self._tiles.put(k, self._render_tile(k))
-                self._prefetch.start(0)  # de a uno por vez para no bloquear la interfaz
+                self._prefetch.start(0)  # one at a time so the interface never blocks
                 return
 
     def _paint_cursor(self, p: QPainter, y: float):
@@ -443,7 +444,7 @@ class LogCanvas(QWidget):
             i, x0, w0 = self._drag
             width = int(max(MIN_TRACK_W, w0 + x - x0))
             if self.frame_cost_ms() > FRAME_BUDGET_MS:
-                # Equipo lento: se muestra una guía y el ancho se aplica al soltar.
+                # Slow machine: show a guide line and apply the width on release.
                 self._drag_pending = (i, width)
                 self.update()
             else:
@@ -465,7 +466,7 @@ class LogCanvas(QWidget):
         return QRect(0, int(y - fm_h - 4), self.width(), int(fm_h + 8))
 
     def _set_cursor_y(self, y: float | None):
-        """Mueve la línea del cursor repintando sólo las franjas afectadas, no todo el widget."""
+        """Moves the cursor line repainting only the affected strips, not the whole widget."""
         if y == self._cursor_y:
             return
         for rect in (self._cursor_rect(self._cursor_y), self._cursor_rect(y)):
@@ -504,7 +505,7 @@ class LogCanvas(QWidget):
         self.contextRequested.emit(idx, depth, e.globalPos())
 
     def _external_cursor(self, depth: float):
-        """Cursor movido desde otra vista del mismo pozo (p. ej. la tabla de datos)."""
+        """Cursor moved from another view of the same well (e.g. the data table)."""
         if self.underMouse():
             return
         self._set_cursor_y(None if math.isnan(depth) else self.y_of(depth))
@@ -514,7 +515,7 @@ class LogCanvas(QWidget):
         return tf.depth(0), tf.depth(self.body_h)
 
     def readout(self, depth: float) -> str:
-        """Texto con los valores de las curvas visibles en una profundidad."""
+        """Text with the values of the visible curves at a depth."""
         parts = [f"{self.well.depth_mnemonic} {depth:.2f} {self.well.depth_unit}"]
         seen = set()
         for t in self.doc.layout.tracks:
@@ -527,6 +528,6 @@ class LogCanvas(QWidget):
                         parts.append(f"{c.mnemonic} {v:.4g}{(' ' + unit) if unit else ''}")
         for top in reversed(self.well.tops):
             if top.depth <= depth:
-                parts.insert(1, f"Zona: {top.name}")
+                parts.insert(1, _("Zone: {name}").format(name=top.name))
                 break
         return "   |   ".join(parts)

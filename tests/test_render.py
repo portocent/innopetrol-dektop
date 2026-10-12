@@ -17,7 +17,7 @@ def test_export_png(app, testdata_well, tmp_path):
     out = export_png(tmp_path / "log.png", w, build_triple_combo(w), 500, 7700, 7900, dpi=120)
     img = QImage(str(out))
     assert img.width() > 500 and img.height() > 300
-    # Debe haber píxeles de colores (curvas/rellenos), no sólo blanco y gris.
+    # There must be colored pixels (curves/fills), not just white and gray.
     colored = sum(1 for x in range(0, img.width(), 7) for y in range(0, img.height(), 7)
                   if img.pixelColor(x, y).saturation() > 80)
     assert colored > 50

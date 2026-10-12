@@ -1,4 +1,4 @@
-"""Widgets pequeños reutilizables."""
+"""Small reusable widgets."""
 
 from __future__ import annotations
 
@@ -6,14 +6,15 @@ from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QColorDialog, QComboBox, QPushButton
 
+from innopetrol.i18n import _
 from innopetrol.model.layout import FILL_PATTERNS, LINE_STYLE_NAMES, LINE_STYLES
 from innopetrol.resources import icon
 
 
 def parse_float(text: str) -> float | None:
-    """Convierte texto a número aceptando coma decimal. Devuelve None si está vacío.
+    """Parses a number, accepting a decimal comma. Returns None for empty text.
 
-    Lanza ValueError si no es un número válido.
+    Raises ValueError if the text is not a valid number.
     """
     t = text.strip().replace(",", ".")
     if not t:
@@ -41,7 +42,7 @@ class ColorButton(QPushButton):
         self.setToolTip(self._color)
 
     def _pick(self):
-        c = QColorDialog.getColor(QColor(self._color), self, "Elegir color")
+        c = QColorDialog.getColor(QColor(self._color), self, _("Choose color"))
         if c.isValid():
             self.set_color(c.name())
             self.colorChanged.emit(self._color)
@@ -52,7 +53,7 @@ class LineStyleCombo(QComboBox):
         super().__init__(parent)
         self.setIconSize(QSize(60, 14))
         for s in LINE_STYLES:
-            self.addItem(icon(f"{s}.png"), LINE_STYLE_NAMES[s], s)
+            self.addItem(icon(f"{s}.png"), _(LINE_STYLE_NAMES[s]), s)
 
     def value(self) -> str:
         return self.currentData()

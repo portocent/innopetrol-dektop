@@ -1,4 +1,4 @@
-"""Utilidades de dibujo para gráficos simples (ejes, ticks) con QPainter."""
+"""Drawing helpers for simple charts (axes, ticks) with QPainter."""
 
 from __future__ import annotations
 

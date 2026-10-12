@@ -1,4 +1,4 @@
-"""Diálogos de cálculo: petrofísica básica, calculadora de curvas y resumen por zonas."""
+"""Calculation dialogs: basic petrophysics, curve calculator and zone summary."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, 
                                QListWidget, QMessageBox, QPlainTextEdit, QPushButton, QTableWidget, QTableWidgetItem,
                                QVBoxLayout)
 
+from innopetrol.i18n import _
 from innopetrol.model import petro
 from innopetrol.model.calculator import CalculatorError, FUNCTIONS, curve_ref, evaluate
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
@@ -34,14 +35,14 @@ def _spin(value, lo, hi, step=0.01, decimals=3):
 def _curve_combo(doc: WellDocument, current: str | None, optional=True) -> QComboBox:
     c = QComboBox()
     if optional:
-        c.addItem("(ninguna)", None)
+        c.addItem(_("(none)"), None)
     for m, curve in doc.well.curves.items():
         c.addItem(f"{m}  [{curve.unit}]" if curve.unit else m, m)
     c.setCurrentIndex(max(c.findData(current), 0))
     return c
 
 
-# ============================================================================ petrofísica
+# ============================================================================ petrophysics
 
 
 class PetroDialog(QDialog):
@@ -58,30 +59,30 @@ class PetroDialog(QDialog):
             p.gr_clean, p.gr_shale = (round(float(v), 1) for v in np.nanpercentile(gr, [5, 95]))
         if doc.petro is None and p.nphi_curve:
             p.phi_method = "nd_average"
-        self.setWindowTitle(f"Petrofísica básica — {doc.title}")
+        self.setWindowTitle(_("Basic petrophysics — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         lay = QVBoxLayout(self)
 
-        g1 = QGroupBox("Volumen de arcilla (Vsh) desde rayos gamma")
+        g1 = QGroupBox(_("Shale volume (Vsh) from gamma ray"))
         f1 = QFormLayout(g1)
         self.gr = _curve_combo(doc, p.gr_curve)
         self.gr_clean = _spin(p.gr_clean, -1000, 10000, 1, 1)
         self.gr_shale = _spin(p.gr_shale, -1000, 10000, 1, 1)
         self.vsh_method = QComboBox()
         for k, v in petro.VSH_METHODS.items():
-            self.vsh_method.addItem(v, k)
+            self.vsh_method.addItem(_(v), k)
         self.vsh_method.setCurrentIndex(self.vsh_method.findData(p.vsh_method))
         gr_row = QHBoxLayout()
-        gr_row.addWidget(QLabel("GR limpio"))
+        gr_row.addWidget(QLabel(_("Clean GR")))
         gr_row.addWidget(self.gr_clean)
-        gr_row.addWidget(QLabel("GR arcilla"))
+        gr_row.addWidget(QLabel(_("Shale GR")))
         gr_row.addWidget(self.gr_shale)
-        f1.addRow("Curva GR:", self.gr)
+        f1.addRow(_("GR curve:"), self.gr)
         f1.addRow(gr_row)
-        f1.addRow("Método:", self.vsh_method)
+        f1.addRow(_("Method:"), self.vsh_method)
         lay.addWidget(g1)
 
-        g2 = QGroupBox("Porosidad")
+        g2 = QGroupBox(_("Porosity"))
         f2 = QFormLayout(g2)
         self.rhob = _curve_combo(doc, p.rhob_curve)
         self.nphi = _curve_combo(doc, p.nphi_curve)
@@ -89,34 +90,34 @@ class PetroDialog(QDialog):
         self.rho_fl = _spin(p.rho_fl, 0.5, 1.5)
         self.phi_method = QComboBox()
         for k, v in petro.PHI_METHODS.items():
-            self.phi_method.addItem(v, k)
+            self.phi_method.addItem(_(v), k)
         self.phi_method.setCurrentIndex(self.phi_method.findData(p.phi_method))
         rho_row = QHBoxLayout()
-        rho_row.addWidget(QLabel("ρ matriz"))
+        rho_row.addWidget(QLabel(_("ρ matrix")))
         rho_row.addWidget(self.rho_ma)
-        rho_row.addWidget(QLabel("ρ fluido"))
+        rho_row.addWidget(QLabel(_("ρ fluid")))
         rho_row.addWidget(self.rho_fl)
-        f2.addRow("Densidad (RHOB):", self.rhob)
-        f2.addRow("Neutrón (NPHI):", self.nphi)
+        f2.addRow(_("Density (RHOB):"), self.rhob)
+        f2.addRow(_("Neutron (NPHI):"), self.nphi)
         f2.addRow(rho_row)
-        f2.addRow("Método:", self.phi_method)
+        f2.addRow(_("Method:"), self.phi_method)
         lay.addWidget(g2)
 
-        g3 = QGroupBox("Saturación de agua — Archie")
+        g3 = QGroupBox(_("Water saturation — Archie"))
         f3 = QGridLayout(g3)
         self.rt = _curve_combo(doc, p.rt_curve)
         self.rw = _spin(p.rw, 0.001, 100, 0.005, 4)
         self.a = _spin(p.a, 0.1, 5)
         self.m = _spin(p.m, 1, 4)
         self.n = _spin(p.n, 1, 4)
-        f3.addWidget(QLabel("Resistividad Rt:"), 0, 0)
+        f3.addWidget(QLabel(_("Resistivity Rt:")), 0, 0)
         f3.addWidget(self.rt, 0, 1, 1, 7)
         for i, (lbl, s) in enumerate((("Rw", self.rw), ("a", self.a), ("m", self.m), ("n", self.n))):
             f3.addWidget(QLabel(lbl), 1, i * 2)
             f3.addWidget(s, 1, i * 2 + 1)
         lay.addWidget(g3)
 
-        g4 = QGroupBox("Cortes (net reservoir / net pay)")
+        g4 = QGroupBox(_("Cutoffs (net reservoir / net pay)"))
         f4 = QHBoxLayout(g4)
         self.vsh_cut = _spin(p.vsh_cut, 0, 1)
         self.phi_cut = _spin(p.phi_cut, 0, 1)
@@ -126,13 +127,13 @@ class PetroDialog(QDialog):
             f4.addWidget(s)
         lay.addWidget(g4)
 
-        self.add_track = QCheckBox("Agregar/actualizar un track «Resultados petrofísicos»")
+        self.add_track = QCheckBox(_("Add/update a “Petrophysical results” track"))
         self.add_track.setChecked(True)
         lay.addWidget(self.add_track)
-        lay.addWidget(QLabel("Las curvas se calculan con fórmulas visibles en el árbol del pozo y se pueden "
-                             "exportar a LAS."))
+        lay.addWidget(QLabel(_("Curves are computed with formulas shown in the well tree and can be "
+                               "exported to LAS.")))
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText("Calcular")
+        buttons.button(QDialogButtonBox.Ok).setText(_("Compute"))
         buttons.accepted.connect(self._run)
         buttons.rejected.connect(self.reject)
         lay.addWidget(buttons)
@@ -150,18 +151,18 @@ class PetroDialog(QDialog):
     def _run(self):
         p = self.params()
         if p.gr_clean >= p.gr_shale and p.gr_curve:
-            QMessageBox.warning(self, "Petrofísica", "GR limpio debe ser menor que GR arcilla.")
+            QMessageBox.warning(self, _("Petrophysics"), _("Clean GR must be lower than shale GR."))
             return
         if abs(p.rho_ma - p.rho_fl) < 1e-6:
-            QMessageBox.warning(self, "Petrofísica", "ρ matriz y ρ fluido no pueden ser iguales.")
+            QMessageBox.warning(self, _("Petrophysics"), _("ρ matrix and ρ fluid cannot be equal."))
             return
         try:
             curves = petro.compute(self.doc.well, p)
         except CalculatorError as e:
-            QMessageBox.critical(self, "Petrofísica", f"Error en el cálculo: {e}")
+            QMessageBox.critical(self, _("Petrophysics"), _("Calculation error: {error}").format(error=e))
             return
         if not curves:
-            QMessageBox.information(self, "Petrofísica", "Seleccione al menos la curva GR o la de densidad.")
+            QMessageBox.information(self, _("Petrophysics"), _("Select at least the GR or the density curve."))
             return
         self.doc.petro = p
         self.doc.add_curves(curves)
@@ -172,7 +173,7 @@ class PetroDialog(QDialog):
     def _update_results_track(self, names: list[str]):
         w = self.doc.well
         styles = [make_curve_style(w, m) for m in ("VSH", "PHIE", "SW") if m in names]
-        track = TrackSpec(title="Resultados petrofísicos", width=220, curves=styles)
+        track = TrackSpec(title=_("Petrophysical results"), width=220, curves=styles)
         if "VSH" in names:
             track.fills.append(FillSpec(left_value=0, right_curve="VSH", color="#a0522d", pattern="dense3",
                                         label="Vsh"))
@@ -182,21 +183,33 @@ class PetroDialog(QDialog):
         flags = [m for m in ("RES_FLAG", "PAY_FLAG") if m in names]
         flag_track = None
         if flags:
-            flag_track = TrackSpec(title="Net res / pay", width=70, grid="none",
+            flag_track = TrackSpec(title=_("Net res / pay"), width=70, grid="none",
                                    curves=[CurveStyle(m, color=c, left=0, right=1, visible=False)
                                            for m, c in zip(flags, ("#27ae60", "#c0392b"))])
             colors = {"RES_FLAG": "#82e0aa", "PAY_FLAG": "#e74c3c"}
             for m in flags:
                 flag_track.fills.append(FillSpec(left_value=0, right_curve=m, color=colors[m],
-                                                 label="Reservorio" if m == "RES_FLAG" else "Pago"))
+                                                 label=_("Reservoir") if m == "RES_FLAG" else _("Pay")))
         tracks = self.doc.layout.tracks
-        # Se ubican junto al track de densidad-neutrón (o el de resistividad) para que se vean de inmediato.
-        anchor = next((i for i, t in enumerate(tracks) if t.title == "Densidad - Neutrón"),
-                      next((i for i, t in enumerate(tracks) if t.title == "Resistividad"), len(tracks) - 1))
-        for title, new in (("Resultados petrofísicos", track), ("Net res / pay", flag_track)):
-            idx = next((i for i, t in enumerate(tracks) if t.title == title), None)
+
+        # Tracks are found by the curves they contain, never by title: titles depend on the
+        # language that was active when the layout was created.
+        def find(mnemonics=(), families=()):
+            for i, t in enumerate(tracks):
+                if any(c.mnemonic in mnemonics or (c.family and c.family in families) for c in t.curves):
+                    return i
+            return None
+
+        # Placed next to the density-neutron track (or resistivity) so they are visible right away.
+        anchor = find(families=("density", "neutron"))
+        if anchor is None:
+            anchor = find(families=("deep_res",))
+        if anchor is None:
+            anchor = len(tracks) - 1
+        for new, owned in ((track, ("VSH", "PHIE", "SW")), (flag_track, ("RES_FLAG", "PAY_FLAG"))):
             if new is None:
                 continue
+            idx = find(mnemonics=owned)
             if idx is None:
                 anchor += 1
                 tracks.insert(anchor, new)
@@ -206,33 +219,35 @@ class PetroDialog(QDialog):
         self.doc.layoutChanged.emit()
 
 
-# ============================================================================ calculadora
+# ============================================================================ calculator
 
 
 class CalculatorDialog(QDialog):
     def __init__(self, doc: WellDocument, parent=None):
         super().__init__(parent)
         self.doc = doc
-        self.setWindowTitle(f"Calculadora de curvas — {doc.title}")
+        self.setWindowTitle(_("Curve calculator — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         self.resize(640, 440)
         lay = QHBoxLayout(self)
         left = QVBoxLayout()
         form = QFormLayout()
-        self.name = QLineEdit("NUEVA")
+        self.name = QLineEdit(_("NEW"))
         self.unit = QLineEdit()
         self.descr = QLineEdit()
-        form.addRow("Nombre:", self.name)
-        form.addRow("Unidad:", self.unit)
-        form.addRow("Descripción:", self.descr)
+        form.addRow(_("Name:"), self.name)
+        form.addRow(_("Unit:"), self.unit)
+        form.addRow(_("Description:"), self.descr)
         left.addLayout(form)
-        left.addWidget(QLabel("Expresión:"))
+        left.addWidget(QLabel(_("Expression:")))
         self.expr = QPlainTextEdit()
-        self.expr.setPlaceholderText("Ej.: (2.65 - RHOB) / (2.65 - 1.0)\n     where(GR > 75, 1, 0)\n     log10(LLD)")
+        self.expr.setPlaceholderText(_("E.g.: (2.65 - RHOB) / (2.65 - 1.0)") + "\n     where(GR > 75, 1, 0)\n     log10(LLD)")
         left.addWidget(self.expr, 1)
-        help_text = ("Operadores: + - * / ** < > <= >= == & |\n"
-                     f"Funciones: {', '.join(sorted(FUNCTIONS))}\n"
-                     "Constantes: pi, e, nan. Curvas con nombres especiales: [K-3104]")
+        help_text = "\n".join([
+            _("Operators: {operators}").format(operators="+ - * / ** < > <= >= == & |"),
+            _("Functions: {functions}").format(functions=", ".join(sorted(FUNCTIONS))),
+            _("Constants: pi, e, nan. Curves with special names: [K-3104]"),
+        ])
         hl = QLabel(help_text)
         hl.setWordWrap(True)
         hl.setStyleSheet("color: #566573")
@@ -240,12 +255,12 @@ class CalculatorDialog(QDialog):
         self.preview = QLabel(" ")
         left.addWidget(self.preview)
         row = QHBoxLayout()
-        test = QPushButton("Probar")
+        test = QPushButton(_("Test"))
         test.clicked.connect(self._test)
         row.addWidget(test)
         row.addStretch()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText("Crear curva")
+        buttons.button(QDialogButtonBox.Ok).setText(_("Create curve"))
         buttons.accepted.connect(self._ok)
         buttons.rejected.connect(self.reject)
         row.addWidget(buttons)
@@ -253,7 +268,7 @@ class CalculatorDialog(QDialog):
         lay.addLayout(left, 1)
 
         right = QVBoxLayout()
-        right.addWidget(QLabel("Curvas (doble clic para insertar):"))
+        right.addWidget(QLabel(_("Curves (double-click to insert):")))
         self.list = QListWidget()
         for m in doc.well.curves:
             self.list.addItem(m)
@@ -265,7 +280,7 @@ class CalculatorDialog(QDialog):
         try:
             return evaluate(self.expr.toPlainText(), {m: c.values for m, c in self.doc.well.curves.items()})
         except CalculatorError as e:
-            self.preview.setText(f"<span style='color:#c0392b'>Error: {e}</span>")
+            self.preview.setText("<span style='color:#c0392b'>{}</span>".format(_("Error: {error}").format(error=e)))
             return None
 
     def _test(self):
@@ -273,29 +288,30 @@ class CalculatorDialog(QDialog):
         if v is not None:
             n = int(np.isfinite(v).sum())
             if n:
-                self.preview.setText(f"Válida: {n} muestras · min {np.nanmin(v):.4g} · max {np.nanmax(v):.4g} · "
-                                     f"media {np.nanmean(v):.4g}")
+                self.preview.setText(_("Valid: {count} samples · min {min} · max {max} · mean {mean}").format(
+                    count=n, min=f"{np.nanmin(v):.4g}", max=f"{np.nanmax(v):.4g}", mean=f"{np.nanmean(v):.4g}"))
             else:
-                self.preview.setText("Válida, pero el resultado no tiene valores (todo NaN)")
+                self.preview.setText(_("Valid, but the result has no values (all NaN)"))
 
     def _ok(self):
         name = self.name.text().strip().upper()
         if not name or not name.replace("_", "").isalnum():
-            QMessageBox.warning(self, "Calculadora", "Use un nombre con letras, números o _.")
+            QMessageBox.warning(self, _("Calculator"), _("Use a name made of letters, digits or _."))
             return
         v = self._evaluate()
         if v is None:
             return
         if name in self.doc.well.curves and self.doc.well.curves[name].formula is None:
-            QMessageBox.warning(self, "Calculadora", f"{name} es una curva original del LAS; elija otro nombre.")
+            QMessageBox.warning(self, _("Calculator"),
+                                _("{name} is an original LAS curve; choose another name.").format(name=name))
             return
         formula = " ".join(self.expr.toPlainText().split())
-        self.doc.add_curves([Curve(name, self.unit.text().strip(), self.descr.text().strip() or "Curva calculada",
+        self.doc.add_curves([Curve(name, self.unit.text().strip(), self.descr.text().strip() or _("Computed curve"),
                                    v, formula=formula)])
         self.accept()
 
 
-# ============================================================================ resumen por zonas
+# ============================================================================ zone summary
 
 
 class ZoneSummaryDialog(QDialog):
@@ -304,7 +320,7 @@ class ZoneSummaryDialog(QDialog):
         self.doc = doc
         w = doc.well
         p = doc.petro or petro.PetroParams()
-        self.setWindowTitle(f"Resumen por zonas — {doc.title}")
+        self.setWindowTitle(_("Zone summary — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         self.resize(900, 420)
         lay = QVBoxLayout(self)
@@ -319,7 +335,7 @@ class ZoneSummaryDialog(QDialog):
                          ("Sw", self.sw), ("≤", self.sw_cut)):
             row.addWidget(QLabel(lbl))
             row.addWidget(wdg)
-        calc = QPushButton("Calcular")
+        calc = QPushButton(_("Compute"))
         calc.clicked.connect(self._calc)
         row.addWidget(calc)
         lay.addLayout(row)
@@ -327,15 +343,17 @@ class ZoneSummaryDialog(QDialog):
         lay.addWidget(self.note)
         self.table = QTableWidget(0, 10)
         u = w.depth_unit
-        self.table.setHorizontalHeaderLabels(["Zona", f"Tope ({u})", f"Base ({u})", f"Bruto ({u})",
-                                              f"Neto res. ({u})", f"Neto pago ({u})", "N/G", "φ prom", "Sw prom",
-                                              "Vsh prom"])
+        self.table.setHorizontalHeaderLabels([
+            _("Zone"), _("Top ({unit})").format(unit=u), _("Base ({unit})").format(unit=u),
+            _("Gross ({unit})").format(unit=u), _("Net res. ({unit})").format(unit=u),
+            _("Net pay ({unit})").format(unit=u), "N/G", _("Avg φ"), _("Avg Sw"), _("Avg Vsh")])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)  # zone names
         lay.addWidget(self.table, 1)
         out = QHBoxLayout()
-        copy_btn = QPushButton("Copiar (para Excel)")
+        copy_btn = QPushButton(_("Copy (for Excel)"))
         copy_btn.clicked.connect(self._copy)
-        save_btn = QPushButton("Guardar CSV…")
+        save_btn = QPushButton(_("Save CSV…"))
         save_btn.clicked.connect(self._save)
         out.addWidget(copy_btn)
         out.addWidget(save_btn)
@@ -353,16 +371,16 @@ class ZoneSummaryDialog(QDialog):
             zones = zones_from_tops(w.tops, w.stop)
             first = min(t.depth for t in w.tops)
             if first > w.start:
-                zones.insert(0, Zone("(sobre el primer tope)", w.start, first))
+                zones.insert(0, Zone(_("(above the first top)"), w.start, first))
             return zones
-        return [Zone("Pozo completo", w.start, w.stop)]
+        return [Zone(_("Whole well"), w.start, w.stop)]
 
     def _calc(self):
         rows = petro.zone_summary(self.doc.well, self._zones(), self.vsh.currentData(), self.phi.currentData(),
                                   self.sw.currentData(), self.vsh_cut.value(), self.phi_cut.value(),
                                   self.sw_cut.value())
         self.note.setText("" if self.doc.well.tops else
-                          "Sin topes definidos: se resume el pozo completo (Pozo ▸ Topes de formación…).")
+                          _("No tops defined: the whole well is summarized (Well ▸ Formation tops…)."))
         self._rows = []
         self.table.setRowCount(len(rows))
         for r, z in enumerate(rows):
@@ -382,9 +400,10 @@ class ZoneSummaryDialog(QDialog):
         QGuiApplication.clipboard().setText(text)
 
     def _save(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Guardar resumen", f"{self.doc.title}_zonas.csv", "CSV (*.csv)")
+        path, _filter = QFileDialog.getSaveFileName(self, _("Save summary"), f"{self.doc.title}_zones.csv",
+                                                     "CSV (*.csv)")
         if path:
-            with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel en Windows
+            with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel on Windows
                 csv.writer(f).writerows([self._headers()] + self._rows)
 
 

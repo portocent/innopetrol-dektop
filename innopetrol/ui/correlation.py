@@ -1,12 +1,15 @@
-"""Correlación multi-pozo: pozos lado a lado, misma escala, opcionalmente aplanados en un tope."""
+"""Multi-well correlation: wells side by side at the same scale, optionally flattened on a top."""
 
 from __future__ import annotations
+
+import sys
 
 from PySide6.QtCore import QPointF, Qt, QTimer
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QListWidget,
                                QListWidgetItem, QScrollArea, QScrollBar, QVBoxLayout, QWidget)
 
+from innopetrol.i18n import _
 from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.render.scene import total_width
 from innopetrol.resources import app_icon
@@ -18,14 +21,14 @@ TITLE_H = 26
 
 
 class CorrelationSetup(QDialog):
-    """Elegir pozos y tope de aplanamiento."""
+    """Choose the wells and the flattening top."""
 
     def __init__(self, docs: list[WellDocument], parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Correlación de pozos")
+        self.setWindowTitle(_("Well correlation"))
         self.setWindowIcon(app_icon())
         lay = QVBoxLayout(self)
-        lay.addWidget(QLabel("Pozos a correlacionar (en orden):"))
+        lay.addWidget(QLabel(_("Wells to correlate (in order):")))
         self.list = QListWidget()
         for d in docs:
             item = QListWidgetItem(d.title)
@@ -35,20 +38,20 @@ class CorrelationSetup(QDialog):
         self.list.setDragDropMode(QListWidget.InternalMove)
         lay.addWidget(self.list)
         self.datum = QComboBox()
-        self.datum.addItem("Profundidad medida (sin aplanar)", DEPTH_DATUM)
+        self.datum.addItem(_("Measured depth (not flattened)"), DEPTH_DATUM)
         names = sorted({t.name for d in docs for t in d.well.tops})
         for n in names:
-            self.datum.addItem(f"Aplanar en tope: {n}", n)
-        lay.addWidget(QLabel("Datum:"))
+            self.datum.addItem(_("Flatten on top: {name}").format(name=n), n)
+        lay.addWidget(QLabel(_("Datum:")))
         lay.addWidget(self.datum)
         self.tracks = QComboBox()
-        self.tracks.addItem("Primeros 3 tracks (correlación, profundidad, resistividad)", 3)
-        self.tracks.addItem("Primeros 2 tracks", 2)
-        self.tracks.addItem("Todos los tracks", 0)
-        lay.addWidget(QLabel("Tracks de cada pozo:"))
+        self.tracks.addItem(_("First 3 tracks (correlation, depth, resistivity)"), 3)
+        self.tracks.addItem(_("First 2 tracks"), 2)
+        self.tracks.addItem(_("All tracks"), 0)
+        lay.addWidget(QLabel(_("Tracks of each well:")))
         lay.addWidget(self.tracks)
         if not names:
-            hint = QLabel("Para aplanar, defina topes con el mismo nombre en cada pozo (Pozo ▸ Topes).")
+            hint = QLabel(_("To flatten, define tops with the same name in every well (Well ▸ Tops)."))
             hint.setStyleSheet("color:#566573")
             hint.setWordWrap(True)
             lay.addWidget(hint)
@@ -63,7 +66,7 @@ class CorrelationSetup(QDialog):
 
 
 class TopConnector(QWidget):
-    """Une con líneas los topes del mismo nombre entre dos pozos vecinos."""
+    """Draws lines joining tops with the same name in two neighboring wells."""
 
     def __init__(self, left: LogCanvas, right: LogCanvas, parent=None):
         super().__init__(parent)
@@ -89,13 +92,13 @@ class TopConnector(QWidget):
 
 
 def compact_doc(doc: WellDocument, n_tracks: int, parent) -> WellDocument:
-    """Vista reducida del pozo para correlación: comparte el pozo pero con menos tracks."""
+    """Reduced view of a well for correlation: shares the well but has fewer tracks."""
     if not n_tracks:
         return doc
     layout = doc.layout.copy()
     layout.tracks = layout.tracks[:n_tracks]
     view = WellDocument(doc.well, layout, parent=parent)
-    doc.topsChanged.connect(view.layoutChanged)  # topes editados en el pozo se ven en la correlación
+    doc.topsChanged.connect(view.layoutChanged)  # tops edited in the well show up in the correlation
     doc.layoutChanged.connect(view.layoutChanged)
     return view
 
@@ -103,7 +106,7 @@ def compact_doc(doc: WellDocument, n_tracks: int, parent) -> WellDocument:
 class CorrelationWindow(QDialog):
     def __init__(self, docs: list[WellDocument], datum: str, parent=None, n_tracks: int = 3):
         super().__init__(parent)
-        self.setWindowTitle("Correlación — " + " · ".join(d.title for d in docs))
+        self.setWindowTitle(_("Correlation — {wells}").format(wells=" · ".join(d.title for d in docs)))
         self.setWindowIcon(app_icon())
         self.setModal(False)
         self.resize(1200, 760)
@@ -113,15 +116,16 @@ class CorrelationWindow(QDialog):
 
         root = QVBoxLayout(self)
         bar = QHBoxLayout()
-        bar.addWidget(QLabel("Escala:"))
+        bar.addWidget(QLabel(_("Scale:")))
         self.scale = QComboBox()
-        self.scale.addItem("Ajustar", 0)
+        self.scale.addItem(_("Fit"), 0)
         for n in SCALE_PRESETS:
             self.scale.addItem(f"1:{n}", n)
         self.scale.setCurrentIndex(self.scale.findData(500))
         bar.addWidget(self.scale)
-        info = "Aplanado en «%s»" % datum if datum != DEPTH_DATUM else "Profundidad medida"
-        bar.addWidget(QLabel(f"   Datum: {info}.   Rueda: desplazar · Ctrl+rueda: zoom"))
+        info = _("flattened on “{top}”").format(top=datum) if datum != DEPTH_DATUM else _("measured depth")
+        bar.addWidget(QLabel("   " + _("Datum: {datum}.   Wheel: scroll · {modifier}+wheel: zoom").format(
+            datum=info, modifier="⌘" if sys.platform == "darwin" else "Ctrl")))
         bar.addStretch()
         root.addLayout(bar)
 
@@ -180,9 +184,9 @@ class CorrelationWindow(QDialog):
 
     def showEvent(self, e):
         super().showEvent(e)
-        QTimer.singleShot(0, self._apply_scale)  # cuando los widgets ya tienen su tamaño final
+        QTimer.singleShot(0, self._apply_scale)  # once the widgets have their final size
 
-    # rango combinado en coordenadas de visualización (profundidad + desplazamiento)
+    # combined range in display coordinates (depth + shift)
     def _display_range(self) -> tuple[float, float]:
         lo = min(c.well.start + c.depth_shift for c in self.canvases)
         hi = max(c.well.stop + c.depth_shift for c in self.canvases)
@@ -195,7 +199,7 @@ class CorrelationWindow(QDialog):
         if n:
             ref.set_scale(n)
             if self.datum != DEPTH_DATUM:
-                ref.set_view(-ref.body_h / ref.ppu / 2, ref.ppu)  # datum centrado
+                ref.set_view(-ref.body_h / ref.ppu / 2, ref.ppu)  # datum centered
             else:
                 ref.set_view(lo, ref.ppu)
         else:

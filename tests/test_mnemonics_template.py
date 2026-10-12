@@ -16,17 +16,17 @@ def test_family_of(mnem, fam):
 def test_triple_combo_testdata(testdata_well):
     layout = build_triple_combo(testdata_well)
     titles = [t.title for t in layout.tracks]
-    assert titles[:3] == ["Correlación", "Prof.", "Resistividad"]
+    assert titles[:3] == ["Correlation", "Depth", "Resistivity"]
     assert layout.tracks[1].is_depth
-    dn = next(t for t in layout.tracks if t.title == "Densidad - Neutrón")
+    dn = next(t for t in layout.tracks if t.title == "Density - Neutron")
     assert {c.mnemonic for c in dn.curves} == {"RHOB", "TNPH"}
     assert any("gas" in f.label for f in dn.fills)
-    res = next(t for t in layout.tracks if t.title == "Resistividad")
+    res = next(t for t in layout.tracks if t.title == "Resistivity")
     assert all(c.log for c in res.curves)
 
 
 def test_template_across_wells(samples, testdata_well):
-    """Una plantilla hecha con SGR/LLD/TNPH funciona en un pozo con GR/ILD/NPHI."""
+    """A template made with SGR/LLD/TNPH works on a well that has GR/ILD/NPHI."""
     other = Well.from_las(samples / "TotalDepthPrueba.las")
     text = template_to_json(build_triple_combo(testdata_well))
     layout, missing = apply_template(template_from_json(text), other)

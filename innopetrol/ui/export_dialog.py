@@ -1,10 +1,11 @@
-"""Diálogo de exportación: imagen/PDF del registro, LAS y CSV."""
+"""Export dialog: image/PDF of the log."""
 
 from __future__ import annotations
 
 from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
                                QMessageBox, QSpinBox)
 
+from innopetrol.i18n import _, ngettext
 from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.render.export import ExportError, export_pdf, export_png
 from innopetrol.resources import app_icon
@@ -16,12 +17,12 @@ class ExportDialog(QDialog):
         super().__init__(parent)
         self.doc = doc
         w = doc.well
-        self.setWindowTitle(f"Exportar registro — {doc.title}")
+        self.setWindowTitle(_("Export log — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         form = QFormLayout(self)
         self.fmt = QComboBox()
-        self.fmt.addItem("PDF (paginado, para imprimir)", "pdf")
-        self.fmt.addItem("Imagen PNG", "png")
+        self.fmt.addItem(_("PDF (paginated, for printing)"), "pdf")
+        self.fmt.addItem(_("PNG image"), "png")
         self.scale = QComboBox()
         for n in SCALE_PRESETS:
             self.scale.addItem(f"1:{n}", n)
@@ -32,13 +33,13 @@ class ExportDialog(QDialog):
         self.top.setValue(w.start)
         self.base.setValue(w.stop)
         self.interval = QComboBox()
-        self.interval.addItem("Pozo completo", (w.start, w.stop))
+        self.interval.addItem(_("Whole well"), (w.start, w.stop))
         if visible:
             v0, v1 = max(visible[0], w.start), min(visible[1], w.stop)
-            self.interval.addItem("Lo visible en pantalla", (v0, v1))
+            self.interval.addItem(_("What is visible on screen"), (v0, v1))
         for t in w.tops:
             nxt = next((o.depth for o in w.tops if o.depth > t.depth), w.stop)
-            self.interval.addItem(f"Zona {t.name}", (t.depth, nxt))
+            self.interval.addItem(_("Zone {name}").format(name=t.name), (t.depth, nxt))
         self.interval.currentIndexChanged.connect(self._interval)
         self.page = QComboBox()
         for p in ("A4", "Letter", "A3"):
@@ -46,15 +47,15 @@ class ExportDialog(QDialog):
         self.dpi = QSpinBox()
         self.dpi.setRange(72, 600)
         self.dpi.setValue(200)
-        form.addRow("Formato:", self.fmt)
-        form.addRow("Escala vertical:", self.scale)
-        form.addRow("Intervalo:", self.interval)
-        form.addRow(f"Desde ({w.depth_unit}):", self.top)
-        form.addRow(f"Hasta ({w.depth_unit}):", self.base)
-        form.addRow("Papel (PDF):", self.page)
-        form.addRow("Resolución (PNG, dpi):", self.dpi)
+        form.addRow(_("Format:"), self.fmt)
+        form.addRow(_("Vertical scale:"), self.scale)
+        form.addRow(_("Interval:"), self.interval)
+        form.addRow(_("From ({unit}):").format(unit=w.depth_unit), self.top)
+        form.addRow(_("To ({unit}):").format(unit=w.depth_unit), self.base)
+        form.addRow(_("Paper (PDF):"), self.page)
+        form.addRow(_("Resolution (PNG, dpi):"), self.dpi)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText("Exportar…")
+        buttons.button(QDialogButtonBox.Ok).setText(_("Export…"))
         buttons.accepted.connect(self._export)
         buttons.rejected.connect(self.reject)
         form.addRow(buttons)
@@ -67,24 +68,24 @@ class ExportDialog(QDialog):
     def _export(self):
         top, base = self.top.value(), self.base.value()
         if base <= top:
-            QMessageBox.warning(self, "Exportar", "«Hasta» debe ser mayor que «Desde».")
+            QMessageBox.warning(self, _("Export"), _("“To” must be greater than “From”."))
             return
         kind = self.fmt.currentData()
         ext = "pdf" if kind == "pdf" else "png"
         scale = self.scale.currentData()
-        path, _ = QFileDialog.getSaveFileName(self, "Guardar como", f"{self.doc.title}_1-{scale}.{ext}",
+        path, _filter = QFileDialog.getSaveFileName(self, _("Save as"), f"{self.doc.title}_1-{scale}.{ext}",
                                               f"{ext.upper()} (*.{ext})")
         if not path:
             return
         try:
             if kind == "pdf":
                 pages = export_pdf(path, self.doc.well, self.doc.layout, scale, top, base, page=self.page.currentData())
-                msg = f"PDF guardado ({pages} hoja{'s' if pages != 1 else ''})."
+                msg = ngettext("PDF saved ({pages} page).", "PDF saved ({pages} pages).", pages).format(pages=pages)
             else:
                 export_png(path, self.doc.well, self.doc.layout, scale, top, base, dpi=self.dpi.value())
-                msg = "Imagen guardada."
+                msg = _("Image saved.")
         except (ExportError, OSError) as e:
-            QMessageBox.warning(self, "Exportar", f"No se pudo exportar: {e}")
+            QMessageBox.warning(self, _("Export"), _("Could not export: {error}").format(error=e))
             return
-        QMessageBox.information(self, "Exportar", msg)
+        QMessageBox.information(self, _("Export"), msg)
         self.accept()

@@ -1,7 +1,7 @@
-"""Caché de tiles: el registro se dibuja por franjas horizontales que se reutilizan.
+"""Tile cache: the log is drawn in reusable horizontal strips.
 
-Mover el cursor o desplazarse ya no vuelve a dibujar todas las curvas: sólo se copian
-imágenes ya hechas y se dibujan las franjas nuevas que aparecen.
+Moving the cursor or scrolling no longer redraws every curve: already rendered images are
+copied and only newly exposed strips are drawn.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 from PySide6.QtGui import QPixmap
 
-TILE_H = 256  # alto de un tile en píxeles lógicos
+TILE_H = 256  # tile height in logical pixels
 MAX_BYTES = 160 * 1024 * 1024
 
 
@@ -29,7 +29,7 @@ class TileCache:
         return list(self._tiles.items())
 
     def validate(self, key) -> None:
-        """Si cambia algo que afecta al dibujo (layout, escala, ancho, dpr…), se descarta todo."""
+        """If anything that affects drawing changes (layout, scale, width, dpr…) everything is dropped."""
         if key != self._key:
             self.clear()
             self._key = key
@@ -48,7 +48,7 @@ class TileCache:
         self._tiles[index] = pm
         self._bytes += _size(pm)
         while self._bytes > self.max_bytes and len(self._tiles) > 1:
-            _, old = self._tiles.popitem(last=False)
+            _key, old = self._tiles.popitem(last=False)
             self._bytes -= _size(old)
 
     def __contains__(self, index: int) -> bool:

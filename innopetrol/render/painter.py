@@ -1,7 +1,7 @@
-"""Funciones de dibujo de tracks: grilla, curvas, rellenos, profundidad, topes y encabezados.
+"""Track drawing functions: grid, curves, fills, depth, tops and headers.
 
-Son funciones puras sobre un QPainter: no guardan estado ni dependen de widgets, por eso
-la misma rutina dibuja en pantalla, en una imagen PNG o en un PDF.
+They are pure functions over a QPainter: no state and no widgets, so the same code draws
+on screen, into a PNG image or into a PDF.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import shiboken6
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QFontMetricsF, QPainter, QPainterPath, QPen, QPolygonF, QTransform
 
+from innopetrol.i18n import _, pgettext
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
 from innopetrol.model.scales import depth_ticks, log_grid_positions, map_values
 
@@ -35,10 +36,10 @@ BORDER = QColor("#2c3e50")
 
 @dataclass
 class DepthTransform:
-    """Relación profundidad ↔ y dentro del cuerpo de un track."""
+    """Depth ↔ y mapping inside a track body."""
 
-    top: float  # profundidad en y = 0
-    ppu: float  # píxeles por unidad de profundidad
+    top: float  # depth at y = 0
+    ppu: float  # pixels per depth unit
 
     def y(self, depth):
         return (np.asarray(depth, dtype=float) - self.top) * self.ppu
@@ -49,11 +50,11 @@ class DepthTransform:
 
 @dataclass
 class RenderOptions:
-    k: float = 1.0  # factor para grosores (1 en pantalla, dpi/96 al exportar)
+    k: float = 1.0  # line width factor (1 on screen, dpi/96 when exporting)
     top_labels: bool = True
-    draw_tops: bool = True  # la pantalla dibuja los topes aparte, encima de los tiles en caché
-    dpr: float = 1.0  # píxeles físicos por píxel lógico (2 en pantallas Retina)
-    frame_ends: bool = True  # borde superior/inferior del cuerpo (los tiles no lo llevan)
+    draw_tops: bool = True  # the screen draws tops separately, over the cached tiles
+    dpr: float = 1.0  # physical pixels per logical pixel (2 on Retina screens)
+    frame_ends: bool = True  # top/bottom border of the body (tiles have none)
 
 
 def fmt(v: float | None) -> str:
@@ -86,11 +87,11 @@ def grid_mode(track: TrackSpec) -> tuple[str, CurveStyle | None]:
     return "linear", None
 
 
-# ------------------------------------------------------------------------------ cuerpo de track
+# ------------------------------------------------------------------------------ track body
 
 
 def visible_slice(depth: np.ndarray, tf: DepthTransform, height: float, margin: float = 8) -> slice:
-    """Muestras dentro de la altura visible (más un margen para que nada se corte en los bordes)."""
+    """Samples within the visible height (plus a margin so nothing is cut at the edges)."""
     d0, d1 = tf.depth(-margin), tf.depth(height + margin)
     i0 = max(int(np.searchsorted(depth, d0)) - 1, 0)
     i1 = min(int(np.searchsorted(depth, d1)) + 1, depth.size)
@@ -138,7 +139,7 @@ def _draw_vertical_grid(p, track, w, h, opts):
     if mode == "none":
         return
     if mode == "log" and ref is not None:
-        left, right, _ = scale_of(ref)
+        left, right, _log = scale_of(ref)
         for value, decade in log_grid_positions(left, right):
             x = float(map_values(np.array([value]), left, right, True, w)[0])
             p.setPen(QPen(GRID_STRONG if decade else GRID_MAJOR, (1.0 if decade else 0.6) * opts.k))
@@ -161,13 +162,13 @@ def _draw_depth_lines(p, tf, w, h, opts):
 
 
 def _qpolygon(n: int) -> tuple[QPolygonF, np.ndarray]:
-    """QPolygonF de n puntos y una vista numpy (n, 2) sobre su memoria.
+    """A QPolygonF of n points plus a numpy (n, 2) view over its memory.
 
-    Escribir en la vista llena el polígono sin crear un objeto QPointF por punto,
-    que era la parte lenta de convertir miles de muestras.
+    Writing into the view fills the polygon without creating one QPointF object per point,
+    which was the slow part of converting thousands of samples.
     """
     poly = QPolygonF()
-    if n == 0:  # sin puntos no hay memoria donde escribir
+    if n == 0:  # no points, no memory to write into
         return poly, np.empty((0, 2))
     poly.resize(n)
     view = np.frombuffer(shiboken6.VoidPtr(poly.data(), n * 16, True), dtype=np.float64).reshape(n, 2)
@@ -182,7 +183,7 @@ def polygon_from_arrays(x: np.ndarray, y: np.ndarray) -> QPolygonF:
 
 
 def _hlines(p: QPainter, ys: np.ndarray, x0, x1) -> None:
-    """Líneas horizontales en una sola llamada (x0/x1 pueden ser escalares o arreglos)."""
+    """Horizontal lines in a single call (x0/x1 may be scalars or arrays)."""
     n = len(ys)
     if not n:
         return
@@ -195,17 +196,17 @@ def _hlines(p: QPainter, ys: np.ndarray, x0, x1) -> None:
 
 
 def _runs(valid: np.ndarray) -> list[tuple[int, int]]:
-    """Tramos continuos de True (para cortar las curvas en los huecos de datos)."""
+    """Contiguous runs of True (used to break curves at data gaps)."""
     d = np.diff(np.concatenate(([0], valid.astype(np.int8), [0])))
     return list(zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1)))
 
 
 def _envelope(x: np.ndarray, y: np.ndarray, dpr: float):
-    """Reduce una curva densa a un tramo horizontal [mín, máx] por fila de píxeles físicos.
+    """Reduces a dense curve to one horizontal [min, max] span per physical pixel row.
 
-    Con varias muestras por píxel, la polilínea en zigzag cubre exactamente esos píxeles, pero
-    trazarla con antialiasing es muy caro. Cada tramo incluye el último valor de la fila
-    anterior para que la curva quede continua.
+    With several samples per pixel the zig-zag polyline covers exactly those pixels, but stroking
+    it with antialiasing is very expensive. Each span includes the last value of the previous row
+    so the curve stays continuous.
     """
     rows = np.floor(y * dpr).astype(np.int64)
     starts = np.flatnonzero(np.concatenate(([True], rows[1:] != rows[:-1])))
@@ -227,7 +228,7 @@ def _draw_curve(p, style: CurveStyle, values, y, w, h, opts):
     r = 1.5 * opts.k + width / 2
     for a, b in _runs(valid):
         if b - a < 3:
-            # Muestras aisladas (p. ej. datos de núcleo): se marcan con un punto visible.
+            # Isolated samples (e.g. core data) are drawn as a visible dot.
             p.setRenderHint(QPainter.Antialiasing, True)
             p.setPen(Qt.NoPen)
             p.setBrush(color)
@@ -238,9 +239,9 @@ def _draw_curve(p, style: CurveStyle, values, y, w, h, opts):
         xs, ys = x[a:b], y[a:b]
         span_rows = (ys[-1] - ys[0]) * opts.dpr
         if span_rows > 0 and (b - a) / span_rows >= 1.5:
-            # Muchas muestras por fila de píxeles: dibujar la envolvente con líneas horizontales
-            # de un píxel físico de alto. Los guiones no se distinguen a esta densidad, así que las
-            # curvas no continuas se dibujan semitransparentes para diferenciarlas.
+            # Many samples per pixel row: draw the envelope as horizontal lines one physical pixel
+            # tall. Dashes are indistinguishable at this density, so non-solid curves are drawn
+            # semi-transparent to tell them apart.
             lo, hi, yc = _envelope(xs, ys, opts.dpr)
             span_color = QColor(color)
             if style.style != "solid":
@@ -287,7 +288,7 @@ def _draw_fill(p, track, fill: FillSpec, well, sl, y, w, opts):
     xl = np.clip(xl, 0, w)
     xr = np.clip(xr, 0, w)
     valid = np.isfinite(xl) & np.isfinite(xr)
-    xr = np.where(valid, np.maximum(xl, xr), xr)  # sólo donde la izquierda está a la izquierda
+    xr = np.where(valid, np.maximum(xl, xr), xr)  # only where the left bound is to the left
     path = QPainterPath()
     path.setFillRule(Qt.WindingFill)
     for a, b in _runs(valid):
@@ -322,7 +323,7 @@ def draw_tops(p, tops, tf: DepthTransform, w, h, opts: RenderOptions, labels=Tru
             p.drawText(box, Qt.AlignCenter, text)
 
 
-# ------------------------------------------------------------------------------ track de profundidad
+# ------------------------------------------------------------------------------ depth track
 
 
 def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: RenderOptions = RenderOptions()):
@@ -332,7 +333,7 @@ def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: R
     w, h = rect.width(), rect.height()
     p.fillRect(QRectF(0, 0, w, h), HEADER_BG)
     font = QFont(p.font())
-    margin = QFontMetricsF(font).height()  # etiquetas partidas entre dos tiles se dibujan en ambos
+    margin = QFontMetricsF(font).height()  # labels split between two tiles are drawn in both
     ticks = depth_ticks(tf.depth(-margin), tf.depth(h + margin), tf.ppu / opts.k)
     p.setPen(QPen(GRID_STRONG, 0.8 * opts.k))
     for values, length in ((ticks.minor, 4), (ticks.major, 8)):
@@ -355,7 +356,7 @@ def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: R
     p.restore()
 
 
-# ------------------------------------------------------------------------------ encabezados
+# ------------------------------------------------------------------------------ headers
 
 
 def header_height(track: TrackSpec, fm: QFontMetricsF, k: float = 1.0) -> float:
@@ -383,14 +384,14 @@ def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: R
 
     p.setFont(bold)
     p.setPen(BORDER)
-    title = track.title or ("Profundidad" if track.is_depth else "")
+    title = track.title or (pgettext("track title", "Depth") if track.is_depth else "")
     p.drawText(QRectF(pad, 2 * opts.k, w - 2 * pad, line), Qt.AlignCenter,
                QFontMetricsF(bold).elidedText(title, Qt.ElideRight, w - 2 * pad))
     p.setFont(font)
     y = line + 4 * opts.k
 
     if track.is_depth:
-        unit = "pies (ft)" if well.depth_unit == "ft" else "metros (m)"
+        unit = _("feet (ft)") if well.depth_unit == "ft" else _("meters (m)")
         p.drawText(QRectF(0, y, w, line), Qt.AlignCenter, well.depth_mnemonic)
         p.drawText(QRectF(0, y + line, w, line), Qt.AlignCenter, unit)
     else:
@@ -401,12 +402,12 @@ def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: R
             curve = well.curves.get(style.mnemonic)
             name = style.mnemonic + (f" ({curve.unit})" if curve and curve.unit else "")
             if curve is None:
-                name += " — no disponible"
+                name = _("{curve} — not available").format(curve=name)
                 color = QColor("#999999")
             p.setPen(color)
             p.drawText(QRectF(pad, y, w - 2 * pad, line), Qt.AlignCenter,
                        fm.elidedText(name, Qt.ElideRight, w - 2 * pad))
-            left, right, _ = scale_of(style)
+            left, right, _log = scale_of(style)
             lt, rt = fmt(left), fmt(right)
             p.drawText(QRectF(pad, y + line, w, line), Qt.AlignLeft | Qt.AlignVCenter, lt)
             p.drawText(QRectF(0, y + line, w - pad, line), Qt.AlignRight | Qt.AlignVCenter, rt)

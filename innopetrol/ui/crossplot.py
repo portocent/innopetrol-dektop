@@ -1,4 +1,4 @@
-"""Crossplot de dos curvas, coloreado por una tercera. Modos Neutrón-Densidad y Pickett."""
+"""Crossplot of two curves colored by a third one. Neutron-density and Pickett modes."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QFontMetricsF, QImage, QPainter, QPen
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QFileDialog, QFormLayout, QHBoxLayout,
                                QLabel, QLineEdit, QPushButton, QWidget)
 
+from innopetrol.i18n import N_, _
 from innopetrol.model.mnemonics import default_scale, find_curve
 from innopetrol.model.petro import PetroParams
 from innopetrol.model.scales import log_decades, nice_linear_range
@@ -18,11 +19,11 @@ from innopetrol.ui.document import WellDocument
 from innopetrol.ui.plotting import Axis, colormap, draw_axes, plot_rect
 from innopetrol.ui.widgets import parse_float
 
-# Líneas de litología aproximadas para neutrón calibrado en caliza (φN, ρb) en función de φ.
+# Approximate lithology lines for a limestone-calibrated neutron: (φN, ρb) as a function of φ.
 LITHOLOGY = {
-    "Arenisca": (lambda f: f - 0.035 * (1 - f / 0.45), lambda f: 2.65 - 1.65 * f, "#d4ac0d"),
-    "Caliza": (lambda f: f, lambda f: 2.71 - 1.71 * f, "#2471a3"),
-    "Dolomita": (lambda f: f + 0.04 + 0.05 * f, lambda f: 2.87 - 1.87 * f, "#7d3c98"),
+    N_("Sandstone"): (lambda f: f - 0.035 * (1 - f / 0.45), lambda f: 2.65 - 1.65 * f, "#d4ac0d"),
+    N_("Limestone"): (lambda f: f, lambda f: 2.71 - 1.71 * f, "#2471a3"),
+    N_("Dolomite"): (lambda f: f + 0.04 + 0.05 * f, lambda f: 2.87 - 1.87 * f, "#7d3c98"),
 }
 
 
@@ -68,13 +69,13 @@ class CrossplotWidget(QWidget):
         p.restore()
         p.setPen(BORDER)
         p.drawText(QRectF(r.left() + 6, r.top() + 4, r.width() - 12, fm.height()), Qt.AlignRight,
-                   f"{int(ok.sum())} puntos")
+                   _("{count} points").format(count=int(ok.sum())))
         if self.c.size:
             self._draw_colorbar(p, QRectF(r.right() + 18, r.top(), 16, r.height()), fm)
 
     def _draw_points(self, p: QPainter, px, py, ok):
-        """Puntos agrupados en niveles de color: una llamada a drawPoints por nivel en vez de
-        un drawEllipse por punto (los niveles altos se dibujan al final, quedan encima)."""
+        """Points grouped into color levels: one drawPoints call per level instead of one
+        drawEllipse per point (higher levels are drawn last, so they end up on top)."""
         pen = QPen(QColor("#2e86c1"), 4.8, Qt.SolidLine, Qt.RoundCap)
         if not self.c.size:
             color = QColor("#2e86c1")
@@ -114,10 +115,10 @@ class CrossplotWidget(QWidget):
                 inside = [i for i in range(len(phi)) if r.contains(QPointF(xs[i], ys[i]))]
                 if inside:
                     k = inside[int(len(inside) * 0.8)]
-                    p.drawText(QPointF(xs[k] + 6, ys[k] + 4), name)
+                    p.drawText(QPointF(xs[k] + 6, ys[k] + 4), _(name))
             p.setPen(QColor("#566573"))
             p.drawText(QRectF(r.left() + 6, r.bottom() - 20, r.width(), 18), Qt.AlignLeft,
-                       "Líneas aproximadas (neutrón en caliza); marcas cada 10 p.u.")
+                       _("Approximate lines (limestone neutron); marks every 10 p.u."))
         elif self.overlay == "pickett" and self.pickett:
             pp = self.pickett
             phi = np.logspace(-2, 0, 50)
@@ -158,25 +159,25 @@ class CrossplotWindow(QDialog):
         super().__init__(parent)
         self.doc = doc
         w = doc.well
-        self.setWindowTitle(f"Crossplot — {doc.title}")
+        self.setWindowTitle(_("Crossplot — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         self.setModal(False)
         self.resize(1000, 640)
         lay = QHBoxLayout(self)
         form = QFormLayout()
         self.mode = QComboBox()
-        for k, v in (("free", "Libre"), ("nd", "Neutrón - Densidad"), ("pickett", "Pickett (φ vs Rt)")):
+        for k, v in (("free", _("Free")), ("nd", _("Neutron - Density")), ("pickett", _("Pickett (φ vs Rt)"))):
             self.mode.addItem(v, k)
         self.x, self.y, self.c = QComboBox(), QComboBox(), QComboBox()
-        self.c.addItem("(sin color)", None)
+        self.c.addItem(_("(no color)"), None)
         for m in w.curves:
             for combo in (self.x, self.y, self.c):
                 combo.addItem(m, m)
-        self.logx, self.logy = QCheckBox("X logarítmica"), QCheckBox("Y logarítmica")
+        self.logx, self.logy = QCheckBox(_("Logarithmic X")), QCheckBox(_("Logarithmic Y"))
         self.zone = QComboBox()
         for name, top, base in zone_choices(w):
             self.zone.addItem(name, (top, base))
-        self.xmin, self.xmax, self.ymin, self.ymax = (QLineEdit() for _ in range(4))
+        self.xmin, self.xmax, self.ymin, self.ymax = (QLineEdit() for _i in range(4))
         for e in (self.xmin, self.xmax, self.ymin, self.ymax):
             e.setPlaceholderText("auto")
             e.setMaximumWidth(80)
@@ -185,20 +186,20 @@ class CrossplotWindow(QDialog):
         self.m = QDoubleSpinBox(decimals=2, minimum=1, maximum=4, value=pp.m, singleStep=0.1)
         self.n = QDoubleSpinBox(decimals=2, minimum=1, maximum=4, value=pp.n, singleStep=0.1)
         self.a = QDoubleSpinBox(decimals=2, minimum=0.1, maximum=5, value=pp.a, singleStep=0.05)
-        form.addRow("Tipo:", self.mode)
-        form.addRow("Eje X:", self.x)
-        form.addRow("Eje Y:", self.y)
-        form.addRow("Color:", self.c)
-        form.addRow("Intervalo:", self.zone)
+        form.addRow(_("Type:"), self.mode)
+        form.addRow(_("X axis:"), self.x)
+        form.addRow(_("Y axis:"), self.y)
+        form.addRow(_("Color:"), self.c)
+        form.addRow(_("Interval:"), self.zone)
         form.addRow(self.logx)
         form.addRow(self.logy)
-        form.addRow("X mín / máx:", self._pair(self.xmin, self.xmax))
-        form.addRow("Y mín / máx:", self._pair(self.ymin, self.ymax))
-        self.pickett_label = QLabel("<b>Pickett</b> (líneas de Sw)")
+        form.addRow(_("X min / max:"), self._pair(self.xmin, self.xmax))
+        form.addRow(_("Y min / max:"), self._pair(self.ymin, self.ymax))
+        self.pickett_label = QLabel(_("<b>Pickett</b> (Sw lines)"))
         form.addRow(self.pickett_label)
         form.addRow("Rw / a:", self._pair(self.rw, self.a))
         form.addRow("m / n:", self._pair(self.m, self.n))
-        save = QPushButton("Guardar imagen…")
+        save = QPushButton(_("Save image…"))
         save.clicked.connect(self._save)
         form.addRow(save)
         side = QWidget()
@@ -313,7 +314,7 @@ class CrossplotWindow(QDialog):
         plot.update()
 
     def _save(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Guardar crossplot", f"{self.doc.title}_crossplot.png",
+        path, _filter = QFileDialog.getSaveFileName(self, _("Save crossplot"), f"{self.doc.title}_crossplot.png",
                                               "PNG (*.png)")
         if path:
             img = QImage(self.plot.size() * 2, QImage.Format_ARGB32)

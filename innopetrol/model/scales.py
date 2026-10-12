@@ -1,7 +1,7 @@
-"""Conversión valor→píxel (lineal/log), escalas por defecto y marcas de profundidad.
+"""Value-to-pixel mapping (linear/log), default scales and depth ticks.
 
-Todo está vectorizado con numpy: se transforma la curva completa de una sola vez en lugar
-de recorrer muestra por muestra en Python.
+Everything is vectorized with numpy: a whole curve is transformed at once instead of
+looping over samples in Python.
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ SCALE_PRESETS = [10, 20, 25, 50, 100, 200, 240, 500, 1000, 2000, 5000]
 
 
 def next_preset(current: float, direction: int) -> float:
-    """Siguiente escala estándar al acercar (direction > 0, número menor) o alejar (< 0).
+    """Next standard scale when zooming in (direction > 0, smaller number) or out (< 0).
 
-    Desde una escala no estándar (p. ej. la de "Ajustar a la ventana") salta a la estándar más próxima
-    en esa dirección; en los extremos se queda en el límite.
+    From a non-standard scale (e.g. the one set by "Fit to window") it jumps to the nearest standard
+    one in that direction; at either end it stays at the limit.
     """
     if direction > 0:
         smaller = [n for n in SCALE_PRESETS if n < current * 0.99]
@@ -29,9 +29,9 @@ def next_preset(current: float, direction: int) -> float:
 
 
 def map_values(values: np.ndarray, left: float, right: float, log: bool, width: float) -> np.ndarray:
-    """Mapea valores a coordenada x en [0, width]. Permite escalas invertidas (left > right).
+    """Maps values to x in [0, width]. Reversed scales (left > right) are allowed.
 
-    En escala log los valores <= 0 no existen y quedan como NaN.
+    On a log scale values <= 0 do not exist and become NaN.
     """
     values = np.asarray(values, dtype=float)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -53,7 +53,7 @@ def map_value(value: float, left: float, right: float, log: bool, width: float) 
 
 
 def nice_linear_range(vmin: float, vmax: float) -> tuple[float, float]:
-    """Rango 'redondo' que contiene los datos (p. ej. 13.9–139.7 → 0–150)."""
+    """A 'round' range that contains the data (e.g. 13.9–139.7 → 0–150)."""
     if not (math.isfinite(vmin) and math.isfinite(vmax)):
         return 0.0, 1.0
     if vmin == vmax:
@@ -73,7 +73,7 @@ def nice_linear_range(vmin: float, vmax: float) -> tuple[float, float]:
 
 
 def log_decades(vmin: float, vmax: float) -> tuple[float, float]:
-    """Década completa que contiene los datos positivos (p. ej. 0.47–72 → 0.1–100)."""
+    """Whole decades that contain the positive data (e.g. 0.47–72 → 0.1–100)."""
     if not math.isfinite(vmax) or vmax <= 0:
         return 0.1, 1000.0
     if not math.isfinite(vmin) or vmin <= 0:
@@ -86,7 +86,7 @@ def log_decades(vmin: float, vmax: float) -> tuple[float, float]:
 
 
 def log_grid_positions(left: float, right: float) -> list[tuple[float, bool]]:
-    """Valores de las líneas de grilla log: (valor, es_década)."""
+    """Log grid line values: (value, is_decade)."""
     lo, hi = sorted((left, right))
     if lo <= 0:
         return []
@@ -101,9 +101,9 @@ def log_grid_positions(left: float, right: float) -> list[tuple[float, bool]]:
 
 
 def px_per_unit(scale_ratio: float, dpi: float, depth_unit: str) -> float:
-    """Píxeles por unidad de profundidad para una escala 1:N real en pantalla/papel.
+    """Pixels per depth unit for a true 1:N scale on screen/paper.
 
-    Ej.: escala 1:500 en metros → 1 m = 2 mm de papel → 2 mm * dpi/25.4 píxeles.
+    E.g. 1:500 in meters → 1 m = 2 mm of paper → 2 mm * dpi/25.4 pixels.
     """
     return dpi / 25.4 * MM_PER_UNIT.get(depth_unit, 1000.0) / scale_ratio
 
@@ -124,11 +124,11 @@ _INTERVALS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 500
 
 
 def depth_ticks(top: float, bottom: float, ppu: float, min_px: float = 6, label_px: float = 40) -> DepthTicks:
-    """Marcas de profundidad sin acumular errores de punto flotante.
+    """Depth ticks without accumulating floating point error.
 
-    El código original sumaba `i += step` y preguntaba `i % 1000 == 0`; con pasos de 0.5 o 0.1
-    el redondeo hacía que algunas marcas nunca aparecieran. Aquí se generan como múltiplos
-    enteros del intervalo, elegidos según cuántos píxeles separan cada marca.
+    The original code did `i += step` and tested `i % 1000 == 0`; with steps like 0.1 the rounding
+    error meant some ticks never appeared. Here they are generated as integer multiples of an
+    interval chosen from how many pixels separate consecutive ticks.
     """
     minor_iv = next((iv for iv in _INTERVALS if iv * ppu >= min_px), _INTERVALS[-1])
     major_iv = next((iv for iv in _INTERVALS if iv >= minor_iv * 5 and iv * ppu >= min_px * 4), minor_iv * 5)

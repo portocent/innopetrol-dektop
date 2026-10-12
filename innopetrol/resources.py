@@ -1,7 +1,7 @@
-"""Rutas a imágenes del programa, independientes del sistema operativo.
+"""Paths to the program's images, independent of the operating system.
 
-El código original usaba "statics\\\\images\\\\..." (sólo Windows) y nombres con mayúsculas
-inconsistentes (d1.png vs d1.PNG), por eso los iconos no aparecían en macOS/Linux.
+The original code used "statics\\\\images\\\\..." (Windows only) and inconsistent capitalization
+(d1.png vs d1.PNG), which is why icons were missing on macOS/Linux.
 """
 
 from pathlib import Path

@@ -45,7 +45,7 @@ def test_las_and_csv_roundtrip(testdata_well, tmp_path):
 
 @pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig", "cp1252"])
 def test_las_encodings(samples, tmp_path, encoding):
-    """LAS con acentos en UTF-8 (con y sin BOM) y en Windows-1252 se leen sin caracteres rotos."""
+    """Accented LAS files in UTF-8 (with and without BOM) and Windows-1252 are read without garbling."""
     import re
 
     text = (samples / "TotalDepthPrueba.las").read_text(encoding="latin-1")

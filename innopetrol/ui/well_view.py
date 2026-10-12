@@ -1,4 +1,4 @@
-"""WellView: ventana de un pozo (LogCanvas + barras de desplazamiento + menú contextual)."""
+"""WellView: a well window (LogCanvas + scroll bars + context menu)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QGridLayout, QInputDialog, QMenu, QMessageBox, QScrollBar, QWidget
 
+from innopetrol.i18n import _, pgettext
 from innopetrol.model.layout import TrackSpec
 from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.model.tops import PALETTE, Top
@@ -63,7 +64,7 @@ class WellView(QWidget):
 
     def _vbar_moved(self, v):
         if not self._syncing:
-            lo, _ = self.canvas.scroll_range()
+            lo, _hi = self.canvas.scroll_range()
             self.canvas.set_top(lo + v / self.canvas.ppu)
 
     def _hbar_moved(self, v):
@@ -75,7 +76,7 @@ class WellView(QWidget):
         if not math.isnan(depth):
             self.statusMessage.emit(self.canvas.readout(depth))
 
-    # ------------------------------------------------------------------ acciones sobre tracks
+    # ------------------------------------------------------------------ track actions
 
     @property
     def selected_track(self) -> int:
@@ -89,7 +90,7 @@ class WellView(QWidget):
             return
         track = self.doc.layout.tracks[index]
         if track.is_depth:
-            name, ok = QInputDialog.getText(self, "Track de profundidad", "Título:", text=track.title)
+            name, ok = QInputDialog.getText(self, _("Depth track"), _("Title:"), text=track.title)
             if ok:
                 track.title = name
                 self.doc.layoutChanged.emit()
@@ -100,9 +101,9 @@ class WellView(QWidget):
         after = self.canvas.selected if after is None else after
         index = (after + 1) if after is not None and after >= 0 else len(self.doc.layout.tracks)
         if kind == "depth":
-            track = TrackSpec(kind="depth", title="Prof.", width=72)
+            track = TrackSpec(kind="depth", title=pgettext("track title", "Depth"), width=72)
         else:
-            track = TrackSpec(title=f"Track {index + 1}")
+            track = TrackSpec(title=_("Track {number}").format(number=index + 1))
         self.doc.insert_track(index, track)
         self.canvas.selected = index
         if kind != "depth":
@@ -114,7 +115,8 @@ class WellView(QWidget):
             return
         track = self.doc.layout.tracks[index]
         if track.curves:
-            r = QMessageBox.question(self, "Eliminar track", f"¿Eliminar el track «{track.title}» y su configuración?")
+            r = QMessageBox.question(self, _("Remove track"),
+                                     _("Remove the track “{title}” and its settings?").format(title=track.title))
             if r != QMessageBox.Yes:
                 return
         self.canvas.selected = -1
@@ -131,23 +133,24 @@ class WellView(QWidget):
         if index is None or index < 0:
             return
         track = self.doc.layout.tracks[index]
-        name, ok = QInputDialog.getText(self, "Renombrar track", "Título:", text=track.title)
+        name, ok = QInputDialog.getText(self, _("Rename track"), _("Title:"), text=track.title)
         if ok:
             track.title = name
             self.doc.layoutChanged.emit()
 
     def add_top_at(self, depth: float):
-        name, ok = QInputDialog.getText(self, "Nuevo tope", f"Nombre del tope a {depth:.2f} {self.doc.well.depth_unit}:")
+        name, ok = QInputDialog.getText(self, _("New top"), _("Name of the top at {depth} {unit}:").format(
+            depth=f"{depth:.2f}", unit=self.doc.well.depth_unit))
         if ok and name.strip():
             tops = list(self.doc.well.tops)
             tops.append(Top(name.strip(), round(depth, 2), PALETTE[len(tops) % len(PALETTE)]))
             self.doc.set_tops(tops)
 
-    # ------------------------------------------------------------------ menú contextual
+    # ------------------------------------------------------------------ context menu
 
     def scale_menu(self, parent: QWidget) -> QMenu:
-        menu = QMenu("Escala vertical", parent)
-        fit = menu.addAction("Ajustar a la ventana")
+        menu = QMenu(_("Vertical scale"), parent)
+        fit = menu.addAction(_("Fit to window"))
         fit.setCheckable(True)
         fit.setChecked(self.canvas.fit_mode)
         fit.triggered.connect(self.canvas.fit)
@@ -157,40 +160,41 @@ class WellView(QWidget):
             a = menu.addAction(f"1:{n}")
             a.setCheckable(True)
             a.setChecked(not self.canvas.fit_mode and abs(current - n) / n < 0.01)
-            a.triggered.connect(lambda _=False, n=n: self.canvas.set_scale(n))
+            a.triggered.connect(lambda _checked=False, n=n: self.canvas.set_scale(n))
         return menu
 
     def _context_menu(self, index: int, depth: float, global_pos):
         menu = QMenu(self)
         if index >= 0:
             track = self.doc.layout.tracks[index]
-            edit = menu.addAction("Editar track…" if not track.is_depth else "Título del track…")
+            edit = menu.addAction(_("Edit track…") if not track.is_depth else _("Track title…"))
             edit.triggered.connect(lambda: self.edit_track(index))
-            menu.addAction("Renombrar…").triggered.connect(lambda: self.rename_track(index))
-            left = menu.addAction("Mover a la izquierda")
+            menu.addAction(_("Rename…")).triggered.connect(lambda: self.rename_track(index))
+            left = menu.addAction(_("Move left"))
             left.setEnabled(index > 0)
             left.triggered.connect(lambda: self.move_track(-1))
-            right = menu.addAction("Mover a la derecha")
+            right = menu.addAction(_("Move right"))
             right.setEnabled(index < len(self.doc.layout.tracks) - 1)
             right.triggered.connect(lambda: self.move_track(1))
-            menu.addAction("Eliminar track").triggered.connect(lambda: self.remove_track(index))
+            menu.addAction(_("Remove track")).triggered.connect(lambda: self.remove_track(index))
             menu.addSeparator()
-        menu.addAction("Agregar track de curvas").triggered.connect(lambda: self.add_track("curves", index))
-        menu.addAction("Agregar track de profundidad").triggered.connect(lambda: self.add_track("depth", index))
+        menu.addAction(_("Add curve track")).triggered.connect(lambda: self.add_track("curves", index))
+        menu.addAction(_("Add depth track")).triggered.connect(lambda: self.add_track("depth", index))
         if not math.isnan(depth):
             menu.addSeparator()
-            add_top = QAction(f"Agregar tope en {depth:.2f}…", menu)
+            add_top = QAction(_("Add top at {depth}…").format(depth=f"{depth:.2f}"), menu)
             add_top.triggered.connect(lambda: self.add_top_at(depth))
             menu.addAction(add_top)
         menu.addSeparator()
         menu.addMenu(self.scale_menu(menu))
-        menu.addAction("Exportar imagen / PDF…").triggered.connect(self.exportRequested.emit)
+        menu.addAction(_("Export image / PDF…")).triggered.connect(self.exportRequested.emit)
         menu.exec(global_pos)
 
     def closeEvent(self, e):
         if self.confirm_close:
-            r = QMessageBox.question(self, "Cerrar pozo", f"¿Está seguro de cerrar el pozo «{self.doc.title}»?")
-            if r != QMessageBox.Yes:  # antes: retval == 1024 (número mágico)
+            r = QMessageBox.question(self, _("Close well"),
+                                     _("Close the well “{name}”?").format(name=self.doc.title))
+            if r != QMessageBox.Yes:  # formerly: retval == 1024 (a magic number)
                 e.ignore()
                 return
         e.accept()

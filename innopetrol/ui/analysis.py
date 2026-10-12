@@ -1,4 +1,4 @@
-"""Estadísticas con histograma y tabla de datos sincronizada con el cursor."""
+"""Statistics with a histogram, and a data table synchronized with the cursor."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QSpinBox, QTableView,
                                QVBoxLayout, QWidget)
 
+from innopetrol.i18n import _
 from innopetrol.model.scales import log_decades, nice_linear_range
 from innopetrol.model.tops import zones_from_tops
 from innopetrol.resources import app_icon
@@ -18,13 +19,13 @@ from innopetrol.ui.plotting import Axis, draw_axes, plot_rect
 
 
 def zone_choices(well) -> list[tuple[str, float | None, float | None]]:
-    out = [("Pozo completo", None, None)]
+    out = [(_("Whole well"), None, None)]
     for z in zones_from_tops(well.tops, well.stop):
         out.append((f"{z.name} ({z.top:g}–{z.base:g})", z.top, z.base))
     return out
 
 
-# ============================================================================ histograma
+# ============================================================================ histogram
 
 
 class Histogram(QWidget):
@@ -50,16 +51,16 @@ class Histogram(QWidget):
         fm = QFontMetricsF(self.font())
         r = plot_rect(QRectF(self.rect()), fm)
         if self.values.size == 0:
-            p.drawText(self.rect(), Qt.AlignCenter, "Sin datos en el intervalo")
+            p.drawText(self.rect(), Qt.AlignCenter, _("No data in the interval"))
             p.end()
             return
         lo, hi = (log_decades if self.log else nice_linear_range)(float(self.values.min()), float(self.values.max()))
         edges = np.logspace(np.log10(lo), np.log10(hi), self.bins + 1) if self.log else np.linspace(lo, hi, self.bins + 1)
-        counts, _ = np.histogram(self.values, edges)
+        counts, _edges = np.histogram(self.values, edges)
         freq = counts / counts.sum() * 100
         ymax = max(float(freq.max()) * 1.1, 1)
         xa = Axis(lo, hi, self.log, self.label)
-        ya = Axis(0, ymax, False, "Frecuencia (%)")
+        ya = Axis(0, ymax, False, _("Frequency (%)"))
         draw_axes(p, r, xa, ya)
         xs = r.left() + xa.map(edges, r.width())
         p.setPen(QPen(self.color.darker(130), 0.8))
@@ -67,7 +68,7 @@ class Histogram(QWidget):
         for i, f in enumerate(freq):
             h = f / ymax * r.height()
             p.drawRect(QRectF(xs[i], r.bottom() - h, xs[i + 1] - xs[i], h))
-        # Curva acumulada
+        # Cumulative curve
         cum = np.cumsum(freq) / 100 * r.height()
         p.setPen(QPen(QColor("#c0392b"), 1.5))
         pts = [(xs[i + 1], r.bottom() - c) for i, c in enumerate(cum)]
@@ -80,7 +81,7 @@ class StatsDialog(QDialog):
     def __init__(self, doc: WellDocument, curve: str | None = None, parent=None):
         super().__init__(parent)
         self.doc = doc
-        self.setWindowTitle(f"Estadísticas — {doc.title}")
+        self.setWindowTitle(_("Statistics — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         self.resize(820, 460)
         lay = QHBoxLayout(self)
@@ -93,16 +94,16 @@ class StatsDialog(QDialog):
         self.zone = QComboBox()
         for name, top, base in zone_choices(doc.well):
             self.zone.addItem(name, (top, base))
-        self.log = QCheckBox("Escala logarítmica")
+        self.log = QCheckBox(_("Logarithmic scale"))
         self.bins = QSpinBox()
         self.bins.setRange(5, 200)
         self.bins.setValue(40)
         self.stats = QLabel()
         self.stats.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.stats.setAlignment(Qt.AlignTop)
-        side.addRow("Curva:", self.curve)
-        side.addRow("Intervalo:", self.zone)
-        side.addRow("Clases:", self.bins)
+        side.addRow(_("Curve:"), self.curve)
+        side.addRow(_("Interval:"), self.zone)
+        side.addRow(_("Bins:"), self.bins)
         side.addRow(self.log)
         side.addRow(self.stats)
         box = QWidget()
@@ -136,21 +137,28 @@ class StatsDialog(QDialog):
         f = v[np.isfinite(v)]
         if f.size:
             p10, p50, p90 = np.percentile(f, [10, 50, 90])
-            txt = (f"<b>{m}</b> {curve.unit}<br>{curve.description}<br><br>"
-                   f"Muestras válidas: {f.size} de {v.size}<br>"
-                   f"Mínimo: {f.min():.4g}<br>Máximo: {f.max():.4g}<br>Media: {f.mean():.4g}<br>"
-                   f"Desv. estándar: {f.std():.4g}<br>P10: {p10:.4g}<br>P50 (mediana): {p50:.4g}<br>P90: {p90:.4g}")
+            lines = [
+                _("Valid samples: {valid} of {total}").format(valid=f.size, total=v.size),
+                _("Minimum: {value}").format(value=f"{f.min():.4g}"),
+                _("Maximum: {value}").format(value=f"{f.max():.4g}"),
+                _("Mean: {value}").format(value=f"{f.mean():.4g}"),
+                _("Std. deviation: {value}").format(value=f"{f.std():.4g}"),
+                f"P10: {p10:.4g}",
+                _("P50 (median): {value}").format(value=f"{p50:.4g}"),
+                f"P90: {p90:.4g}",
+            ]
+            txt = f"<b>{m}</b> {curve.unit}<br>{curve.description}<br><br>" + "<br>".join(lines)
             if curve.formula:
-                txt += f"<br><br><i>Fórmula:</i> {curve.formula}"
+                txt += "<br><br><i>{}</i> {}".format(_("Formula:"), curve.formula)
         else:
-            txt = f"<b>{m}</b>: sin datos en el intervalo"
+            txt = f"<b>{m}</b>: " + _("no data in the interval")
         self.stats.setText(txt)
         color = next((c.color for t in self.doc.layout.tracks for c in t.curves if c.mnemonic == m), "#2e86c1")
         self.hist.set_data(v, f"{m} ({curve.unit})" if curve.unit else m, self.log.isChecked(),
                            self.bins.value(), color)
 
 
-# ============================================================================ tabla de datos
+# ============================================================================ data table
 
 
 class CurveTableModel(QAbstractTableModel):
@@ -191,18 +199,18 @@ class CurveTableModel(QAbstractTableModel):
 
 
 class DataTableWindow(QDialog):
-    """Ventana no modal: al mover el cursor sobre el registro, la tabla salta a esa profundidad
-    y al seleccionar una fila se marca esa profundidad en el registro."""
+    """Non-modal window: moving the cursor over the log scrolls the table to that depth, and
+    selecting a row marks that depth on the log."""
 
     def __init__(self, doc: WellDocument, parent=None):
         super().__init__(parent)
         self.doc = doc
-        self.setWindowTitle(f"Datos — {doc.title}")
+        self.setWindowTitle(_("Data — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         self.resize(760, 560)
         self.setModal(False)
         lay = QVBoxLayout(self)
-        self.follow = QCheckBox("Seguir el cursor del registro")
+        self.follow = QCheckBox(_("Follow the log cursor"))
         self.follow.setChecked(True)
         lay.addWidget(self.follow)
         self.model = CurveTableModel(doc.well, self)

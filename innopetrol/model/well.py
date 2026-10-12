@@ -1,4 +1,4 @@
-"""Carga de archivos LAS y representación de un pozo."""
+"""LAS file loading and the in-memory representation of a well."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from pathlib import Path
 import lasio
 import numpy as np
 
+from innopetrol.i18n import _
 from innopetrol.model.tops import Top
 
 FEET_UNITS = {"F", "FT", "FEET", "FOOT", "FT.", "FEET."}
@@ -21,7 +22,7 @@ class Curve:
     unit: str
     description: str
     values: np.ndarray
-    formula: str | None = None  # curvas calculadas guardan su fórmula para poder reproducirlas
+    formula: str | None = None  # computed curves keep their formula so they can be recomputed
 
     @property
     def has_data(self) -> bool:
@@ -49,7 +50,7 @@ class Well:
     name: str
     path: Path | None
     depth: np.ndarray
-    depth_unit: str  # "ft" o "m"
+    depth_unit: str  # "ft" or "m"
     depth_mnemonic: str = "DEPT"
     header: list[HeaderItem] = field(default_factory=list)
     curves: dict[str, Curve] = field(default_factory=dict)
@@ -58,14 +59,14 @@ class Well:
     @classmethod
     def from_las(cls, path: str | Path) -> Well:
         path = Path(path)
-        # lasio avisa por logging cuando cambia de motor para archivos WRAP=YES; no es un error.
+        # lasio logs a warning when it switches engines for WRAP=YES files; that is not an error.
         logging.getLogger("lasio").setLevel(logging.ERROR)
         las = lasio.read(str(path), encoding=detect_encoding(path), ignore_header_errors=True)
         if not las.curves:
-            raise ValueError("el archivo no contiene curvas")
+            raise ValueError(_("the file contains no curves"))
         depth = np.asarray(las.index, dtype=float)
         if depth.size < 2:
-            raise ValueError("el archivo no contiene datos")
+            raise ValueError(_("the file contains no data"))
 
         unit_raw = (las.curves[0].unit or "").strip().upper()
         if not unit_raw and "STRT" in las.well:
@@ -82,7 +83,7 @@ class Well:
             curves[mnem] = Curve(mnem, (c.unit or "").strip(), (c.descr or "").strip(),
                                  np.asarray(c.data, dtype=float))
 
-        # El dibujo asume profundidad creciente; algunos LAS vienen de fondo a superficie.
+        # Drawing assumes increasing depth; some LAS files are written bottom-up.
         if depth[0] > depth[-1]:
             depth = depth[::-1].copy()
             for c in curves.values():
@@ -118,16 +119,16 @@ class Well:
 
     def add_curve(self, curve: Curve, replace: bool = True) -> None:
         if curve.values.shape != self.depth.shape:
-            raise ValueError("la curva no tiene el mismo número de muestras que la profundidad")
+            raise ValueError(_("the curve does not have the same number of samples as the depth"))
         if not replace and curve.mnemonic in self.curves:
-            raise ValueError(f"ya existe una curva llamada {curve.mnemonic}")
+            raise ValueError(_("a curve named {name} already exists").format(name=curve.mnemonic))
         self.curves[curve.mnemonic] = curve
 
     def remove_curve(self, mnemonic: str) -> None:
         self.curves.pop(mnemonic, None)
 
     def value_at(self, mnemonic: str, depth: float) -> float:
-        """Valor interpolado de una curva en una profundidad (NaN fuera de rango o en huecos)."""
+        """Interpolated curve value at a depth (NaN outside the range or in gaps)."""
         curve = self.curves.get(mnemonic)
         if curve is None or depth < self.start or depth > self.stop:
             return float("nan")
@@ -160,7 +161,7 @@ class Well:
             descr = c.description if c.formula is None else f"{c.description} [= {c.formula}]"
             las.append_curve(c.mnemonic, c.values[sel], unit=c.unit, descr=descr)
         las.well["WELL"] = lasio.HeaderItem("WELL", "", self.name, "WELL")
-        # Codificación explícita: en Windows Python usaría cp1252 y fallaría con caracteres como φ.
+        # Explicit encoding: on Windows Python would default to cp1252 and fail on characters like φ.
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             las.write(f, version=2.0, fmt="%.5f")
 
@@ -168,7 +169,7 @@ class Well:
         sel = slice(None) if mask is None else mask
         names = [self.depth_mnemonic] + list(self.curves)
         columns = np.column_stack([self.depth[sel]] + [c.values[sel] for c in self.curves.values()])
-        # utf-8-sig agrega el BOM que Excel en Windows necesita para mostrar bien los acentos.
+        # utf-8-sig adds the BOM that Excel on Windows needs to show accented characters correctly.
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.writer(f)
             writer.writerow(names)
@@ -177,10 +178,10 @@ class Well:
 
 
 def detect_encoding(path: str | Path) -> str:
-    """Codificación de un archivo de texto: UTF-8 (con o sin BOM), Windows-1252 o Latin-1.
+    """Text encoding of a file: UTF-8 (with or without BOM), Windows-1252 or Latin-1.
 
-    Muchos LAS de compañías latinoamericanas vienen en Windows-1252 ("Compañía"); otros en UTF-8.
-    Sin esta detección lasio leería un UTF-8 como Windows-1252 y mostraría "CompaÃ±Ã­a".
+    Many LAS files from Latin American vendors are Windows-1252 ("Compañía"), others are UTF-8.
+    Without this check lasio would read UTF-8 as Windows-1252 and show "CompaÃ±Ã­a".
     """
     raw = Path(path).read_bytes()
     if raw.startswith(b"\xef\xbb\xbf"):
@@ -191,7 +192,7 @@ def detect_encoding(path: str | Path) -> str:
             return enc
         except UnicodeDecodeError:
             continue
-    return "latin-1"  # decodifica cualquier byte
+    return "latin-1"  # decodes any byte
 
 
 def _unique(name: str, existing: dict) -> str:

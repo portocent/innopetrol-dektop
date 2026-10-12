@@ -1,9 +1,9 @@
-"""Calculadora de curvas segura.
+"""Safe curve calculator.
 
-Evalúa expresiones como `(2.65 - RHOB) / (2.65 - 1.0)` sobre arrays de numpy.
-NO usa `eval()`: la expresión se analiza con el módulo `ast` y sólo se permiten números,
-nombres de curvas, operadores aritméticos/comparaciones y una lista cerrada de funciones.
-Cualquier otra cosa (atributos, imports, lambdas, índices…) se rechaza.
+Evaluates expressions such as `(2.65 - RHOB) / (2.65 - 1.0)` on numpy arrays.
+It does NOT use `eval()`: the expression is parsed with the `ast` module and only numbers,
+curve names, arithmetic/comparison operators and a closed list of functions are allowed.
+Anything else (attributes, imports, lambdas, subscripts…) is rejected.
 """
 
 from __future__ import annotations
@@ -13,6 +13,8 @@ import operator
 import re
 
 import numpy as np
+
+from innopetrol.i18n import _
 
 
 class CalculatorError(Exception):
@@ -41,15 +43,15 @@ def _quote(name: str) -> str:
 
 
 def evaluate(expression: str, curves: dict[str, np.ndarray]) -> np.ndarray:
-    """Evalúa la expresión. Las curvas con nombres que no son identificadores válidos
-    (p. ej. `K-3104`) se escriben como `curve("K-3104")` o entre corchetes `[K-3104]`."""
+    """Evaluates the expression. Curves whose names are not valid identifiers
+    (e.g. `K-3104`) are written as `curve("K-3104")` or in brackets `[K-3104]`."""
     if len(expression) > _MAX_LEN:
-        raise CalculatorError("expresión demasiado larga")
+        raise CalculatorError(_("expression too long"))
     expr = re.sub(r"\[([^\[\]]+)\]", lambda m: _quote(m.group(1).strip()), expression)
     try:
         tree = ast.parse(expr.strip(), mode="eval")
     except SyntaxError as e:
-        raise CalculatorError(f"error de sintaxis cerca de la columna {e.offset}") from e
+        raise CalculatorError(_("syntax error near column {column}").format(column=e.offset)) from e
 
     size = len(next(iter(curves.values()))) if curves else None
     with np.errstate(all="ignore"):
@@ -57,10 +59,10 @@ def evaluate(expression: str, curves: dict[str, np.ndarray]) -> np.ndarray:
     result = np.asarray(result, dtype=float)
     if result.ndim == 0:
         if size is None:
-            raise CalculatorError("la expresión no usa ninguna curva")
+            raise CalculatorError(_("the expression does not use any curve"))
         result = np.full(size, float(result))
     if size is not None and result.shape != (size,):
-        raise CalculatorError("el resultado no tiene el tamaño de las curvas")
+        raise CalculatorError(_("the result does not have the size of the curves"))
     result[~np.isfinite(result)] = np.nan
     return result
 
@@ -68,14 +70,14 @@ def evaluate(expression: str, curves: dict[str, np.ndarray]) -> np.ndarray:
 def _eval(node, curves):
     if isinstance(node, ast.Constant):
         if isinstance(node.value, bool) or not isinstance(node.value, (int, float)):
-            raise CalculatorError("sólo se permiten números")
+            raise CalculatorError(_("only numbers are allowed"))
         return float(node.value)
     if isinstance(node, ast.Name):
         if node.id in curves:
             return np.asarray(curves[node.id], dtype=float)
         if node.id in CONSTANTS:
             return CONSTANTS[node.id]
-        raise CalculatorError(f"curva desconocida: {node.id}")
+        raise CalculatorError(_("unknown curve: {name}").format(name=node.id))
     if isinstance(node, ast.BinOp) and type(node.op) in _BINOPS:
         return _BINOPS[type(node.op)](_eval(node.left, curves), _eval(node.right, curves))
     if isinstance(node, ast.UnaryOp) and type(node.op) in _UNARY:
@@ -91,7 +93,7 @@ def _eval(node, curves):
         out = None
         for op, comp in zip(node.ops, node.comparators):
             if type(op) not in _COMPARE:
-                raise CalculatorError("comparación no permitida")
+                raise CalculatorError(_("comparison not allowed"))
             right = _eval(comp, curves)
             r = _COMPARE[type(op)](left, right)
             out = r if out is None else np.logical_and(out, r)
@@ -103,19 +105,20 @@ def _eval(node, curves):
         name = node.func.id
         if name == "curve":
             if len(node.args) != 1 or not isinstance(node.args[0], ast.Constant) or not isinstance(node.args[0].value, str):
-                raise CalculatorError('uso: curve("NOMBRE")')
+                raise CalculatorError(_('usage: curve("NAME")'))
             key = node.args[0].value
             if key not in curves:
-                raise CalculatorError(f"curva desconocida: {key}")
+                raise CalculatorError(_("unknown curve: {name}").format(name=key))
             return np.asarray(curves[key], dtype=float)
         if name in FUNCTIONS:
             args = [_eval(a, curves) for a in node.args]
             try:
                 return FUNCTIONS[name](*args)
             except TypeError as e:
-                raise CalculatorError(f"argumentos inválidos para {name}()") from e
-        raise CalculatorError(f"función no permitida: {name}")
-    raise CalculatorError(f"elemento no permitido en la expresión: {type(node).__name__}")
+                raise CalculatorError(_("invalid arguments for {function}()").format(function=name)) from e
+        raise CalculatorError(_("function not allowed: {function}").format(function=name))
+    raise CalculatorError(_("element not allowed in the expression: {element}").format(
+        element=type(node).__name__))
 
 
 def referenced_names(expression: str) -> set[str]:
@@ -136,6 +139,6 @@ def referenced_names(expression: str) -> set[str]:
 
 
 def curve_ref(mnemonic: str) -> str:
-    """Cómo escribir una curva dentro de una fórmula."""
+    """How to write a curve name inside a formula."""
     return mnemonic if mnemonic.isidentifier() and mnemonic not in FUNCTIONS and mnemonic not in CONSTANTS \
         else f"[{mnemonic}]"

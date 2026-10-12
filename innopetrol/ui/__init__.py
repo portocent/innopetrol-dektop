@@ -1,1 +1,1 @@
-"""Interfaz gráfica (PySide6)."""
+"""Graphical user interface (PySide6)."""

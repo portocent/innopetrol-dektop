@@ -1,4 +1,4 @@
-"""Composición de un registro completo: encabezados + cuerpos de todos los tracks."""
+"""Composition of a full log: headers + bodies of every track."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from innopetrol.render.painter import (DepthTransform, RenderOptions, draw_depth
 
 
 def track_edges(layout: LogLayout, k: float = 1.0) -> list[tuple[float, float]]:
-    """(x inicial, ancho) de cada track."""
+    """(start x, width) of each track."""
     out, x = [], 0.0
     for t in layout.tracks:
         w = t.width * k
@@ -34,7 +34,7 @@ def headers_height(p: QPainter, layout: LogLayout, k: float = 1.0) -> float:
 def paint_log(p: QPainter, layout: LogLayout, well, tf: DepthTransform, x0: float, y0: float,
               header_h: float, body_h: float, opts: RenderOptions, selected: int | None = None,
               draw_headers: bool = True) -> None:
-    """Dibuja los tracks empezando en (x0, y0). Si draw_headers es False, el cuerpo empieza en y0."""
+    """Draws the tracks starting at (x0, y0). If draw_headers is False the body starts at y0."""
     body_y = y0 + (header_h if draw_headers else 0)
     first_curves = next((i for i, t in enumerate(layout.tracks) if not t.is_depth), None)
     for i, ((x, w), track) in enumerate(zip(track_edges(layout, opts.k), layout.tracks)):
@@ -56,8 +56,8 @@ def paint_headers(p: QPainter, layout: LogLayout, well, x0: float, y0: float, he
 
 def paint_tops_overlay(p: QPainter, layout: LogLayout, well, tf: DepthTransform, x0: float, y0: float,
                        body_h: float, opts: RenderOptions) -> None:
-    """Topes dibujados encima del cuerpo (la pantalla los separa de los tiles para que las
-    etiquetas no queden cortadas en el borde de un tile)."""
+    """Tops drawn over the body (the screen keeps them out of the cached tiles so labels are
+    never cut at a tile edge)."""
     if not well.tops:
         return
     first_curves = next((i for i, t in enumerate(layout.tracks) if not t.is_depth), None)

@@ -1,4 +1,4 @@
-"""Proyecto: sesión de trabajo con varios pozos (rutas LAS, layouts, topes y curvas calculadas)."""
+"""Project: a working session with several wells (LAS paths, layouts, tops and computed curves)."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from innopetrol.i18n import _
 from innopetrol.model.calculator import evaluate
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.petro import PetroParams
@@ -61,16 +62,16 @@ def load_project(path: str | Path) -> LoadResult:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
-        raise ProjectError(f"no se pudo leer el proyecto: {e}") from e
+        raise ProjectError(_("could not read the project: {error}").format(error=e)) from e
     if not isinstance(data, dict) or data.get("format") != FORMAT:
-        raise ProjectError("el archivo no es un proyecto de InnoPetrol")
+        raise ProjectError(_("the file is not an InnoPetrol project"))
 
     result = LoadResult()
     for w in data.get("wells", []):
         las_path = (path.parent / w["path"]).resolve()
         try:
             well = Well.from_las(las_path)
-        except Exception as e:  # noqa: BLE001 - cualquier error de lectura se informa y se sigue
+        except Exception as e:  # noqa: BLE001 - any read error is reported and loading continues
             result.errors.append(f"{w.get('name', las_path.name)}: {e}")
             continue
         well.tops = [Top.from_dict(t) for t in w.get("tops", [])]
@@ -78,7 +79,8 @@ def load_project(path: str | Path) -> LoadResult:
             try:
                 values = evaluate(c["formula"], {m: cv.values for m, cv in well.curves.items()})
             except Exception as e:  # noqa: BLE001
-                result.errors.append(f"{well.name}: no se pudo recalcular {c['mnemonic']}: {e}")
+                result.errors.append(_("{well}: could not recompute {curve}: {error}").format(
+                    well=well.name, curve=c["mnemonic"], error=e))
                 continue
             well.add_curve(Curve(c["mnemonic"], c.get("unit", ""), c.get("description", ""), values,
                                  formula=c["formula"]))
@@ -90,5 +92,5 @@ def load_project(path: str | Path) -> LoadResult:
 def _relative(target: Path, base: Path) -> str:
     try:
         return os.path.relpath(Path(target).resolve(), base.resolve())
-    except ValueError:  # distinto disco en Windows
+    except ValueError:  # different drive on Windows
         return str(Path(target).resolve())

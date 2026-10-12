@@ -1,7 +1,7 @@
-"""Árbol lateral: pozos abiertos, información de cabecera, curvas y topes.
+"""Side tree: open wells, header information, curves and tops.
 
-Cada ítem guarda una referencia directa a su documento (Qt.UserRole). El código original
-buscaba los ítems por el texto del título o por posición, y se desincronizaba al cerrar pozos.
+Each item keeps a direct reference to its document (Qt.UserRole). The original code looked
+items up by title text or by position, and got out of sync when wells were closed.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QFont
 from PySide6.QtWidgets import QMenu, QTreeWidget, QTreeWidgetItem
 
+from innopetrol.i18n import _
 from innopetrol.model.mnemonics import FAMILIES, family_of
 from innopetrol.ui.document import WellDocument
 
@@ -32,12 +33,22 @@ class WellTree(QTreeWidget):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
         self.itemDoubleClicked.connect(self._double_click)
-        self.template_item = QTreeWidgetItem(["Plantilla por defecto: Triple Combo automático"])
+        self.template_item = QTreeWidgetItem([""])
+        self._template_name: str | None = None
+        self.set_template_name(None)
         self.template_item.setForeground(0, QBrush(QColor("#566573")))
         self.addTopLevelItem(self.template_item)
 
     def set_template_name(self, name: str | None):
-        self.template_item.setText(0, f"Plantilla por defecto: {name or 'Triple Combo automático'}")
+        self._template_name = name
+        self.template_item.setText(0, _("Default template: {name}").format(name=name or _("automatic Triple Combo")))
+
+    def retranslate(self):
+        self.set_template_name(self._template_name)
+        for i in range(self.topLevelItemCount()):
+            doc = self.topLevelItem(i).data(0, ROLE_DOC)
+            if doc is not None:
+                self.refresh(doc)
 
     def _item_for(self, doc) -> QTreeWidgetItem | None:
         for i in range(self.topLevelItemCount()):
@@ -84,8 +95,9 @@ class WellTree(QTreeWidget):
         item.setFont(0, bold)
         item.setToolTip(0, str(w.path) if w.path else doc.title)
 
-        info = QTreeWidgetItem(item, ["Información del pozo"])
-        QTreeWidgetItem(info, [f"Intervalo: {w.start:g} – {w.stop:g} {w.depth_unit} (paso {w.step:g})"])
+        info = QTreeWidgetItem(item, [_("Well information")])
+        QTreeWidgetItem(info, [_("Interval: {start} – {stop} {unit} (step {step})").format(
+            start=f"{w.start:g}", stop=f"{w.stop:g}", unit=w.depth_unit, step=f"{w.step:g}")])
         for h in w.header:
             if h.mnemonic.upper() in ("STRT", "STOP", "STEP"):
                 continue
@@ -93,13 +105,13 @@ class WellTree(QTreeWidget):
                 child = QTreeWidgetItem(info, [f"{h.mnemonic}: {h.value} {h.unit}".strip()])
                 child.setToolTip(0, h.description)
 
-        curves = QTreeWidgetItem(item, [f"Curvas ({len(w.curves)})"])
+        curves = QTreeWidgetItem(item, [_("Curves ({count})").format(count=len(w.curves))])
         curves.setExpanded(True)
         for m, c in w.curves.items():
             fam = FAMILIES.get(family_of(m) or "")
-            label = f"{m}" + (f"  [{c.unit}]" if c.unit else "") + (f"  · {fam.name}" if fam else "")
+            label = f"{m}" + (f"  [{c.unit}]" if c.unit else "") + (f"  · {_(fam.name)}" if fam else "")
             if c.formula:
-                label += "  (calculada)"
+                label += "  " + _("(computed)")
             ci = QTreeWidgetItem(curves, [label])
             ci.setData(0, ROLE_DOC, doc)
             ci.setData(0, ROLE_KIND, "curve")
@@ -108,12 +120,13 @@ class WellTree(QTreeWidget):
                 ci.setForeground(0, QBrush(QColor("#1f618d")))
             tip = [c.description] if c.description else []
             if c.has_data:
-                tip.append(f"Min {c.min:.4g} · Max {c.max:.4g} · Media {np.nanmean(c.values):.4g}")
+                tip.append(_("Min {min} · Max {max} · Mean {mean}").format(
+                    min=f"{c.min:.4g}", max=f"{c.max:.4g}", mean=f"{np.nanmean(c.values):.4g}"))
             if c.formula:
                 tip.append(f"= {c.formula}")
             ci.setToolTip(0, "\n".join(tip))
 
-        tops = QTreeWidgetItem(item, [f"Topes ({len(w.tops)})"])
+        tops = QTreeWidgetItem(item, [_("Tops ({count})").format(count=len(w.tops))])
         tops.setData(0, ROLE_DOC, doc)
         tops.setData(0, ROLE_KIND, "tops")
         for t in w.tops:
@@ -153,11 +166,11 @@ class WellTree(QTreeWidget):
         menu = QMenu(self)
         if item.data(0, ROLE_KIND) == "curve":
             name = item.data(0, ROLE_NAME)
-            menu.addAction("Estadísticas e histograma…").triggered.connect(
+            menu.addAction(_("Statistics and histogram…")).triggered.connect(
                 lambda: self.curveStatsRequested.emit(doc, name))
             if doc.well.curves[name].formula:
-                menu.addAction("Eliminar curva calculada").triggered.connect(
+                menu.addAction(_("Delete computed curve")).triggered.connect(
                     lambda: self.curveDeleteRequested.emit(doc, name))
-        menu.addAction("Mostrar ventana del pozo").triggered.connect(lambda: self.docActivated.emit(doc))
-        menu.addAction("Editar topes…").triggered.connect(lambda: self.topsRequested.emit(doc))
+        menu.addAction(_("Show well window")).triggered.connect(lambda: self.docActivated.emit(doc))
+        menu.addAction(_("Edit tops…")).triggered.connect(lambda: self.topsRequested.emit(doc))
         menu.exec(self.viewport().mapToGlobal(pos))

@@ -1,3 +1,3 @@
-"""InnoPetrol: visor de registros de pozo (LAS) para ingenieros de petróleo."""
+"""InnoPetrol: well log (LAS) viewer for petroleum engineers."""
 
 __version__ = "2.0.0"

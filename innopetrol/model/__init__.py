@@ -1,1 +1,1 @@
-"""Modelo de datos puro (sin Qt): pozos, escalas, layouts, plantillas y cálculos."""
+"""Pure data model (no Qt): wells, scales, layouts, templates and calculations."""
