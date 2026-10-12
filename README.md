@@ -55,6 +55,10 @@ Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python w
 **Files**
 - JSON templates (`.ipt.json`): they apply to other wells even when those use different mnemonics. Configurable default template.
 - Projects (`.ipproj`): wells, layouts, tops, parameters and computed curves (stored as formulas).
+  **Hundreds of wells per project**: wells are listed from a summary and loaded only when used (a
+  500-well project opens in a fraction of a second); add a whole folder at once; search by name, UWI,
+  field or company and filter by curve; copy the well files into a folder next to the project, and
+  find moved files again.
 - **Autosave and crash recovery**: unsaved work is saved every 2 minutes and offered back after an
   unexpected exit. Errors are written to a log file and reported without closing the program.
 - **Mnemonic aliases** editable by the user (Template ▸ Mnemonic aliases…), importable/exportable as JSON

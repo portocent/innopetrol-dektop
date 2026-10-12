@@ -12,6 +12,7 @@ from PySide6.QtCore import QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QUndoGroup
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QDockWidget,
     QFileDialog,
@@ -27,7 +28,7 @@ from PySide6.QtWidgets import (
 from innopetrol import i18n
 from innopetrol.i18n import _
 from innopetrol.model import units
-from innopetrol.model.catalog import WellRef, refs_from_file, well_files
+from innopetrol.model.catalog import WellRef, copy_files, data_folder, refs_from_file, relocate, well_files
 from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.mnemonics import build_triple_combo
@@ -145,6 +146,8 @@ class MainWindow(QMainWindow):
         self.a_open = A(self.open_las_dialog, QKeySequence.StandardKey.Open, needs_doc=False)
         self.a_open_proj = A(self.open_project_dialog, "Ctrl+Shift+O", needs_doc=False)
         self.a_add_folder = A(self.add_folder_dialog, needs_doc=False)
+        self.a_copy_data = A(self.copy_data_dialog, needs_doc=False)
+        self.a_locate = A(self.locate_missing_dialog, needs_doc=False)
         self.a_save_proj = A(self.save_project, QKeySequence.StandardKey.Save)
         self.a_save_proj_as = A(lambda: self.save_project(ask=True), "Ctrl+Shift+S")
         self.a_export = A(self.export_log, "Ctrl+E")
@@ -238,7 +241,7 @@ class MainWindow(QMainWindow):
         self.m_file.addAction(self.a_add_folder)
         self.recent_menu = self.m_file.addMenu("")
         self.m_file.addSeparator()
-        for a in (self.a_open_proj, self.a_save_proj, self.a_save_proj_as):
+        for a in (self.a_open_proj, self.a_save_proj, self.a_save_proj_as, self.a_copy_data, self.a_locate):
             self.m_file.addAction(a)
         self.m_file.addSeparator()
         for a in (self.a_export, self.a_export_las, self.a_export_csv):
@@ -373,6 +376,12 @@ class MainWindow(QMainWindow):
             # action: (menu text, toolbar text or None, status tip or None)
             self.a_open: (_("Open LAS…"), _("Open LAS"), _("Open one or more LAS files")),
             self.a_open_proj: (_("Open project…"), None, None),
+            self.a_copy_data: (
+                _("Copy well files to the project folder"),
+                None,
+                _("Copies the LAS/DLIS files next to the project file, so the project can be moved as one folder"),
+            ),
+            self.a_locate: (_("Locate missing well files…"), None, None),
             self.a_add_folder: (
                 _("Add a folder of wells to the project…"),
                 None,
@@ -506,7 +515,7 @@ class MainWindow(QMainWindow):
             if a.property("needs_doc"):
                 a.setEnabled(has)
         self.a_corr.setEnabled(len(self.docs) >= 2)
-        for a in (self.a_save_proj, self.a_save_proj_as):
+        for a in (self.a_save_proj, self.a_save_proj_as, self.a_copy_data, self.a_locate):
             a.setEnabled(len(self.wells) > 0)  # wells that are not loaded are saved too
         self.scale_combo.setEnabled(has)
         self._refresh_depth_controls()
@@ -729,7 +738,7 @@ class MainWindow(QMainWindow):
 
     def add_folder_dialog(self):
         folder = QFileDialog.getExistingDirectory(
-            self, _("Add a folder of wells to the project"), self.settings.value("last_dir", str(Path.home()))
+            self, _("Add a folder of wells to the project"), str(self.settings.value("last_dir", str(Path.home())))
         )
         if folder:
             self.settings.setValue("last_dir", folder)
@@ -857,12 +866,114 @@ class MainWindow(QMainWindow):
             self._update_actions()
 
     def load_refs(self, refs: list[WellRef]) -> list[WellDocument]:
-        """Load wells of the project (with a progress dialog for many). Problems are shown together."""
+        """Load wells of the project (with a progress dialog for many). Problems are shown together.
+        If some files are missing, offers to look for them in a folder first."""
+        lost = [r for r in refs if r.path is not None and not r.path.exists()]
+        if lost and (
+            QMessageBox.question(
+                self,
+                _("Load wells"),
+                _("{count} well files were not found. Look for them in a folder?").format(count=len(lost)),
+            )
+            == QMessageBox.StandardButton.Yes
+        ):
+            self.locate_missing_dialog()
         errors = self.wells.ensure_loaded(refs, self)
         if errors:
             message = _("Some wells could not be loaded:") + "\n\n" + "\n".join(errors)
             QMessageBox.warning(self, _("Load wells"), message)
         return [self.wells.docs[r] for r in refs if r in self.wells.docs]
+
+    def locate_missing_dialog(self) -> int:
+        """Look in a folder (and its subfolders) for every missing well file of the project, by name."""
+        folder = QFileDialog.getExistingDirectory(
+            self, _("Locate missing well files"), str(self.settings.value("last_dir", str(Path.home())))
+        )
+        return self.locate_missing(folder) if folder else 0
+
+    def locate_missing(self, folder) -> int:
+        lost = [r for r in self.wells.refs if r.path is not None and not r.path.exists()]
+        found = relocate(lost, folder)
+        for ref in lost:
+            if not ref.missing:
+                self.tree.set_doc(ref, None)  # no longer shown as missing
+        if found:
+            self.dirty = True
+        self.statusBar().showMessage(
+            _("{found} of {count} missing files found.").format(found=found, count=len(lost)), 8000
+        )
+        return found
+
+    def copy_data_dialog(self) -> None:
+        """Copy every well file into the folder next to the project file."""
+        if self.project_path is None:
+            QMessageBox.information(
+                self,
+                _("Copy well files to the project folder"),
+                _("Save the project first: the files are copied to a folder next to it."),
+            )
+            if not self.save_project(ask=True) or self.project_path is None:
+                return
+        folder = data_folder(self.project_path)
+        copied, errors = self.copy_data(folder)
+        message = _("{count} files copied to {folder}.").format(count=copied, folder=folder)
+        if copied:
+            message += "\n" + _("Save the project to keep the new locations.")
+        if errors:
+            message += "\n\n" + _("Could not copy:") + "\n" + "\n".join(errors[:20])
+        QMessageBox.information(self, _("Copy well files to the project folder"), message)
+
+    def copy_data(self, folder: Path) -> tuple[int, list[str]]:
+        """Copy the project's well files into `folder` and point the wells to the copies.
+        Returns (files copied, problems)."""
+        paths = [r.path for r in self.wells.refs if r.path is not None and r.path.exists()]
+        progress = QProgressDialog(_("Copying well files…"), _("Cancel"), 0, len(paths), self)
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setMinimumDuration(500)
+
+        def on_file(i: int, n: int) -> bool:
+            progress.setValue(i)
+            return not progress.wasCanceled()
+
+        try:
+            copies, errors = copy_files(paths, folder, on_file)
+        finally:
+            progress.close()
+        for ref in self.wells.refs:
+            new = copies.get(ref.path) if ref.path is not None else None
+            if new is None:
+                continue
+            ref.path = new
+            doc = self.wells.docs.get(ref)
+            if doc is not None:
+                doc.well.path = new
+            else:
+                self.tree.set_doc(ref, None)  # tooltip with the new path
+        if copies:
+            self.dirty = True
+        return len(copies), errors
+
+    def _wants_data_copied(self) -> bool:
+        """Ask (once, if the user wants it remembered) whether Save As copies the well files too."""
+        remembered = self.settings.value("copy_data_on_save_as")
+        if remembered in ("yes", "no"):
+            return remembered == "yes"
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            _("Save project"),
+            _(
+                "Copy the well files to a folder next to the project? The project can then be moved or shared "
+                "as one folder. The original files are not touched."
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            self,
+        )
+        remember = QCheckBox(_("Remember my answer"))
+        box.setCheckBox(remember)
+        answer = box.exec() == QMessageBox.StandardButton.Yes
+        if remember.isChecked():
+            self.settings.setValue("copy_data_on_save_as", "yes" if answer else "no")
+        return answer
 
     def open_refs(self, refs: list[WellRef]) -> None:
         """Load wells if needed and show their windows."""
@@ -1025,7 +1136,9 @@ class MainWindow(QMainWindow):
 
     def open_project(self, path) -> None:
         if self._load_project_file(path):
+            changed = self.dirty
             self.session.opened(path)
+            self.dirty = changed
             self._refresh_recent()
             self._update_title()
 
@@ -1048,8 +1161,8 @@ class MainWindow(QMainWindow):
         self._close_all()
         for ref in refs:
             self.wells.add(ref)
-        self.open_refs([r for r in refs if is_open(r)])
         self.dirty = False
+        self.open_refs([r for r in refs if is_open(r)])  # may relocate missing files: a change to save
         return True
 
     def save_project(self, ask: bool = False) -> bool:
@@ -1062,6 +1175,13 @@ class MainWindow(QMainWindow):
             if not name:
                 return False
             path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
+            folder = data_folder(path).resolve()
+            outside = any(r.path is not None and r.path.parent != folder for r in self.wells.refs)
+            if outside and self._wants_data_copied():
+                _copied, errors = self.copy_data(folder)
+                if errors:
+                    message = _("Could not copy:") + "\n" + "\n".join(errors[:20])
+                    QMessageBox.warning(self, _("Save project"), message)
         try:
             self.session.save(self._project_items(), path)
         except OSError as e:

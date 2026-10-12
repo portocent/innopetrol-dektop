@@ -115,3 +115,30 @@ def test_add_a_folder_of_wells(qtbot, tmp_path, samples, monkeypatch):
     assert doc.layout.tracks and w.views[doc]
     w.session.save(w._project_items(), tmp_path / "p.ipproj")
     w.dirty = False
+
+
+def test_copy_data_and_find_moved_files(qtbot, tmp_path, samples, monkeypatch):
+    monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
+    source = tmp_path / "original"
+    source.mkdir()
+    shutil.copy(samples / "Testdata.las", source / "Testdata.las")
+    w = MainWindow(QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat))
+    qtbot.addWidget(w)
+    w.open_las([str(source / "Testdata.las")])
+    w.project_path = tmp_path / "field.ipproj"
+    w.copy_data_dialog()
+    copy = (tmp_path / "field_pozos" / "Testdata.las").resolve()
+    assert w.wells.refs[0].path == copy and w.docs[0].well.path == copy
+    assert w.save_project()
+
+    # The project folder is moved: its wells are found again in the new place
+    moved = tmp_path / "moved"
+    moved.mkdir()
+    shutil.move(tmp_path / "field_pozos", moved / "data")
+    w2 = MainWindow(QSettings(str(tmp_path / "s2.ini"), QSettings.Format.IniFormat))
+    qtbot.addWidget(w2)
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.StandardButton.Yes)
+    monkeypatch.setattr(w2, "locate_missing_dialog", lambda: w2.locate_missing(moved))
+    w2.open_project(tmp_path / "field.ipproj")  # the open well is missing: offers to look for it
+    assert [d.title for d in w2.docs] == ["Test Well 1"] and w2.dirty
+    w.dirty = w2.dirty = False

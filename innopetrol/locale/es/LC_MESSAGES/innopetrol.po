@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 14:07-0500\n"
+"POT-Creation-Date: 2026-10-12 14:10-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -352,8 +352,24 @@ msgstr "Constantes: pi, e, nan. Curvas con nombres especiales: [K-3104]"
 msgid "Coordinates:"
 msgstr "Coordenadas:"
 
+msgid "Copies the LAS/DLIS files next to the project file, so the project can be moved as one folder"
+msgstr "Copia los archivos LAS/DLIS junto al archivo del proyecto, así el proyecto se puede mover como una sola carpeta"
+
 msgid "Copy (for Excel)"
 msgstr "Copiar (para Excel)"
+
+msgid ""
+"Copy the well files to a folder next to the project? The project can then be moved or shared as one folder. The "
+"original files are not touched."
+msgstr ""
+"¿Copiar los archivos de pozo a una carpeta junto al proyecto? Así el proyecto se puede mover o compartir como una "
+"sola carpeta. Los archivos originales no se modifican."
+
+msgid "Copy well files to the project folder"
+msgstr "Copiar los archivos de pozo a la carpeta del proyecto"
+
+msgid "Copying well files…"
+msgstr "Copiando archivos de pozo…"
 
 msgid "Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; it comes with NO WARRANTY."
 msgstr ""
@@ -399,6 +415,9 @@ msgstr "Correlación"
 #, python-brace-format
 msgid "Correlation — {wells}"
 msgstr "Correlación — {wells}"
+
+msgid "Could not copy:"
+msgstr "No se pudieron copiar:"
 
 #, python-brace-format
 msgid "Could not export: {error}"
@@ -1085,6 +1104,12 @@ msgstr "Cargando pozos…"
 msgid "Loading {well}…"
 msgstr "Cargando {well}…"
 
+msgid "Locate missing well files"
+msgstr "Buscar archivos de pozo faltantes"
+
+msgid "Locate missing well files…"
+msgstr "Buscar archivos de pozo faltantes…"
+
 msgid "Location"
 msgstr "Ubicación"
 
@@ -1557,6 +1582,9 @@ msgstr "Elevación de referencia: {value} {unit}"
 msgid "Reference:"
 msgstr "Referencia:"
 
+msgid "Remember my answer"
+msgstr "Recordar mi respuesta"
+
 msgid "Remove"
 msgstr "Quitar"
 
@@ -1722,6 +1750,12 @@ msgstr "Guardar plantilla del pozo activo…"
 
 msgid "Save the current project before continuing?"
 msgstr "¿Guardar el proyecto actual antes de continuar?"
+
+msgid "Save the project first: the files are copied to a folder next to it."
+msgstr "Primero guarde el proyecto: los archivos se copian a una carpeta junto a él."
+
+msgid "Save the project to keep the new locations."
+msgstr "Guarde el proyecto para conservar las nuevas ubicaciones."
 
 msgid ""
 "Saves the inputs, InnoPetrol's results and the same equations as spreadsheet formulas, to check the calculation in "
@@ -2627,6 +2661,10 @@ msgid "{changed} of {total} samples change."
 msgstr "Cambian {changed} de {total} muestras."
 
 #, python-brace-format
+msgid "{count} files copied to {folder}."
+msgstr "{count} archivos copiados a {folder}."
+
+#, python-brace-format
 msgid "{count} intervals"
 msgstr "{count} intervalos"
 
@@ -2669,6 +2707,10 @@ msgstr[0] "{count} valor igual a un marcador de nulo común (-999, -9999…) se 
 msgstr[1] "{count} valores iguales a marcadores de nulo comunes (-999, -9999…) se trataron como faltantes"
 
 #, python-brace-format
+msgid "{count} well files were not found. Look for them in a folder?"
+msgstr "No se encontraron {count} archivos de pozo. ¿Buscarlos en una carpeta?"
+
+#, python-brace-format
 msgid "{count} were already in the project."
 msgstr "{count} ya estaban en el proyecto."
 
@@ -2695,6 +2737,10 @@ msgstr "{curve} — no disponible"
 #, python-brace-format
 msgid "{file}: {count} samples between {top} and {base}. Check the columns to import."
 msgstr "{file}: {count} muestras entre {top} y {base}. Marque las columnas a importar."
+
+#, python-brace-format
+msgid "{found} of {count} missing files found."
+msgstr "Se encontraron {found} de {count} archivos faltantes."
 
 #, python-brace-format
 msgid "{modifier} + wheel or trackpad pinch: continuous zoom at the cursor"

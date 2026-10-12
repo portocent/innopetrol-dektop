@@ -115,7 +115,11 @@ Items marked **[checked]** were verified in the code.
   autosave every 2 minutes with crash recovery, error log and error dialog; base map with surface
   locations and survey trajectories, picking correlation sections; multi-well crossplots and
   histograms. Code signing and notarization need paid certificates: see `docs/DISTRIBUTION.md`.
-  Still open: projects with hundreds of wells (lazy loading, filters), copying data into the project.
+  Projects with hundreds of wells and data in the project: done afterwards (Scale).
+- **Scale (done):** project catalog (wells in the project, loaded, shown), project format v2 with well
+  summaries, on-demand loading, tree search and "with the curve…" filter, multi-selection, adding a
+  folder of wells, copying the well files next to the project and relocating missing files. Measured
+  with 500 real LAS files: the project opens in 0.05 s (18 s loading every well).
 
 ## Next
 
@@ -128,8 +132,10 @@ Pending items, grouped. Each one keeps the rules in [ARCHITECTURE.md](ARCHITECTU
 - Error bars for core points; horizontal zoom; picking tops by clicking in a single-well window.
 
 **Data and scale**
-- Projects with hundreds of wells: filterable well list, lazy loading, curve search.
-- Option to copy the data into the project (today projects reference file paths).
+- Done: projects with hundreds of wells (summaries, lazy loading, search and curve filter, adding a
+  folder) and copying the data next to the project, with relocation of missing files.
+- Multi-well tools listing every well of the project (today they use the loaded ones); a faster
+  header reader for adding thousands of files.
 - LAS 3.0, several runs per file, CSV/ASCII import with column and unit mapping.
 - Array curves from DLIS (images, NMR T2).
 
@@ -156,3 +162,4 @@ Pending items, grouped. Each one keeps the rules in [ARCHITECTURE.md](ARCHITECTU
 | 3 | Curve units · undo/redo · zone parameters · Simandoux/Indonesia · temperature-corrected Rw · graphical parameter picking **(done)** | Interpretation becomes trustworthy and correctable |
 | 4 | Wrap-around · color-map fill · lithology track · log header · click-to-pick tops **(done)** | Professional presentation quality |
 | 5 | Signing/notarization and installers · editable aliases · autosave · base map · multi-well **(done, signing pending certificates)** | Deployment and scale |
+| 6 | Project catalog · lazy loading · well search and curve filter · data copied next to the project **(done)** | Real projects have hundreds of wells |

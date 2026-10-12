@@ -56,6 +56,10 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 **Archivos**
 - Plantillas en JSON (`.ipt.json`): se aplican a otros pozos aunque usen otros mnemónicos. Plantilla por defecto configurable.
 - Proyectos (`.ipproj`): pozos, layouts, topes, parámetros y curvas calculadas (guardadas como fórmulas).
+  **Cientos de pozos por proyecto**: los pozos se listan desde un resumen y se cargan sólo cuando se
+  usan (un proyecto de 500 pozos abre en una fracción de segundo); se puede agregar una carpeta entera;
+  búsqueda por nombre, UWI, campo o compañía y filtro por curva; copia de los archivos de pozo a una
+  carpeta junto al proyecto, y búsqueda de archivos movidos.
 - **Autoguardado y recuperación**: el trabajo sin guardar se guarda cada 2 minutos y se ofrece recuperarlo
   tras un cierre inesperado. Los errores quedan en un archivo de registro y se informan sin cerrar el programa.
 - **Alias de mnemónicos** editables por el usuario (Plantilla ▸ Alias de mnemónicos…), que se importan y

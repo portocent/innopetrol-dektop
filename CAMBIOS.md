@@ -615,6 +615,31 @@ proyecto 0,07 s y volver a abrirlo 0,2 s.
 1498 pozos eran 2 millones de pasos (0,7 s). Ahora lleva la cuenta de los ocultos al aplicar el
 filtro, así contar no cuesta nada.
 
+**Los datos dentro del proyecto.** Un proyecto guardaba sólo rutas a los LAS: si se movían, el pozo
+no cargaba. Ahora:
+- *Archivo ▸ Copiar los archivos de pozo a la carpeta del proyecto* copia cada LAS/DLIS a
+  `proyecto_pozos/`, junto a `proyecto.ipproj`, sin tocar los originales. Los nombres repetidos se
+  numeran (`pozo.las`, `pozo_2.las`) y un DLIS con varios marcos se copia una sola vez. Así el
+  proyecto se mueve o se comparte como una sola carpeta.
+- *Guardar proyecto como…* pregunta si copiar los datos (con "Recordar mi respuesta").
+- *Archivo ▸ Buscar archivos de pozo faltantes…*: busca por nombre de archivo en una carpeta y sus
+  subcarpetas, y reubica **todos** los faltantes que encuentre, no sólo uno. Al abrir un pozo cuyo
+  archivo no está, se ofrece buscarlo. Mientras tanto el pozo sigue en el proyecto, en rojo, con sus
+  topes, intervalos y curvas calculadas intactos.
+
+*Decisión de diseño:* la carpeta se llama siempre `_pozos`, no se traduce. Así un proyecto encuentra
+sus datos aunque se abra con la interfaz en otro idioma.
+
+**Medición de escala** (`tools/realdata.py --scale 500` y `tests/test_scale.py`, marcador `realdata`):
+
+| 500 LAS de Kansas | Tiempo |
+|---|---|
+| Leer los encabezados | 7,1 s |
+| Guardar el proyecto | 0,02 s |
+| Abrir el proyecto en la ventana | **0,05 s** |
+| Filtrar el árbol | 0,001 s |
+| Cargar todos los pozos (lo que se hacía antes) | 18,3 s |
+
 **Selección múltiple** (Ctrl/Shift + clic): abrir, cargar, correlacionar, descargar o quitar varios pozos
 a la vez. Correlacionar carga antes los que falten.
 

@@ -9,6 +9,8 @@ read only when a well is opened or used by a tool.
 from __future__ import annotations
 
 import logging
+import shutil
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -173,3 +175,65 @@ def refs_from_file(path: str | Path) -> list[WellRef]:
         WellRef(path, source, summary, entry={"name": summary.name, "source": source, "open": False})
         for source, summary in summaries_from_file(path)
     ]
+
+
+# The well files of a project can be copied next to it: "field.ipproj" + "field_pozos/". The folder name
+# is fixed (not translated) so a project finds its data whatever the interface language.
+DATA_FOLDER_SUFFIX = "_pozos"
+
+
+def data_folder(project_path: str | Path) -> Path:
+    project_path = Path(project_path)
+    return project_path.with_name(project_path.stem + DATA_FOLDER_SUFFIX)
+
+
+def copy_files(
+    paths: list[Path], folder: Path, on_file: Callable[[int, int], bool] | None = None
+) -> tuple[dict[Path, Path], list[str]]:
+    """Copy files into `folder` without touching the originals. Returns ({original: copy}, problems).
+
+    Files already inside the folder are left where they are; a file listed twice (a DLIS with several
+    frames) is copied once; name clashes get a number (well.las, well_2.las). `on_file(i, n)` is
+    called before each file and can return False to stop.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    folder = folder.resolve()
+    unique = list(dict.fromkeys(p.resolve() for p in paths))
+    copies: dict[Path, Path] = {}
+    errors: list[str] = []
+    for i, source in enumerate(unique):
+        if on_file is not None and not on_file(i, len(unique)):
+            break
+        if source.parent == folder:
+            continue
+        target = folder / source.name
+        n = 2
+        while target.exists():
+            target = folder / f"{source.stem}_{n}{source.suffix}"
+            n += 1
+        try:
+            shutil.copy2(source, target)
+        except OSError as e:
+            errors.append(f"{source.name}: {e}")
+            continue
+        copies[source] = target
+    return copies, errors
+
+
+def relocate(refs: list[WellRef], folder: str | Path) -> int:
+    """Point the wells whose file is missing to a file of the same name found in `folder` (or its
+    subfolders). Returns how many were found."""
+    lost = [r for r in refs if r.path is not None and not r.path.exists()]
+    if not lost:
+        return 0
+    found: dict[str, Path] = {}
+    for p in Path(folder).rglob("*"):
+        if p.is_file():
+            found.setdefault(p.name.lower(), p.resolve())
+    count = 0
+    for ref in lost:
+        new = found.get(ref.path.name.lower()) if ref.path is not None else None
+        if new is not None:
+            ref.path, ref.missing = new, False
+            count += 1
+    return count

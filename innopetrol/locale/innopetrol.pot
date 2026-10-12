@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 14:07-0500\n"
+"POT-Creation-Date: 2026-10-12 14:10-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -346,7 +346,21 @@ msgstr ""
 msgid "Coordinates:"
 msgstr ""
 
+msgid "Copies the LAS/DLIS files next to the project file, so the project can be moved as one folder"
+msgstr ""
+
 msgid "Copy (for Excel)"
+msgstr ""
+
+msgid ""
+"Copy the well files to a folder next to the project? The project can then be moved or shared as "
+"one folder. The original files are not touched."
+msgstr ""
+
+msgid "Copy well files to the project folder"
+msgstr ""
+
+msgid "Copying well files…"
 msgstr ""
 
 msgid ""
@@ -392,6 +406,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Correlation — {wells}"
+msgstr ""
+
+msgid "Could not copy:"
 msgstr ""
 
 #, python-brace-format
@@ -1073,6 +1090,12 @@ msgstr ""
 msgid "Loading {well}…"
 msgstr ""
 
+msgid "Locate missing well files"
+msgstr ""
+
+msgid "Locate missing well files…"
+msgstr ""
+
 msgid "Location"
 msgstr ""
 
@@ -1537,6 +1560,9 @@ msgstr ""
 msgid "Reference:"
 msgstr ""
 
+msgid "Remember my answer"
+msgstr ""
+
 msgid "Remove"
 msgstr ""
 
@@ -1699,6 +1725,12 @@ msgid "Save template of the active well…"
 msgstr ""
 
 msgid "Save the current project before continuing?"
+msgstr ""
+
+msgid "Save the project first: the files are copied to a folder next to it."
+msgstr ""
+
+msgid "Save the project to keep the new locations."
 msgstr ""
 
 msgid ""
@@ -2595,6 +2627,10 @@ msgid "{changed} of {total} samples change."
 msgstr ""
 
 #, python-brace-format
+msgid "{count} files copied to {folder}."
+msgstr ""
+
+#, python-brace-format
 msgid "{count} intervals"
 msgstr ""
 
@@ -2637,6 +2673,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #, python-brace-format
+msgid "{count} well files were not found. Look for them in a folder?"
+msgstr ""
+
+#, python-brace-format
 msgid "{count} were already in the project."
 msgstr ""
 
@@ -2662,6 +2702,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "{file}: {count} samples between {top} and {base}. Check the columns to import."
+msgstr ""
+
+#, python-brace-format
+msgid "{found} of {count} missing files found."
 msgstr ""
 
 #, python-brace-format

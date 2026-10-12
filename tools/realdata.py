@@ -3,6 +3,7 @@
     uv run python tools/realdata.py                     # Kansas Geological Survey LAS archive (downloaded once)
     uv run python tools/realdata.py --folder PATH       # your own files (Volve, company data…)
     uv run python tools/realdata.py --limit 200         # only the first N files
+    uv run python tools/realdata.py --scale 500         # time a project with N wells (no per-file checks)
 
 For each file: load it, build the automatic layout, draw part of it and, when the well has gamma ray and
 density, compute the petrophysics. The report (CSV, one row per file) lists failures, corrections made
@@ -196,17 +197,62 @@ def summary(results: list[FileResult]) -> str:
     return "\n".join(lines)
 
 
+def scale_benchmark(files: list[Path], folder: Path) -> dict[str, float]:
+    """Seconds taken by a project with these wells: reading the headers, saving the project, opening
+    it in the main window (nothing loaded), filtering the tree, and loading every well (as before
+    projects kept wells unloaded)."""
+    from PySide6.QtCore import QSettings
+    from PySide6.QtWidgets import QApplication
+
+    from innopetrol.model.catalog import refs_from_file
+    from innopetrol.model.project import load_project, save_project
+    from innopetrol.ui.main_window import MainWindow
+
+    _app = QApplication.instance() or QApplication([])
+    times: dict[str, float] = {}
+    t = time.perf_counter()
+    refs = [ref for f in files for ref in refs_from_file(f)]
+    times["headers"] = time.perf_counter() - t
+    project = folder / "scale.ipproj"
+    t = time.perf_counter()
+    save_project(project, refs)
+    times["save"] = time.perf_counter() - t
+    window = MainWindow(QSettings(str(folder / "scale.ini"), QSettings.Format.IniFormat))
+    t = time.perf_counter()
+    window.open_project(project)
+    times["open"] = time.perf_counter() - t
+    t = time.perf_counter()
+    window.tree.set_filter("", "density")
+    window.tree.set_filter("", "")
+    times["filter"] = (time.perf_counter() - t) / 2
+    window.dirty = False
+    window.close()
+    t = time.perf_counter()
+    load_project(project)
+    times["load_all"] = time.perf_counter() - t
+    return times
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--folder", type=Path, help="folder with your own LAS/DLIS files")
     parser.add_argument("--limit", type=int, default=0, help="only the first N files")
     parser.add_argument("--report", type=Path, default=Path("realdata-report.csv"))
+    parser.add_argument("--scale", type=int, default=0, help="time a project with the first N files")
     args = parser.parse_args()
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     folder = args.folder or kgs_corpus()
     files = well_files(folder)
     if args.limit:
         files = files[: args.limit]
+    if args.scale:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            times = scale_benchmark(files[: args.scale], Path(tmp))
+        for name, seconds in times.items():
+            print(f"{name:10} {seconds:8.3f} s")
+        return 0
     print(f"Checking {len(files)} files from {folder}", flush=True)
     results = run(files, args.report)
     print(summary(results))

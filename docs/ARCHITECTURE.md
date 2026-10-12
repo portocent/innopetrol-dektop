@@ -45,7 +45,12 @@ A project can hold hundreds of wells, so a well has three states:
 3. **Shown:** it also has a window (`MainWindow.views`). Closing the window keeps the well loaded.
 
 `MainWindow.docs` are the loaded wells. Projects store each well's summary and whether its window was
-open; opening a project loads only those wells.
+open; opening a project loads only those wells. A well added from a folder (`refs_from_file`) has no
+layout until it is first loaded, when it gets the default template.
+
+Well files can be copied next to the project (`catalog.copy_files` into `data_folder`, named
+`<project>_pozos/` in any language) and found again by file name when moved (`catalog.relocate`).
+Paths in a `WellRef` are kept resolved, so finding duplicates is a plain comparison.
 
 ### Invariants
 

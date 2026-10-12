@@ -4,7 +4,7 @@ import json
 import math
 import shutil
 
-from innopetrol.model.catalog import WellRef, WellSummary, summaries_from_file
+from innopetrol.model.catalog import WellRef, WellSummary, copy_files, data_folder, relocate, summaries_from_file
 from innopetrol.model.mnemonics import build_triple_combo
 from innopetrol.model.project import WellEntry, is_open, load_ref, read_project, save_project
 from innopetrol.model.tops import Top
@@ -65,3 +65,30 @@ def test_missing_file_is_marked(tmp_path):
     assert ref.missing and ref.name == "Gone"
     errors: list[str] = []
     assert load_ref(ref, errors) is None and errors
+
+
+def test_copy_files_into_the_project_folder(tmp_path, samples):
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir(), b.mkdir()
+    shutil.copy(samples / "Testdata.las", a / "well.las")
+    shutil.copy(samples / "TotalDepthPrueba.las", b / "well.las")  # same name, different file
+    folder = data_folder(tmp_path / "field.ipproj")
+    assert folder.name == "field_pozos"
+    copies, errors = copy_files([a / "well.las", b / "well.las", a / "well.las"], folder)
+    assert not errors and len(copies) == 2  # listed twice (DLIS frames): copied once
+    assert sorted(p.name for p in folder.iterdir()) == ["well.las", "well_2.las"]
+    assert (a / "well.las").exists() and (b / "well.las").exists()  # originals untouched
+    again, _ = copy_files(list(copies.values()), folder)
+    assert again == {}  # already inside
+
+
+def test_relocate_missing_files(tmp_path, samples):
+    refs = [
+        WellRef(tmp_path / "old" / "Testdata.las", None, WellSummary("A")),
+        WellRef(tmp_path / "old" / "gone.las", None, WellSummary("B")),
+    ]
+    new = tmp_path / "new" / "deep"
+    new.mkdir(parents=True)
+    shutil.copy(samples / "Testdata.las", new / "TESTDATA.LAS")  # names compared ignoring case
+    assert relocate(refs, tmp_path / "new") == 1
+    assert refs[0].path == (new / "TESTDATA.LAS").resolve() and refs[1].path == tmp_path / "old" / "gone.las"
