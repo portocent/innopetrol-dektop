@@ -10,10 +10,15 @@ from pathlib import Path
 import lasio
 import numpy as np
 
-from innopetrol.i18n import _
+from innopetrol.i18n import _, ngettext
 from innopetrol.model.tops import Top
 
 FEET_UNITS = {"F", "FT", "FEET", "FOOT", "FT.", "FEET."}
+# Missing-value markers found in real files even when the header declares a different NULL.
+# Only negative markers: 999 or 9999 can be valid depths or readings.
+NULL_MARKERS = (-999.0, -999.25, -999.99, -9999.0, -9999.25)
+# Values that LAS 1.2 writers put in the WELL value field when the real name is in the description.
+_GENERIC_WELL_NAMES = {"", "WELL", "WELL NAME", "WELLNAME", "NAME"}
 
 
 @dataclass
@@ -55,13 +60,17 @@ class Well:
     header: list[HeaderItem] = field(default_factory=list)
     curves: dict[str, Curve] = field(default_factory=dict)
     tops: list[Top] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)  # data fixes made while loading, shown to the user
 
     @classmethod
     def from_las(cls, path: str | Path) -> Well:
         path = Path(path)
         # lasio logs a warning when it switches engines for WRAP=YES files; that is not an error.
         logging.getLogger("lasio").setLevel(logging.ERROR)
-        las = lasio.read(str(path), encoding=detect_encoding(path), ignore_header_errors=True)
+        # "strict": only the NULL declared in the header. lasio's broader policies also treat 9999.25
+        # as null, which would delete real depths in deep wells; other markers are handled below.
+        las = lasio.read(str(path), encoding=detect_encoding(path), ignore_header_errors=True,
+                         null_policy="strict")
         if not las.curves:
             raise ValueError(_("the file contains no curves"))
         depth = np.asarray(las.index, dtype=float)
@@ -76,20 +85,18 @@ class Well:
         header = [
             HeaderItem(i.mnemonic, i.unit or "", str(i.value), i.descr or "") for i in las.well
         ]
-        name = str(las.well["WELL"].value).strip() if "WELL" in las.well else ""
+        name = _well_name(las)
         curves = {}
         for c in las.curves[1:]:
             mnem = _unique(c.mnemonic.strip() or "CURVE", curves)
             curves[mnem] = Curve(mnem, (c.unit or "").strip(), (c.descr or "").strip(),
                                  np.asarray(c.data, dtype=float))
-
-        # Drawing assumes increasing depth; some LAS files are written bottom-up.
-        if depth[0] > depth[-1]:
-            depth = depth[::-1].copy()
-            for c in curves.values():
-                c.values = c.values[::-1].copy()
+        depth, notes = _clean_samples(depth, curves)
+        if depth.size < 2:
+            raise ValueError(_("the file contains no data"))
 
         return cls(
+            notes=notes,
             name=name or path.stem,
             path=path,
             depth=depth,
@@ -193,6 +200,58 @@ def detect_encoding(path: str | Path) -> str:
         except UnicodeDecodeError:
             continue
     return "latin-1"  # decodes any byte
+
+
+def _clean_samples(depth: np.ndarray, curves: dict[str, Curve]) -> tuple[np.ndarray, list[str]]:
+    """Fixes common problems of real LAS files. Returns the clean depth and notes for the user.
+
+    Drawing, interpolation and zone statistics assume strictly increasing depth with no gaps
+    in the depth column itself, so rows are filtered, sorted and de-duplicated here.
+    """
+    notes = []
+    markers = 0
+    for c in curves.values():
+        bad = np.isin(c.values, NULL_MARKERS)
+        if bad.any():
+            markers += int(bad.sum())
+            c.values = np.where(bad, np.nan, c.values)
+    if markers:
+        notes.append(ngettext("{count} value equal to a common null marker (-999, -9999…) was treated as missing",
+                              "{count} values equal to common null markers (-999, -9999…) were treated as missing",
+                              markers).format(count=markers))
+
+    keep = np.isfinite(depth) & ~np.isin(depth, NULL_MARKERS)
+    if not keep.all():
+        removed = int((~keep).sum())
+        notes.append(ngettext("{count} row with a null depth was removed", "{count} rows with a null depth were removed",
+                              removed).format(count=removed))
+    order = np.flatnonzero(keep)
+    if depth[order].size > 1 and np.any(np.diff(depth[order]) < 0):
+        increasing = depth[order[0]] < depth[order[-1]]
+        order = order[np.argsort(depth[order], kind="stable")]
+        if increasing:  # only partly out of order: worth telling (bottom-up files are normal)
+            notes.append(_("depth was not always increasing; samples were sorted by depth"))
+    sorted_depth = depth[order]
+    unique = np.concatenate(([True], np.diff(sorted_depth) > 0)) if sorted_depth.size else sorted_depth.astype(bool)
+    if not unique.all():
+        repeated = int((~unique).sum())
+        notes.append(ngettext("{count} sample with a repeated depth was removed (the first one is kept)",
+                              "{count} samples with a repeated depth were removed (the first one is kept)",
+                              repeated).format(count=repeated))
+    order = order[unique]
+    for c in curves.values():
+        c.values = c.values[order].copy()
+    return depth[order].copy(), notes
+
+
+def _well_name(las) -> str:
+    if "WELL" not in las.well:
+        return ""
+    item = las.well["WELL"]
+    for candidate in (str(item.value).strip(), str(item.descr or "").strip()):
+        if candidate.upper() not in _GENERIC_WELL_NAMES:
+            return candidate
+    return ""
 
 
 def _unique(name: str, existing: dict) -> str:

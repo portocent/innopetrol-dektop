@@ -118,3 +118,11 @@ samples/     archivos LAS de ejemplo
 Para agregar un idioma, ver la sección *Adding a language* del [README en inglés](README.md#adding-a-language).
 
 Para la historia del proyecto y qué cambió respecto de la versión de 2020, ver [CAMBIOS.md](CAMBIOS.md).
+
+## Licencia
+
+InnoPetrol es software libre: se puede redistribuir y modificar bajo los términos de la
+**Licencia Pública General Reducida de GNU (LGPL), versión 3 o posterior** (ver
+[COPYING.LESSER](COPYING.LESSER) y [COPYING](COPYING)). Se distribuye SIN NINGUNA GARANTÍA.
+
+Componentes de terceros: Qt for Python / PySide6 (LGPLv3), lasio (MIT), NumPy (BSD).

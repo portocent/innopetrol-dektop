@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 21:26-0500\n"
+"POT-Creation-Date: 2026-10-11 21:58-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -185,6 +185,17 @@ msgstr "Constantes: pi, e, nan. Curvas con nombres especiales: [K-3104]"
 msgid "Copy (for Excel)"
 msgstr "Copiar (para Excel)"
 
+msgid ""
+"Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; it "
+"comes with NO WARRANTY."
+msgstr ""
+"Copyright © 2020-2026 Jacobo Porto. Software libre bajo la GNU LGPL, versión 3 o posterior; se "
+"distribuye SIN NINGUNA GARANTÍA."
+
+#, python-brace-format
+msgid "Corrections on load ({count})"
+msgstr "Correcciones al cargar ({count})"
+
 msgid "Correlation"
 msgstr "Correlación"
 
@@ -263,6 +274,9 @@ msgstr "Guiones"
 
 msgid "Data"
 msgstr "Datos"
+
+msgid "Data corrected on load"
+msgstr "Datos corregidos al cargar"
 
 msgid "Data table"
 msgstr "Tabla de datos"
@@ -911,6 +925,9 @@ msgstr "Continua"
 msgid "Some items could not be loaded:"
 msgstr "Algunos elementos no se pudieron cargar:"
 
+msgid "Some problems in the files were corrected:"
+msgstr "Se corrigieron algunos problemas en los archivos:"
+
 msgid "Sonic"
 msgstr "Sónico"
 
@@ -1006,6 +1023,9 @@ msgstr "Use un nombre con letras, números o _."
 
 msgid "Use the active well's layout as the default template"
 msgstr "Usar el layout del pozo activo como plantilla por defecto"
+
+msgid "Uses Qt for Python (PySide6, LGPLv3), lasio (MIT) and NumPy (BSD)."
+msgstr "Usa Qt for Python (PySide6, LGPLv3), lasio (MIT) y NumPy (BSD)."
 
 #, python-brace-format
 msgid "Valid samples: {valid} of {total}"
@@ -1157,6 +1177,9 @@ msgstr "no se pudo leer el proyecto: {error}"
 msgid "could not save the image"
 msgstr "no se pudo guardar la imagen"
 
+msgid "depth was not always increasing; samples were sorted by depth"
+msgstr "la profundidad no siempre era creciente; las muestras se ordenaron por profundidad"
+
 #, python-brace-format
 msgid "element not allowed in the expression: {element}"
 msgstr "elemento no permitido en la expresión: {element}"
@@ -1257,6 +1280,24 @@ msgstr "uso: curve(\"NOMBRE\")"
 #, python-brace-format
 msgid "{count} points"
 msgstr "{count} puntos"
+
+#, python-brace-format
+msgid "{count} row with a null depth was removed"
+msgid_plural "{count} rows with a null depth were removed"
+msgstr[0] "se eliminó {count} fila con profundidad nula"
+msgstr[1] "se eliminaron {count} filas con profundidad nula"
+
+#, python-brace-format
+msgid "{count} sample with a repeated depth was removed (the first one is kept)"
+msgid_plural "{count} samples with a repeated depth were removed (the first one is kept)"
+msgstr[0] "se eliminó {count} muestra con profundidad repetida (se conserva la primera)"
+msgstr[1] "se eliminaron {count} muestras con profundidad repetida (se conserva la primera)"
+
+#, python-brace-format
+msgid "{count} value equal to a common null marker (-999, -9999…) was treated as missing"
+msgid_plural "{count} values equal to common null markers (-999, -9999…) were treated as missing"
+msgstr[0] "{count} valor igual a un marcador de nulo común (-999, -9999…) se trató como faltante"
+msgstr[1] "{count} valores iguales a marcadores de nulo comunes (-999, -9999…) se trataron como faltantes"
 
 #, python-brace-format
 msgid "{curve} (not available)"

@@ -132,3 +132,11 @@ samples/     example LAS files
 
 The project's history and what changed from the 2020 version are described (in Spanish) in
 [CAMBIOS.md](CAMBIOS.md).
+
+## License
+
+InnoPetrol is free software: you can redistribute it and/or modify it under the terms of the
+**GNU Lesser General Public License, version 3 or later** (see [COPYING.LESSER](COPYING.LESSER) and
+[COPYING](COPYING)). It is distributed WITHOUT ANY WARRANTY.
+
+Third-party components: Qt for Python / PySide6 (LGPLv3), lasio (MIT), NumPy (BSD).

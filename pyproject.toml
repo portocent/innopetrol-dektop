@@ -4,6 +4,8 @@ version = "2.0.0"
 description = "Visor de registros de pozo (LAS) para ingenieros de petróleo"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
+license-files = ["COPYING", "COPYING.LESSER"]
 authors = [{ name = "Jacobo Porto" }]
 # pyside6-essentials: sólo los módulos de Qt que se usan (el paquete pyside6 completo pesa ~1 GB).
 dependencies = [

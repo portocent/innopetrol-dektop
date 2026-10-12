@@ -428,7 +428,7 @@ class MainWindow(QMainWindow):
             self.open_las(paths)
 
     def open_las(self, paths):
-        errors, opened = [], []
+        errors, opened, corrected = [], [], []
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             for path in paths:
@@ -445,12 +445,18 @@ class MainWindow(QMainWindow):
                     self.statusBar().showMessage(
                         _("{well}: the default template uses curves that are not in the well: {curves}").format(
                             well=doc.title, curves=", ".join(missing)), 8000)
+                if well.notes:
+                    corrected.append(f"{doc.title}: " + "; ".join(well.notes))
         finally:
             QApplication.restoreOverrideCursor()
         if errors:
             QMessageBox.warning(self, _("Open LAS"), _("Could not open:") + "\n\n" + "\n".join(errors))
         if opened and not errors:
             self.statusBar().showMessage(_("Loaded: {wells}").format(wells=", ".join(opened)), 5000)
+        if corrected:
+            # Engineers must know when their data was altered on load.
+            QMessageBox.information(self, _("Data corrected on load"),
+                                    _("Some problems in the files were corrected:") + "\n\n" + "\n".join(corrected))
 
     def _default_layout(self, well) -> tuple[LogLayout, list[str]]:
         text = self.settings.value("default_template_json")
@@ -828,4 +834,8 @@ class MainWindow(QMainWindow):
             _("Well log visualization (LAS format) for petroleum engineers: configurable tracks, linear and "
               "logarithmic scales, fills, tops, basic petrophysics, crossplots, well correlation and export "
               "to PDF/PNG/LAS."),
-            _("Original project 2020 · rewritten with Python {version} and PySide6.").format(version=version)))
+            _("Original project 2020 · rewritten with Python {version} and PySide6.").format(version=version))
+            + "<p>{}</p><p>{}</p>".format(
+                _("Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; "
+                  "it comes with NO WARRANTY."),
+                _("Uses Qt for Python (PySide6, LGPLv3), lasio (MIT) and NumPy (BSD).")))

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 21:26-0500\n"
+"POT-Creation-Date: 2026-10-11 21:58-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -182,6 +182,15 @@ msgstr ""
 msgid "Copy (for Excel)"
 msgstr ""
 
+msgid ""
+"Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; it "
+"comes with NO WARRANTY."
+msgstr ""
+
+#, python-brace-format
+msgid "Corrections on load ({count})"
+msgstr ""
+
 msgid "Correlation"
 msgstr ""
 
@@ -259,6 +268,9 @@ msgid "Dashed"
 msgstr ""
 
 msgid "Data"
+msgstr ""
+
+msgid "Data corrected on load"
 msgstr ""
 
 msgid "Data table"
@@ -904,6 +916,9 @@ msgstr ""
 msgid "Some items could not be loaded:"
 msgstr ""
 
+msgid "Some problems in the files were corrected:"
+msgstr ""
+
 msgid "Sonic"
 msgstr ""
 
@@ -998,6 +1013,9 @@ msgid "Use a name made of letters, digits or _."
 msgstr ""
 
 msgid "Use the active well's layout as the default template"
+msgstr ""
+
+msgid "Uses Qt for Python (PySide6, LGPLv3), lasio (MIT) and NumPy (BSD)."
 msgstr ""
 
 #, python-brace-format
@@ -1145,6 +1163,9 @@ msgstr ""
 msgid "could not save the image"
 msgstr ""
 
+msgid "depth was not always increasing; samples were sorted by depth"
+msgstr ""
+
 #, python-brace-format
 msgid "element not allowed in the expression: {element}"
 msgstr ""
@@ -1245,6 +1266,24 @@ msgstr ""
 #, python-brace-format
 msgid "{count} points"
 msgstr ""
+
+#, python-brace-format
+msgid "{count} row with a null depth was removed"
+msgid_plural "{count} rows with a null depth were removed"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{count} sample with a repeated depth was removed (the first one is kept)"
+msgid_plural "{count} samples with a repeated depth were removed (the first one is kept)"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{count} value equal to a common null marker (-999, -9999…) was treated as missing"
+msgid_plural "{count} values equal to common null markers (-999, -9999…) were treated as missing"
+msgstr[0] ""
+msgstr[1] ""
 
 #, python-brace-format
 msgid "{curve} (not available)"

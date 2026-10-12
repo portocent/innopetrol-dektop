@@ -27,6 +27,9 @@ def main() -> None:
         "--icon", str(ROOT / "innopetrol" / "statics" / "images" / "logo-08.png"),
         "--add-data", f"{ROOT / 'innopetrol' / 'statics'}:innopetrol/statics",
         "--add-data", f"{ROOT / 'innopetrol' / 'locale'}:innopetrol/locale",  # interface translations
+        # The LGPL requires shipping the licence texts with every copy.
+        "--add-data", f"{ROOT / 'COPYING'}:.",
+        "--add-data", f"{ROOT / 'COPYING.LESSER'}:.",
         "--distpath", str(ROOT / "dist"),
         "--workpath", str(ROOT / "build"),
         "--specpath", str(ROOT / "build"),

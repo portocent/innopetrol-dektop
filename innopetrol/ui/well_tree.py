@@ -96,6 +96,11 @@ class WellTree(QTreeWidget):
         item.setToolTip(0, str(w.path) if w.path else doc.title)
 
         info = QTreeWidgetItem(item, [_("Well information")])
+        if w.notes:
+            fixes = QTreeWidgetItem(info, [_("Corrections on load ({count})").format(count=len(w.notes))])
+            fixes.setForeground(0, QBrush(QColor("#b9770e")))
+            for note in w.notes:
+                QTreeWidgetItem(fixes, [note])
         QTreeWidgetItem(info, [_("Interval: {start} – {stop} {unit} (step {step})").format(
             start=f"{w.start:g}", stop=f"{w.stop:g}", unit=w.depth_unit, step=f"{w.step:g}")])
         for h in w.header:
