@@ -36,6 +36,7 @@ Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python w
 - **Parameters by zone** (between formation tops): clean/shale GR, matrix and fluid density, Rw, a, m, n, Rsh and cutoffs.
 - **Rw at formation temperature** (Arps) from a geothermal gradient on TVD or a temperature curve.
 - **Graphical parameter picking**: clean/shale GR dragging lines on the histogram, Rw dragging the water line on a Pickett plot (or fitted to the wettest clean points), for the whole well or one zone.
+- **Results you can check**: every equation with its bibliographic reference (Help ▸ Equations and references, and a “?” next to each method); a **verification workbook** (.xlsx) that recomputes Vsh, φ and Sw with spreadsheet formulas next to InnoPetrol's values; a **quality report** after computing (Sw above 1 before limiting, negative porosity, impossible densities…, per zone).
 - **Undo / redo** (Ctrl+Z / Ctrl+Shift+Z) for track, template, tops, survey, curve and petrophysics changes, one history per well.
 - Zone summary: gross, net reservoir and net pay thickness, N/G, average φ, Sw and Vsh (copy to Excel or CSV).
 - Curve calculator with expressions (`(2.65 - RHOB) / 1.65`, `where(GR > 75, 1, 0)`) evaluated safely (no `eval`).
@@ -117,6 +118,8 @@ stay smooth on modest hardware too.
 uv sync && uv run pre-commit install
 uv run pytest            # tests (offscreen)
 uv run ruff check && uv run ruff format --check && uv run mypy
+uv run pytest -m realdata             # ~1500 real LAS files from the Kansas Geological Survey (downloaded once)
+uv run python tools/realdata.py --folder PATH   # the same check on your own LAS/DLIS files
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the conventions and step-by-step recipes (new curve family,

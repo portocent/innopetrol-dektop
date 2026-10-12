@@ -139,9 +139,11 @@ Pending items, grouped. Each one keeps the rules in [ARCHITECTURE.md](ARCHITECTU
 - GR normalization across wells (the multi-well histogram already shows when it is needed).
 
 **Trust and distribution**
-- Real public data (Volve, Kansas Geological Survey) in the tests, benchmarked against a reference
-  spreadsheet or commercial software.
-- Equations with their references shown inside the application.
+- Done: corpus of 1498 real LAS files (Kansas Geological Survey) checked weekly in CI; reference
+  cases worked out by hand; verification workbook checked with an independent spreadsheet engine;
+  equations with references in the application; quality report after computing.
+- Still open: compare a full interpretation of a public well (Volve 15/9-19 A, which needs
+  registration) with a commercial package; DLIS files from a real archive.
 - Code signing and notarization (needs certificates; see [DISTRIBUTION.md](DISTRIBUTION.md)).
 
 ## Recommended order

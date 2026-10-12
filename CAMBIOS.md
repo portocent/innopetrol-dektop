@@ -439,6 +439,62 @@ leían. Quedó corregido, con una prueba.
 - **Números en las fórmulas:** las constantes petrofísicas (0,083 de Larionov, 21,5 de Arps) se dejaron
   escritas en las fórmulas. Ponerles nombre las haría más difíciles de comparar con la bibliografía.
 
+### 3.8 Confianza en los números
+
+Un ingeniero adopta una herramienta cuando puede confiar en sus resultados. Hasta ahora las pruebas
+comparaban las fórmulas con funciones escritas por el mismo programa, y eso es circular: si las dos se
+equivocan igual, nadie se entera. Ahora hay cuatro controles independientes.
+
+**1. Archivos reales.**
+- *Herramienta:* `tools/realdata.py` descarga una vez el archivo de LAS públicos del Kansas Geological
+  Survey (1498 pozos reales) y con cada uno hace todo el recorrido: lo carga, arma el layout, lo dibuja y
+  calcula la petrofísica.
+- *Resultado de la primera corrida:* fallaron 68 archivos.
+  - **`-1.#IO` y `-1.#IND`:** así escriben un valor inválido los programas de Windows; ahora se leen
+    como dato faltante.
+  - **Neutrón en cuentas API:** en registros viejos de Kansas el neutrón viene en cuentas API, no en
+    porosidad. El layout intentaba aplicarle la escala de porosidad y fallaba. Además, la petrofísica lo
+    habría tomado como porosidad sin avisar: ahora una curva cuya unidad es de otro tipo no se usa en el
+    cálculo.
+  - **Unidades y nombres que el programa no reconocía:** `POR`, que en esos archivos es porosidad en
+    %, `DEN`, `DECP`, `BARN`… y mnemónicos como GKUT, NEUT, ENPH, RILM o RHOC.
+- *Hoy:* los 1498 pasan. Cada problema encontrado quedó como una prueba con un archivo sintético, porque
+  los datos de terceros nunca se guardan en el repositorio. Una CI semanal vuelve a correr el corpus.
+
+**2. Casos calculables a mano.** `tests/test_reference_cases.py` tiene resultados que cualquiera puede
+verificar con una calculadora:
+- Archie clásico: Sw = 0,25;
+- Larionov con IGR = 0,5: 0,1997 y 0,33;
+- porosidad en los extremos (matriz pura y agua);
+- Arps: 0,0395 ohm·m a 200 °F;
+- un cuarto de circunferencia en el survey: TVD = R.
+
+Al escribir estas pruebas, un valor que yo había calculado mal a mano (0,2984 en lugar de 0,2221) hizo
+fallar la prueba. Es exactamente para eso que sirven.
+
+**3. Planilla de verificación (Excel).** Desde el diálogo de petrofísica, "Planilla de verificación"
+guarda un .xlsx con, por cada muestra:
+- las entradas en las unidades que usan las ecuaciones, y los parámetros de su zona;
+- las mismas ecuaciones escritas como **fórmulas de Excel**;
+- el resultado de InnoPetrol y la diferencia entre ambos.
+
+Si un ingeniero cambia un parámetro en la planilla, las fórmulas se recalculan. Se eligió .xlsx y no CSV
+porque las fórmulas de un .xlsx se guardan en notación inglesa y Excel las muestra en el idioma del
+usuario; un CSV con fórmulas se rompe en un Excel en español (separador `;`, `RAIZ` en vez de `SQRT`).
+Las pruebas evalúan esas fórmulas con **pycel**, un motor de planillas que no tiene nada que ver con
+InnoPetrol, y coinciden con InnoPetrol hasta 1e-9 en tres configuraciones: Archie; Simandoux con zonas
+y gradiente; Indonesia con curva de temperatura.
+
+**4. Ecuaciones a la vista y control de calidad.**
+- *Ecuaciones:* Ayuda ▸ Ecuaciones y referencias muestra cada ecuación con sus variables, cuándo vale y
+  su referencia (Archie 1942, Simandoux 1963, Poupon y Leveaux 1971, Arps 1953, Taylor y Mason 1972…).
+  En el diálogo de petrofísica, un "?" junto a cada método muestra la ecuación elegida, y el árbol del
+  pozo indica de dónde sale cada curva calculada.
+- *Control de calidad:* después de calcular, el programa informa por zona lo que conviene revisar. Por
+  ejemplo, "Sw mayor que 1 en el 42% de la zona B antes de limitar: Rw o m pueden ser demasiado altos".
+  Para eso evalúa la misma fórmula sin el recorte final, así que no hay una segunda implementación que
+  se pueda desincronizar.
+
 ## 4. Arquitectura
 
 ```

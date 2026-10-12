@@ -77,6 +77,8 @@ Never break these.
 | `model/calculator.py` | Safe expression evaluator (AST, closed list of operations; no `eval`). |
 | `model/petro.py` | Petrophysics as formulas, built in ordered steps; zone parameters; zone summary. |
 | `model/petro_layout.py` | Result tracks and where to place them. |
+| `model/equations.py` | Every equation with its variables, validity and bibliographic reference (shown in the program). |
+| `model/workbook.py` | Excel output: tables and the verification workbook (the equations as spreadsheet formulas). |
 | `model/layout.py`, `template.py`, `project.py` | Layout dataclasses and their JSON files. |
 | `render/painter.py` | Drawing of track bodies and headers (curves, backup scales, fills, color maps, volumes, tops). |
 | `render/export.py` | PNG and paginated PDF with the log heading. |
@@ -84,6 +86,18 @@ Never break these.
 | `ui/session.py` | Project file, unsaved changes, recent files, autosave and recovery (no widgets). |
 | `ui/log_canvas.py` | Interactive log with tile cache and adaptive previews. |
 | `ui/document.py` | `WellDocument`: state of an open well, signals, undo. |
+
+## Validation
+
+- **Reference cases:** `tests/test_reference_cases.py` holds results worked out by hand from the
+  published equations.
+- **Independent recalculation:** `tests/test_workbook.py` evaluates the verification workbook's formulas
+  with pycel, a spreadsheet engine independent of InnoPetrol.
+- **Real files:** `tests/test_realdata.py` and `tools/realdata.py` run the program over ~1500 real LAS
+  files.
+- **No third-party data in the repository:** real files are downloaded to `~/.cache/innopetrol`, or
+  read from a folder you choose. Every problem found in them becomes a small synthetic test in
+  `tests/test_las_quirks.py`.
 
 ## Performance-critical code
 

@@ -36,6 +36,7 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 - **Parámetros por zona** (entre topes): GR limpio/arcilla, densidad de matriz y fluido, Rw, a, m, n, Rsh y cortes.
 - **Rw a temperatura de formación** (Arps) con gradiente geotérmico sobre TVD o con una curva de temperatura.
 - **Elección gráfica de parámetros**: GR limpio/arcilla arrastrando líneas sobre el histograma y Rw arrastrando la línea de agua en el gráfico de Pickett (o ajustándola a los puntos limpios más húmedos), para todo el pozo o una zona.
+- **Resultados verificables**: cada ecuación con su referencia bibliográfica (Ayuda ▸ Ecuaciones y referencias, y un «?» junto a cada método); una **planilla de verificación** (.xlsx) que recalcula Vsh, φ y Sw con fórmulas de planilla al lado de los valores de InnoPetrol; un **reporte de calidad** después de calcular (Sw mayor que 1 antes de limitar, porosidad negativa, densidades imposibles…, por zona).
 - **Deshacer / rehacer** (Ctrl+Z / Ctrl+Shift+Z) en cambios de tracks, plantillas, topes, survey, curvas y petrofísica, con un historial por pozo.
 - Resumen por zonas: espesor bruto, neto de reservorio, neto de pago, N/G, φ, Sw y Vsh promedio (copiar a Excel o CSV).
 - Calculadora de curvas con expresiones (`(2.65 - RHOB) / 1.65`, `where(GR > 75, 1, 0)`) evaluadas de forma segura.
@@ -119,6 +120,8 @@ lo ya dibujado, así que se mantienen fluidos también en equipos modestos.
 uv sync && uv run pre-commit install
 uv run pytest            # pruebas (sin abrir ventanas)
 uv run ruff check && uv run ruff format --check && uv run mypy
+uv run pytest -m realdata             # ~1500 LAS reales del Kansas Geological Survey (se descargan una vez)
+uv run python tools/realdata.py --folder RUTA   # la misma revisión sobre sus propios LAS/DLIS
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) (en inglés) explica las convenciones y trae recetas paso a paso: nueva
