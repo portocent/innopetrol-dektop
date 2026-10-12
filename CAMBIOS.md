@@ -153,6 +153,34 @@ Tres causas y tres soluciones:
 El crossplot dibuja los puntos agrupados en 32 niveles de color (una llamada por nivel en lugar de una por
 punto). Una prueba automática verifica que mover el cursor no vuelva a dibujar tiles.
 
+### 3.2 Windows, Linux y equipos de menor potencia
+
+**Compatibilidad**
+- *Codificación de texto.* Muchos LAS de compañías latinoamericanas vienen en Windows-1252
+  ("Compañía") y otros en UTF-8. Sin la librería `chardet`, lasio probaba Windows-1252 primero y un
+  archivo UTF-8 se leía como "CompaÃ±Ã­a". Ahora se prueba UTF-8, luego Windows-1252 y luego Latin-1
+  (`model/well.py::detect_encoding`).
+- *Escritura.* En Windows, Python abre los archivos en cp1252 por defecto: exportar un LAS con "φ" en
+  una descripción fallaba. Ahora siempre se escribe en UTF-8, y los CSV llevan BOM para que Excel en
+  Windows muestre bien los acentos.
+- *Extensiones.* `POZO.LAS` o `PROYECTO.IPPROJ` se reconocen sin importar mayúsculas (Windows no las distingue).
+- *Sin consola.* El lanzador se declara como `gui-scripts`: en Windows no aparece una ventana negra.
+- *Escalado de pantalla.* Se verificó que no aparezcan costuras entre tiles con escalas de 125 %, 150 % y 175 %.
+
+**Equipos lentos.** Con el CPU limitado a ~4 veces más lento (núcleos de eficiencia en modo de baja
+prioridad), cursor y desplazamiento seguían fluidos, pero redimensionar la ventana (85 ms), arrastrar el
+borde de un track (77 ms) y el zoom (37 ms) se sentían trabados. Ahora el canvas **mide su propio costo de
+dibujo**. Si una pantalla completa cuesta más de 30 ms, durante el gesto muestra los tiles anteriores
+estirados (zoom, redimensionar) o una línea guía (arrastre), con 1–6 ms por cuadro, y dibuja con calidad
+completa 160 ms después de que el gesto termina. En máquinas rápidas no cambia nada.
+
+**Instalación más liviana.** `pyside6-essentials` en lugar de `pyside6` (350 MB en lugar de 1,2 GB en macOS;
+sólo se usan QtCore, QtGui y QtWidgets) y sin pandas, que sólo se usaba para escribir el CSV.
+
+**Ejecutables.** `packaging/build.py` genera con PyInstaller un ejecutable que no necesita Python
+(~85 MB). GitHub Actions corre las pruebas en Windows, Linux y macOS y construye el ejecutable de cada
+uno. Además lo arranca con `--smoke-test`, que abre un LAS, dibuja y sale con código 0 si todo funcionó.
+
 ## 4. Arquitectura
 
 ```

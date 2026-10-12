@@ -39,7 +39,28 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 
 ## Instalación y uso
 
-Requiere [uv](https://docs.astral.sh/uv/) (instala Python y las dependencias automáticamente):
+Funciona en **Windows 10/11**, **Linux** (distribuciones con glibc 2.28 o más nueva: Ubuntu 20.04+,
+Debian 11+, RHEL/Rocky 8+) y **macOS 12+**. No necesita tarjeta gráfica dedicada.
+
+### Ejecutable (sin instalar Python)
+
+En la pestaña **Actions** del repositorio en GitHub, cada versión genera un `.zip` por sistema
+(`InnoPetrol-Windows`, `InnoPetrol-Linux`, `InnoPetrol-macOS`). Descomprimir y ejecutar
+`InnoPetrol.exe` (Windows), `InnoPetrol/InnoPetrol` (Linux) o `InnoPetrol.app` (macOS).
+
+En Windows, la primera vez SmartScreen puede advertir que el programa no está firmado:
+«Más información» ▸ «Ejecutar de todas formas».
+
+Para generarlo a mano en la máquina de destino:
+
+```bash
+uv sync --group build
+uv run --group build python packaging/build.py     # resultado en dist/
+```
+
+### Desde el código fuente
+
+Requiere [uv](https://docs.astral.sh/uv/), que instala Python y las dependencias automáticamente:
 
 ```bash
 uv sync
@@ -47,7 +68,23 @@ uv run innopetrol                          # abre la aplicación
 uv run innopetrol samples/Testdata.las     # abre directamente uno o más LAS
 ```
 
+En Windows (PowerShell) se instala uv con `irm https://astral.sh/uv/install.ps1 | iex`.
+
+En Linux, Qt necesita algunas librerías del sistema que suelen estar instaladas en escritorios;
+en una instalación mínima de Ubuntu/Debian:
+
+```bash
+sudo apt install libegl1 libgl1 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libfontconfig1 libdbus-1-3
+```
+
 También se pueden arrastrar archivos `.las` o `.ipproj` a la ventana. En `samples/` hay cuatro pozos de ejemplo.
+
+### Equipos de menor potencia
+
+La aplicación mide cuánto tarda en dibujar en cada máquina. Si un dibujo completo es lento, durante el
+zoom, el cambio de tamaño de la ventana o el arrastre del borde de un track muestra una vista previa
+liviana y dibuja con calidad completa al terminar el gesto. Mover el cursor y desplazarse reutilizan
+lo ya dibujado, así que se mantienen fluidos también en equipos modestos.
 
 ## Pruebas
 
@@ -55,7 +92,9 @@ También se pueden arrastrar archivos `.las` o `.ipproj` a la ventana. En `sampl
 uv run pytest
 ```
 
-Las pruebas de interfaz corren sin abrir ventanas (modo *offscreen*).
+Las pruebas de interfaz corren sin abrir ventanas (modo *offscreen*). GitHub Actions las ejecuta en
+Windows, Linux y macOS en cada cambio, y además construye y prueba el ejecutable de cada sistema
+(`.github/workflows/ci.yml`).
 
 ## Estructura
 
@@ -66,6 +105,7 @@ innopetrol/
   render/    dibujo con QPainter, compartido por la pantalla y la exportación PDF/PNG
   ui/        ventanas y diálogos PySide6
 tests/       pruebas automáticas (pytest + pytest-qt)
+packaging/   construcción del ejecutable con PyInstaller
 samples/     archivos LAS de ejemplo
 ```
 

@@ -17,3 +17,6 @@ build/
 .idea/
 .vscode/
 .DS_Store
+
+# Empaquetado
+packaging/*.spec
