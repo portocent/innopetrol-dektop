@@ -6,30 +6,10 @@ import math
 
 import numpy as np
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen
+from PySide6.QtGui import QFontMetricsF, QPainter, QPen
 
-from innopetrol.model.scales import log_grid_positions, map_values
+from innopetrol.model.scales import log_grid_positions, map_value, map_values
 from innopetrol.render.painter import BORDER, GRID_MAJOR, GRID_MINOR, fmt
-
-VIRIDIS = ["#440154", "#482878", "#3e4989", "#31688e", "#26828e", "#1f9e89", "#35b779", "#6ece58", "#b5de2b", "#fde725"]
-
-
-def colormap(t: np.ndarray) -> list[QColor]:
-    stops = [QColor(c) for c in VIRIDIS]
-    out = []
-    for v in np.clip(np.nan_to_num(t, nan=0.0), 0, 1):
-        x = v * (len(stops) - 1)
-        i = min(int(x), len(stops) - 2)
-        f = x - i
-        a, b = stops[i], stops[i + 1]
-        out.append(
-            QColor(
-                int(a.red() + (b.red() - a.red()) * f),
-                int(a.green() + (b.green() - a.green()) * f),
-                int(a.blue() + (b.blue() - a.blue()) * f),
-            )
-        )
-    return out
 
 
 def linear_ticks(lo: float, hi: float, n: int = 6) -> list[float]:
@@ -50,6 +30,10 @@ class Axis:
 
     def map(self, values, length: float) -> np.ndarray:
         return map_values(values, self.lo, self.hi, self.log, length)
+
+    def map_one(self, value: float, length: float) -> float:
+        """Position of a single value along the axis (NaN outside a log axis' domain)."""
+        return map_value(value, self.lo, self.hi, self.log, length)
 
     def value_at(self, pos: float, length: float) -> float:
         """Inverse of map(): the value at a position along the axis (0 = lo, length = hi)."""
@@ -82,14 +66,14 @@ def draw_axes(p: QPainter, r: QRectF, xa: Axis, ya: Axis) -> None:
     for axis, horizontal in ((xa, True), (ya, False)):
         for v, major in axis.ticks():
             if horizontal:
-                x = r.left() + float(axis.map(np.array([v]), r.width())[0])
+                x = r.left() + axis.map_one(v, r.width())
                 p.setPen(QPen(GRID_MAJOR if major else GRID_MINOR, 0.8))
                 p.drawLine(QPointF(x, r.top()), QPointF(x, r.bottom()))
                 if major:
                     p.setPen(BORDER)
                     p.drawText(QRectF(x - 40, r.bottom() + 2, 80, fm.height()), Qt.AlignHCenter, fmt(v))
             else:
-                y = r.bottom() - float(axis.map(np.array([v]), r.height())[0])
+                y = r.bottom() - axis.map_one(v, r.height())
                 p.setPen(QPen(GRID_MAJOR if major else GRID_MINOR, 0.8))
                 p.drawLine(QPointF(r.left(), y), QPointF(r.right(), y))
                 if major:

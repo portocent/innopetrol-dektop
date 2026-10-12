@@ -79,10 +79,6 @@ class WellView(QWidget):
 
     # ------------------------------------------------------------------ track actions
 
-    @property
-    def selected_track(self) -> int:
-        return self.canvas.selected
-
     def edit_track(self, index: int | None = None):
         from innopetrol.ui.track_editor import TrackEditor
 

@@ -21,7 +21,6 @@ from innopetrol.resources import app_icon
 from innopetrol.ui.plotting import linear_ticks
 
 PICK_PX = 10
-MARGIN = 40
 SELECTED = QColor("#e67e22")
 
 

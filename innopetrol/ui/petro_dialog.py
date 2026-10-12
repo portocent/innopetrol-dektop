@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
-    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QGridLayout,
@@ -43,15 +42,7 @@ from innopetrol.model.tops import Zone, zones_from_tops
 from innopetrol.model.well import Curve
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
-
-
-def _spin(value, lo, hi, step=0.01, decimals=3):
-    s = QDoubleSpinBox()
-    s.setRange(lo, hi)
-    s.setDecimals(decimals)
-    s.setSingleStep(step)
-    s.setValue(value)
-    return s
+from innopetrol.ui.widgets import parse_float, spin
 
 
 def _curve_combo(doc: WellDocument, current: str | None, optional=True) -> QComboBox:
@@ -86,8 +77,8 @@ class PetroDialog(QDialog):
         g1 = QGroupBox(_("Shale volume (Vsh) from gamma ray"))
         f1 = QFormLayout(g1)
         self.gr = _curve_combo(doc, p.gr_curve)
-        self.gr_clean = _spin(p.gr_clean, -1000, 10000, 1, 1)
-        self.gr_shale = _spin(p.gr_shale, -1000, 10000, 1, 1)
+        self.gr_clean = spin(p.gr_clean, -1000, 10000, 1, 1)
+        self.gr_shale = spin(p.gr_shale, -1000, 10000, 1, 1)
         self.vsh_method = QComboBox()
         for k, v in petro.VSH_METHODS.items():
             self.vsh_method.addItem(_(v), k)
@@ -109,8 +100,8 @@ class PetroDialog(QDialog):
         f2 = QFormLayout(g2)
         self.rhob = _curve_combo(doc, p.rhob_curve)
         self.nphi = _curve_combo(doc, p.nphi_curve)
-        self.rho_ma = _spin(p.rho_ma, 1, 4)
-        self.rho_fl = _spin(p.rho_fl, 0.5, 1.5)
+        self.rho_ma = spin(p.rho_ma, 1, 4)
+        self.rho_fl = spin(p.rho_fl, 0.5, 1.5)
         self.phi_method = QComboBox()
         for k, v in petro.PHI_METHODS.items():
             self.phi_method.addItem(_(v), k)
@@ -145,20 +136,20 @@ class PetroDialog(QDialog):
                 "correct for it using Vsh and the shale resistivity Rsh."
             )
         )
-        self.rw = _spin(p.rw, 0.001, 100, 0.005, 4)
-        self.a = _spin(p.a, 0.1, 5)
-        self.m = _spin(p.m, 1, 4)
-        self.n = _spin(p.n, 1, 4)
-        self.rsh = _spin(p.rsh, 0.01, 1000, 0.1, 3)
+        self.rw = spin(p.rw, 0.001, 100, 0.005, 4)
+        self.a = spin(p.a, 0.1, 5)
+        self.m = spin(p.m, 1, 4)
+        self.n = spin(p.n, 1, 4)
+        self.rsh = spin(p.rsh, 0.01, 1000, 0.1, 3)
         f3.addWidget(QLabel(_("Resistivity Rt:")), 0, 0)
         f3.addWidget(self.rt, 0, 1, 1, 9)
         f3.addWidget(QLabel(_("Model:")), 1, 0)
         f3.addWidget(self.sw_model, 1, 1, 1, 9)
-        for i, (lbl, spin) in enumerate(
+        for i, (lbl, box) in enumerate(
             (("Rw", self.rw), ("a", self.a), ("m", self.m), ("n", self.n), ("Rsh", self.rsh))
         ):
             f3.addWidget(QLabel(lbl), 2, i * 2)
-            f3.addWidget(spin, 2, i * 2 + 1)
+            f3.addWidget(box, 2, i * 2 + 1)
         pick_rw = QPushButton(_("Pick Rw on Pickett plot…"))
         pick_rw.clicked.connect(lambda: self._pick_rw(None))
         f3.addWidget(pick_rw, 3, 0, 1, 10, Qt.AlignLeft)
@@ -175,9 +166,9 @@ class PetroDialog(QDialog):
         self.temp_unit.addItem("°F", "degF")
         self.temp_unit.setCurrentIndex(max(self.temp_unit.findData(p.temp_unit), 0))
         self._temp_unit = p.temp_unit
-        self.rw_temp = _spin(p.rw_temp, -50, 500, 1, 1)
-        self.surface_temp = _spin(p.surface_temp, -50, 200, 1, 1)
-        self.gradient = _spin(p.gradient, 0, 20, 0.1, 2)
+        self.rw_temp = spin(p.rw_temp, -50, 500, 1, 1)
+        self.surface_temp = spin(p.surface_temp, -50, 200, 1, 1)
+        self.gradient = spin(p.gradient, 0, 20, 0.1, 2)
         self.temp_curve = _curve_combo(doc, p.temp_curve)
         self.gradient_label = QLabel()
         f5.addRow(_("Formation temperature:"), self.temp_mode)
@@ -233,12 +224,12 @@ class PetroDialog(QDialog):
 
         g4 = QGroupBox(_("Cutoffs (net reservoir / net pay)"))
         f4 = QHBoxLayout(g4)
-        self.vsh_cut = _spin(p.vsh_cut, 0, 1)
-        self.phi_cut = _spin(p.phi_cut, 0, 1)
-        self.sw_cut = _spin(p.sw_cut, 0, 1)
-        for lbl, spin in (("Vsh ≤", self.vsh_cut), ("φe ≥", self.phi_cut), ("Sw ≤", self.sw_cut)):
+        self.vsh_cut = spin(p.vsh_cut, 0, 1)
+        self.phi_cut = spin(p.phi_cut, 0, 1)
+        self.sw_cut = spin(p.sw_cut, 0, 1)
+        for lbl, box in (("Vsh ≤", self.vsh_cut), ("φe ≥", self.phi_cut), ("Sw ≤", self.sw_cut)):
             f4.addWidget(QLabel(lbl))
-            f4.addWidget(spin)
+            f4.addWidget(box)
         lay.addWidget(g4)
 
         self.add_track = QCheckBox(_("Add/update a “Petrophysical results” track"))
@@ -308,8 +299,8 @@ class PetroDialog(QDialog):
         new = self.temp_unit.currentData()
         old, self._temp_unit = self._temp_unit, new
         if old != new:
-            for spin in (self.rw_temp, self.surface_temp):
-                spin.setValue(float(units.convert(spin.value(), old, new)))
+            for box in (self.rw_temp, self.surface_temp):
+                box.setValue(float(units.convert(box.value(), old, new)))
             self.gradient.setValue(self.gradient.value() * (9 / 5 if new == "degF" else 5 / 9))
         self._update_enabled()
 
@@ -331,6 +322,13 @@ class PetroDialog(QDialog):
 
     def _zone_cell(self, row: int, key: str) -> QTableWidgetItem:
         return self.zone_table.item(row, list(petro.ZONE_PARAMS).index(key))
+
+    def _zone_number(self, row: int, key: str, default: float) -> float:
+        try:
+            value = parse_float(self._zone_cell(row, key).text())
+        except ValueError:
+            return default
+        return default if value is None else value
 
     def _zone_overrides(self) -> dict[str, dict[str, float]]:
         out: dict[str, dict[str, float]] = {}
@@ -377,8 +375,8 @@ class PetroDialog(QDialog):
         curve = self.doc.well.curves[mnem]
         clean, shale = self.gr_clean.value(), self.gr_shale.value()
         if row is not None:
-            clean = _float(self._zone_cell(row, "gr_clean").text(), clean)
-            shale = _float(self._zone_cell(row, "gr_shale").text(), shale)
+            clean = self._zone_number(row, "gr_clean", clean)
+            shale = self._zone_number(row, "gr_shale", shale)
         label = f"{mnem} ({curve.unit})" if curve.unit else mnem
         dlg = GrPickerDialog(curve.values[mask], clean, shale, label, name, self)
         if dlg.exec():
@@ -700,9 +698,9 @@ class ZoneSummaryDialog(QDialog):
         self.vsh = _curve_combo(doc, "VSH" if "VSH" in w.curves else find_curve(w, "vsh"))
         self.phi = _curve_combo(doc, "PHIE" if "PHIE" in w.curves else find_curve(w, "effective_porosity"))
         self.sw = _curve_combo(doc, "SW" if "SW" in w.curves else find_curve(w, "sw"))
-        self.vsh_cut = _spin(p.vsh_cut, 0, 1)
-        self.phi_cut = _spin(p.phi_cut, 0, 1)
-        self.sw_cut = _spin(p.sw_cut, 0, 1)
+        self.vsh_cut = spin(p.vsh_cut, 0, 1)
+        self.phi_cut = spin(p.phi_cut, 0, 1)
+        self.sw_cut = spin(p.sw_cut, 0, 1)
         for lbl, wdg in (
             ("Vsh", self.vsh),
             ("≤", self.vsh_cut),
@@ -836,10 +834,3 @@ def _num(v: float) -> str:
 
 def _pct(v: float) -> str:
     return "—" if not np.isfinite(v) else f"{v * 100:.0f} %"
-
-
-def _float(text: str, default: float) -> float:
-    try:
-        return float(text.strip().replace(",", "."))
-    except ValueError:
-        return default

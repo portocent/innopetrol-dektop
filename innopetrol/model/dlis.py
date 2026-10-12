@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from innopetrol.i18n import _, ngettext
-from innopetrol.model.well import Curve, HeaderItem, Well, _clean_samples, _unique, elevation_from_header
+from innopetrol.model.well import Curve, HeaderItem, Well, clean_samples, elevation_from_header, unique_mnemonic
 
 DLIS_SUFFIXES = (".dlis", ".dls")
 # Depth units seen in DLIS index channels -> (factor, unit used by the program).
@@ -138,7 +138,7 @@ def _frame_to_well(frame, base_name: str, header, path: Path, single: bool) -> W
         if values.ndim != 1:
             arrays.append(f"{ch.name} ({int(np.prod(values.shape[1:]))})")
             continue
-        mnem = _unique(ch.name, curves)
+        mnem = unique_mnemonic(ch.name, curves)
         curves[mnem] = Curve(
             mnem,
             (ch.units or "").strip(),
@@ -147,7 +147,7 @@ def _frame_to_well(frame, base_name: str, header, path: Path, single: bool) -> W
         )
     if not curves:
         return None
-    depth, notes = _clean_samples(depth, curves)
+    depth, notes = clean_samples(depth, curves)
     if depth.size < 2:
         return None
     if arrays:

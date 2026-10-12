@@ -110,9 +110,9 @@ class Well:
         name = _well_name(las)
         curves: dict[str, Curve] = {}
         for c in las.curves[1:]:
-            mnem = _unique(c.mnemonic.strip() or "CURVE", curves)
+            mnem = unique_mnemonic(c.mnemonic.strip() or "CURVE", curves)
             curves[mnem] = Curve(mnem, (c.unit or "").strip(), (c.descr or "").strip(), np.asarray(c.data, dtype=float))
-        depth, notes = _clean_samples(depth, curves)
+        depth, notes = clean_samples(depth, curves)
         if depth.size < 2:
             raise ValueError(_("the file contains no data"))
 
@@ -258,7 +258,7 @@ def detect_encoding(path: str | Path) -> str:
     return "latin-1"  # decodes any byte
 
 
-def _clean_samples(depth: np.ndarray, curves: dict[str, Curve]) -> tuple[np.ndarray, list[str]]:
+def clean_samples(depth: np.ndarray, curves: dict[str, Curve]) -> tuple[np.ndarray, list[str]]:
     """Fixes common problems of real LAS files. Returns the clean depth and notes for the user.
 
     Drawing, interpolation and zone statistics assume strictly increasing depth with no gaps
@@ -321,7 +321,7 @@ def _well_name(las) -> str:
     return ""
 
 
-def _unique(name: str, existing: dict) -> str:
+def unique_mnemonic(name: str, existing: dict) -> str:
     if name not in existing:
         return name
     n = 2

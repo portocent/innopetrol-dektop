@@ -26,12 +26,13 @@ from innopetrol.model import units
 from innopetrol.model.mnemonics import data_unit, find_curve
 from innopetrol.model.petro import PetroParams
 from innopetrol.model.scales import log_decades, nice_linear_range
+from innopetrol.render import colormaps
 from innopetrol.render.painter import BORDER, fmt, polygon_from_arrays
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.multiwell import checked_docs, color_of, values_as, well_list, zone_mask, zone_names
-from innopetrol.ui.plotting import Axis, colormap, draw_axes, plot_rect
-from innopetrol.ui.widgets import parse_float
+from innopetrol.ui.plotting import Axis, draw_axes, plot_rect
+from innopetrol.ui.widgets import fill_zone_combo, parse_float
 
 # Approximate lithology lines for a limestone-calibrated neutron: (φN, ρb) as a function of φ.
 LITHOLOGY = {
@@ -42,10 +43,6 @@ LITHOLOGY = {
 
 
 N_LEVELS = 32
-
-
-def _points(x: np.ndarray, y: np.ndarray):
-    return polygon_from_arrays(x, y)
 
 
 class CrossplotWidget(QWidget):
@@ -82,7 +79,7 @@ class CrossplotWidget(QWidget):
         px = r.left() + self.xa.map(self.x, r.width())
         py = r.bottom() - self.ya.map(self.y, r.height())
         ok = np.isfinite(px) & np.isfinite(py)
-        self._draw_points(p, px, py, ok)
+        self._drawpolygon_from_arrays(p, px, py, ok)
         self._draw_overlay(p, r)
         p.restore()
         p.setPen(BORDER)
@@ -109,7 +106,7 @@ class CrossplotWidget(QWidget):
                 fm.elidedText(name, Qt.ElideRight, r.width() - 16),
             )
 
-    def _draw_points(self, p: QPainter, px, py, ok):
+    def _drawpolygon_from_arrays(self, p: QPainter, px, py, ok):
         """Points grouped into color levels: one drawPoints call per level instead of one
         drawEllipse per point (higher levels are drawn last, so they end up on top)."""
         pen = QPen(QColor("#2e86c1"), 4.8, Qt.SolidLine, Qt.RoundCap)
@@ -121,29 +118,29 @@ class CrossplotWidget(QWidget):
                     c.setAlpha(170)
                     pen.setColor(c)
                     p.setPen(pen)
-                    p.drawPoints(_points(px[sel], py[sel]))
+                    p.drawPoints(polygon_from_arrays(px[sel], py[sel]))
             return
         if not self.c.size:
             color = QColor("#2e86c1")
             color.setAlpha(150)
             pen.setColor(color)
             p.setPen(pen)
-            p.drawPoints(_points(px[ok], py[ok]))
+            p.drawPoints(polygon_from_arrays(px[ok], py[ok]))
             return
         lo, hi = self.c_range
         t = (self.c - lo) / (hi - lo) if hi != lo else np.zeros_like(self.c)
         no_color = ok & ~np.isfinite(t)
         pen.setColor(QColor(160, 160, 160, 120))
         p.setPen(pen)
-        p.drawPoints(_points(px[no_color], py[no_color]))
+        p.drawPoints(polygon_from_arrays(px[no_color], py[no_color]))
         levels = np.clip((np.nan_to_num(t) * (N_LEVELS - 1)).round().astype(int), 0, N_LEVELS - 1)
-        palette = colormap(np.linspace(0, 1, N_LEVELS))
+        palette = colormaps.palette("viridis", N_LEVELS)
         for lvl in range(N_LEVELS):
             sel = ok & np.isfinite(t) & (levels == lvl)
             if sel.any():
                 pen.setColor(palette[lvl])
                 p.setPen(pen)
-                p.drawPoints(_points(px[sel], py[sel]))
+                p.drawPoints(polygon_from_arrays(px[sel], py[sel]))
 
     def _draw_overlay(self, p, r):
         if self.overlay == "nd":
@@ -186,8 +183,9 @@ class CrossplotWidget(QWidget):
 
     def _draw_colorbar(self, p, r, fm):
         n = 60
+        colors = colormaps.palette("viridis", n)
         for i in range(n):
-            col = colormap(np.array([1 - i / (n - 1)]))[0]
+            col = colors[n - 1 - i]
             p.fillRect(QRectF(r.left(), r.top() + r.height() * i / n, r.width(), r.height() / n + 1), col)
         p.setPen(BORDER)
         p.setBrush(Qt.NoBrush)
@@ -288,17 +286,12 @@ class CrossplotWindow(QDialog):
         self.mode.setCurrentIndex(max(self.mode.findData(mode), 0))
         self._mode_changed()
 
+    def _included(self) -> list[WellDocument]:
+        return checked_docs(self.wells) if self.wells is not None else [self.doc]
+
     def _fill_zones(self):
         """Whole well plus the zones by name: with several wells, each well uses its own tops."""
-        current = self.zone.currentData()
-        docs = checked_docs(self.wells) if self.wells is not None else [self.doc]
-        self.zone.blockSignals(True)
-        self.zone.clear()
-        self.zone.addItem(_("Whole well"), None)
-        for name in zone_names(docs):
-            self.zone.addItem(name, name)
-        self.zone.setCurrentIndex(max(self.zone.findData(current), 0))
-        self.zone.blockSignals(False)
+        fill_zone_combo(self.zone, zone_names(self._included()))
 
     def _wells_changed(self):
         names = [d.title for d in checked_docs(self.wells)]
@@ -311,7 +304,7 @@ class CrossplotWindow(QDialog):
 
     def series(self, mx: str, my: str, mc: str | None) -> list[tuple[WellDocument, np.ndarray, np.ndarray, np.ndarray]]:
         """(well, x, y, color values) of each included well, in the active well's units."""
-        docs = checked_docs(self.wells) if self.wells is not None else [self.doc]
+        docs = self._included()
         zone = self.zone.currentData()
         out = []
         for d in docs:

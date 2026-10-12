@@ -27,6 +27,7 @@ from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.multiwell import checked_docs, color_of, values_as, well_list, zone_mask, zone_names
 from innopetrol.ui.plotting import Axis, draw_axes, plot_rect
+from innopetrol.ui.widgets import fill_zone_combo
 
 # ============================================================================ histogram
 
@@ -187,16 +188,12 @@ class StatsDialog(QDialog):
         self._initial_log()
         self._update()
 
+    def _included(self) -> list[WellDocument]:
+        return checked_docs(self.wells) if self.wells is not None else [self.doc]
+
     def _fill_zones(self):
-        current = self.zone.currentData()
-        docs = checked_docs(self.wells) if self.wells is not None else [self.doc]
-        self.zone.blockSignals(True)
-        self.zone.clear()
-        self.zone.addItem(_("Whole well"), None)
-        for name in zone_names(docs):
-            self.zone.addItem(name, name)
-        self.zone.setCurrentIndex(max(self.zone.findData(current), 0))
-        self.zone.blockSignals(False)
+        """Whole well plus the zones by name: with several wells, each well uses its own tops."""
+        fill_zone_combo(self.zone, zone_names(self._included()))
 
     def _wells_changed(self):
         self._fill_zones()
@@ -216,7 +213,7 @@ class StatsDialog(QDialog):
             return
         zone = self.zone.currentData()
         curve = self.doc.view.curves[m]  # as displayed (unit chosen by the user)
-        docs = checked_docs(self.wells) if self.wells is not None else [self.doc]
+        docs = self._included()
         if len(docs) > 1:
             self._update_wells(m, curve, zone, docs)
             return

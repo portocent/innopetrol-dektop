@@ -28,7 +28,7 @@ from innopetrol.i18n import _, pgettext
 from innopetrol.model import units
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
 from innopetrol.model.mnemonics import VOLUME_LABELS
-from innopetrol.model.scales import depth_ticks, log_grid_positions, map_values
+from innopetrol.model.scales import depth_ticks, log_grid_positions, map_value, map_values
 from innopetrol.render.colormaps import LEVELS, palette
 
 PEN_STYLES = {
@@ -168,7 +168,7 @@ def _draw_vertical_grid(p, track, w, h, opts):
     if mode == "log" and ref is not None:
         left, right, _log = scale_of(ref)
         for value, decade in log_grid_positions(left, right):
-            x = float(map_values(np.array([value]), left, right, True, w)[0])
+            x = map_value(value, left, right, True, w)
             p.setPen(QPen(GRID_STRONG if decade else GRID_MAJOR, (1.0 if decade else 0.6) * opts.k))
             p.drawLine(QPointF(x, 0), QPointF(x, h))
         return
@@ -333,7 +333,7 @@ def _fill_bound(track, fill: FillSpec, side: str, well, sl, w, n):
         if style is None:
             return None
         left, right, log = scale_of(style)
-        return np.full(n, map_values(np.array([value]), left, right, log, w)[0])
+        return np.full(n, map_value(value, left, right, log, w))
     return np.full(n, 0.0 if side == "left" else w)
 
 

@@ -12,7 +12,10 @@ from innopetrol.i18n import N_
 COLORMAPS = {
     "gamma_ray": (N_("Gamma ray (yellow → brown)"), ["#fff7bc", "#fee391", "#fec44f", "#ec7014", "#993404", "#4d2600"]),
     "resistivity": (N_("Resistivity (blue → red)"), ["#2166ac", "#67a9cf", "#d1e5f0", "#fddbc7", "#ef8a62", "#b2182b"]),
-    "viridis": ("Viridis", ["#440154", "#3e4989", "#26828e", "#35b779", "#b5de2b", "#fde725"]),
+    "viridis": (
+        "Viridis",
+        ["#440154", "#482878", "#3e4989", "#31688e", "#26828e", "#1f9e89", "#35b779", "#6ece58", "#b5de2b", "#fde725"],
+    ),
     "rainbow": (N_("Rainbow"), ["#5e3c99", "#2b83ba", "#abdda4", "#ffffbf", "#fdae61", "#d7191c"]),
     "grayscale": (N_("Grayscale"), ["#f7f7f7", "#252525"]),
 }

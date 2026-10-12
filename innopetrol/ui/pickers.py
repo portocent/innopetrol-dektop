@@ -16,7 +16,6 @@ from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
-    QDoubleSpinBox,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -27,22 +26,14 @@ from PySide6.QtWidgets import (
 
 from innopetrol.i18n import _
 from innopetrol.model.scales import log_decades
+from innopetrol.render.painter import polygon_from_arrays
 from innopetrol.resources import app_icon
 from innopetrol.ui.analysis import Histogram
-from innopetrol.ui.crossplot import _points
 from innopetrol.ui.plotting import Axis, draw_axes, plot_rect
+from innopetrol.ui.widgets import spin
 
 GRAB_PX = 8  # how close to a line the mouse must be to grab it
 CLEAN_COLOR, SHALE_COLOR = "#1e8449", "#8e5a2b"
-
-
-def _spin(value, lo, hi, step, decimals) -> QDoubleSpinBox:
-    s = QDoubleSpinBox()
-    s.setRange(lo, hi)
-    s.setDecimals(decimals)
-    s.setSingleStep(step)
-    s.setValue(value)
-    return s
 
 
 # ============================================================================ GR histogram
@@ -77,7 +68,7 @@ class GrPickHistogram(Histogram):
         r, xa = self.plot_area, self.x_axis
         if xa is None:
             return None
-        x = float(xa.map(np.array([self.lines[key]]), r.width())[0])
+        x = xa.map_one(self.lines[key], r.width())
         return r.left() + x if math.isfinite(x) else None
 
     def _value(self, x: float) -> float:
@@ -140,8 +131,8 @@ class GrPickerDialog(QDialog):
         self.hist.set_data(self.values, label, False, 60, "#95a5a6")
         lay.addWidget(self.hist, 1)
         row = QHBoxLayout()
-        self.clean = _spin(clean, -1000, 10000, 1, 1)
-        self.shale = _spin(shale, -1000, 10000, 1, 1)
+        self.clean = spin(clean, -1000, 10000, 1, 1)
+        self.shale = spin(shale, -1000, 10000, 1, 1)
         row.addWidget(QLabel(_("Clean GR")))
         row.addWidget(self.clean)
         row.addWidget(QLabel(_("Shale GR")))
@@ -165,10 +156,10 @@ class GrPickerDialog(QDialog):
         self.hist.update()
 
     def _from_lines(self):
-        for spin, key in ((self.clean, "clean"), (self.shale, "shale")):
-            spin.blockSignals(True)
-            spin.setValue(self.hist.lines[key])
-            spin.blockSignals(False)
+        for box, key in ((self.clean, "clean"), (self.shale, "shale")):
+            box.blockSignals(True)
+            box.setValue(self.hist.lines[key])
+            box.blockSignals(False)
 
     def _percentiles(self):
         if self.values.size:
@@ -229,7 +220,7 @@ class PickettPicker(QWidget):
             for sel, color in ((~self.clean, "#d5d8dc"), (self.clean, "#34495e")):
                 if sel.any():
                     p.setPen(QPen(QColor(color), 2.5))
-                    p.drawPoints(_points(xs[sel], ys[sel]))
+                    p.drawPoints(polygon_from_arrays(xs[sel], ys[sel]))
         phi = np.logspace(-2, 0, 60)
         for sw, color, width in ((1.0, "#1a5276", 2.6), (0.5, "#27ae60", 1.4), (0.25, "#c0392b", 1.4)):
             rt = self.a * self.rw / (phi**self.m * sw**self.n)
@@ -273,7 +264,7 @@ class PickettPicker(QWidget):
             return False
         phi = self.ya.value_at(r.bottom() - pos.y(), r.height())
         rt = self.a * self.rw / phi**self.m
-        x = r.left() + float(self.xa.map(np.array([rt]), r.width())[0])
+        x = r.left() + self.xa.map_one(rt, r.width())
         return math.isfinite(x) and abs(x - pos.x()) <= GRAB_PX
 
     def mousePressEvent(self, e):
@@ -346,14 +337,14 @@ class PickettPickerDialog(QDialog):
         self.plot.set_rw(rw, notify=False)
         lay.addWidget(self.plot, 1)
         row = QHBoxLayout()
-        self.rw = _spin(rw, 0.001, 100, 0.005, 4)
-        self.a = _spin(a, 0.1, 5, 0.01, 3)
-        self.m = _spin(m, 1, 4, 0.05, 3)
-        self.n = _spin(n, 1, 4, 0.05, 3)
-        for text, spin in (("Rw", self.rw), ("a", self.a), ("m", self.m), ("n", self.n)):
+        self.rw = spin(rw, 0.001, 100, 0.005, 4)
+        self.a = spin(a, 0.1, 5, 0.01, 3)
+        self.m = spin(m, 1, 4, 0.05, 3)
+        self.n = spin(n, 1, 4, 0.05, 3)
+        for text, box in (("Rw", self.rw), ("a", self.a), ("m", self.m), ("n", self.n)):
             row.addWidget(QLabel(text))
-            row.addWidget(spin)
-            spin.valueChanged.connect(self._from_spins)
+            row.addWidget(box)
+            box.valueChanged.connect(self._from_spins)
         fit = QPushButton(_("Fit to the wettest points"))
         fit.clicked.connect(self._fit)
         row.addWidget(fit)

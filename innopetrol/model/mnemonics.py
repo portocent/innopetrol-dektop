@@ -158,9 +158,6 @@ FAMILIES: dict[str, Family] = {
 }
 FAMILIES = {k: dataclasses.replace(f, unit=_FAMILY_UNITS.get(k)) for k, f in FAMILIES.items()}
 
-BUILTIN_ALIAS_INDEX = {alias: fam.key for fam in FAMILIES.values() for alias in fam.aliases}
-_ALIAS_INDEX = dict(BUILTIN_ALIAS_INDEX)
-_USER_ALIASES: dict[str, list[str]] = {}
 ALIASES_FORMAT = "innopetrol-aliases"
 
 
@@ -168,25 +165,56 @@ def normalize_alias(text: str) -> str:
     return text.strip().upper()
 
 
+class AliasRegistry:
+    """Mnemonic → family lookup: the built-in aliases plus the user's (company's) own.
+
+    A user alias wins over a built-in one, so a mnemonic can also be moved to another family.
+    The program uses a single shared instance, `ALIASES`.
+    """
+
+    def __init__(self, families: dict[str, Family]):
+        self._families = families
+        self._builtin = {alias: fam.key for fam in families.values() for alias in fam.aliases}
+        self._index = dict(self._builtin)
+        self._user: dict[str, list[str]] = {}
+
+    def set_user(self, aliases: dict[str, list[str]]) -> None:
+        """Replaces the user aliases. Unknown families and empty names are ignored."""
+        clean = {
+            fam: sorted({normalize_alias(a) for a in names if normalize_alias(a)})
+            for fam, names in aliases.items()
+            if fam in self._families
+        }
+        self._user = {fam: names for fam, names in clean.items() if names}
+        self._index = dict(self._builtin)
+        for fam, names in self._user.items():
+            for alias in names:
+                self._index[alias] = fam
+
+    def user(self) -> dict[str, list[str]]:
+        return {fam: list(names) for fam, names in self._user.items()}
+
+    def family_of(self, mnemonic: str) -> str | None:
+        """Exact match first, then the part before '_', ':' or '.' (GR_EDTC → GR)."""
+        m = mnemonic.strip().upper()
+        if m in self._index:
+            return self._index[m]
+        for sep in ("_", ":", "."):
+            base = m.split(sep)[0]
+            if base and base in self._index:
+                return self._index[base]
+        return None
+
+
+ALIASES = AliasRegistry(FAMILIES)
+
+
 def set_user_aliases(aliases: dict[str, list[str]]) -> None:
-    """Adds the user's (company's) mnemonics to the families. A user alias wins over a built-in one,
-    so a mnemonic can also be moved to another family. Unknown families are ignored."""
-    global _ALIAS_INDEX, _USER_ALIASES
-    clean = {
-        fam: sorted({normalize_alias(a) for a in names if normalize_alias(a)})
-        for fam, names in aliases.items()
-        if fam in FAMILIES
-    }
-    _USER_ALIASES = {fam: names for fam, names in clean.items() if names}
-    index = dict(BUILTIN_ALIAS_INDEX)
-    for fam, names in _USER_ALIASES.items():
-        for alias in names:
-            index[alias] = fam
-    _ALIAS_INDEX = index
+    ALIASES.set_user(aliases)
 
 
 def user_aliases() -> dict[str, list[str]]:
-    return {fam: list(names) for fam, names in _USER_ALIASES.items()}
+    return ALIASES.user()
 
 
 def alias_conflicts(aliases: dict[str, list[str]]) -> list[tuple[str, list[str]]]:
@@ -215,15 +243,8 @@ def aliases_from_json(text: str) -> dict[str, list[str]]:
 
 
 def family_of(mnemonic: str) -> str | None:
-    """Family of a mnemonic: exact match first, then the part before '_' or ':'."""
-    m = mnemonic.strip().upper()
-    if m in _ALIAS_INDEX:
-        return _ALIAS_INDEX[m]
-    for sep in ("_", ":", "."):
-        base = m.split(sep)[0]
-        if base and base in _ALIAS_INDEX:
-            return _ALIAS_INDEX[base]
-    return None
+    """Family of a mnemonic (gamma_ray, density…), or None if it is not recognized."""
+    return ALIASES.family_of(mnemonic)
 
 
 def find_curve(well, family: str) -> str | None:

@@ -4,11 +4,33 @@ from __future__ import annotations
 
 from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QColor, QIcon, QPixmap
-from PySide6.QtWidgets import QColorDialog, QComboBox, QPushButton
+from PySide6.QtWidgets import QColorDialog, QComboBox, QDoubleSpinBox, QPushButton
 
 from innopetrol.i18n import _
 from innopetrol.model.layout import FILL_PATTERNS, LINE_STYLE_NAMES, LINE_STYLES
 from innopetrol.resources import icon
+
+
+def spin(value: float, lo: float, hi: float, step: float = 0.01, decimals: int = 3) -> QDoubleSpinBox:
+    """A number field with its range, step and decimals."""
+    s = QDoubleSpinBox()
+    s.setRange(lo, hi)
+    s.setDecimals(decimals)
+    s.setSingleStep(step)
+    s.setValue(value)
+    return s
+
+
+def fill_zone_combo(combo: QComboBox, zone_names: list[str]) -> None:
+    """Fills an interval selector with "Whole well" (data None) and zones by name, keeping the choice."""
+    current = combo.currentData()
+    combo.blockSignals(True)
+    combo.clear()
+    combo.addItem(_("Whole well"), None)
+    for name in zone_names:
+        combo.addItem(name, name)
+    combo.setCurrentIndex(max(combo.findData(current), 0))
+    combo.blockSignals(False)
 
 
 def parse_float(text: str) -> float | None:
