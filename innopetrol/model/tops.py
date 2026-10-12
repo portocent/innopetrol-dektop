@@ -78,7 +78,7 @@ def load_tops_csv(path: str | Path, well_name: str | None = None) -> list[Top]:
 
 
 def save_tops_csv(path: str | Path, tops: list[Top]) -> None:
-    with open(path, "w", newline="", encoding="utf-8") as f:
+    with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel en Windows
         w = csv.writer(f)
         w.writerow(["name", "depth", "color"])
         for t in sorted(tops, key=lambda t: t.depth):

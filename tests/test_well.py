@@ -41,3 +41,29 @@ def test_las_and_csv_roundtrip(testdata_well, tmp_path):
     w.to_csv(tmp_path / "out.csv", mask=w.interval_mask(8000, 8100))
     lines = (tmp_path / "out.csv").read_text().splitlines()
     assert len(lines) == 1 + 200
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig", "cp1252"])
+def test_las_encodings(samples, tmp_path, encoding):
+    """LAS con acentos en UTF-8 (con y sin BOM) y en Windows-1252 se leen sin caracteres rotos."""
+    import re
+
+    text = (samples / "TotalDepthPrueba.las").read_text(encoding="latin-1")
+    text, n = re.subn(r"(?m)^ *WELL *\..*$", " WELL.   Pozo Compañía Ñandú : Well Name", text, count=1)
+    assert n == 1
+    path = tmp_path / "acentos.las"
+    path.write_text(text, encoding=encoding)
+    assert Well.from_las(path).name == "Pozo Compañía Ñandú"
+
+
+def test_las_export_unicode(testdata_well, tmp_path):
+    w = testdata_well
+    w.add_curve(Curve("PHIX", "v/v", "Porosidad φ calculada", w.curves["RHOB"].values, formula="RHOB"))
+    w.to_las(tmp_path / "u.las")
+    back = Well.from_las(tmp_path / "u.las")
+    assert "φ" in back.curves["PHIX"].description
+
+
+def test_csv_has_bom_for_excel(testdata_well, tmp_path):
+    testdata_well.to_csv(tmp_path / "x.csv")
+    assert (tmp_path / "x.csv").read_bytes().startswith(b"\xef\xbb\xbf")

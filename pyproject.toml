@@ -5,17 +5,19 @@ description = "Visor de registros de pozo (LAS) para ingenieros de petróleo"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Jacobo Porto" }]
+# pyside6-essentials: sólo los módulos de Qt que se usan (el paquete pyside6 completo pesa ~1 GB).
 dependencies = [
-    "pyside6>=6.7",
+    "pyside6-essentials>=6.7",
     "lasio>=0.31",
     "numpy>=1.26",
-    "pandas>=2.1",
 ]
 
-[project.scripts]
+# gui-scripts: en Windows el lanzador no abre una consola negra junto a la aplicación.
+[project.gui-scripts]
 innopetrol = "innopetrol.__main__:main"
 
 [dependency-groups]
+build = ["pyinstaller>=6.10", "pillow>=10"]
 dev = [
     "pytest>=8",
     "pytest-qt>=4.4",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -59,7 +60,7 @@ class Well:
         path = Path(path)
         # lasio avisa por logging cuando cambia de motor para archivos WRAP=YES; no es un error.
         logging.getLogger("lasio").setLevel(logging.ERROR)
-        las = lasio.read(str(path), autodetect_encoding=True, ignore_header_errors=True)
+        las = lasio.read(str(path), encoding=detect_encoding(path), ignore_header_errors=True)
         if not las.curves:
             raise ValueError("el archivo no contiene curvas")
         depth = np.asarray(las.index, dtype=float)
@@ -159,15 +160,38 @@ class Well:
             descr = c.description if c.formula is None else f"{c.description} [= {c.formula}]"
             las.append_curve(c.mnemonic, c.values[sel], unit=c.unit, descr=descr)
         las.well["WELL"] = lasio.HeaderItem("WELL", "", self.name, "WELL")
-        las.write(str(path), version=2.0, fmt="%.5f")
+        # Codificación explícita: en Windows Python usaría cp1252 y fallaría con caracteres como φ.
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            las.write(f, version=2.0, fmt="%.5f")
 
     def to_csv(self, path: str | Path, mask: np.ndarray | None = None) -> None:
-        import pandas as pd
-
         sel = slice(None) if mask is None else mask
-        data = {self.depth_mnemonic: self.depth[sel]}
-        data.update({c.mnemonic: c.values[sel] for c in self.curves.values()})
-        pd.DataFrame(data).to_csv(path, index=False, float_format="%.5f")
+        names = [self.depth_mnemonic] + list(self.curves)
+        columns = np.column_stack([self.depth[sel]] + [c.values[sel] for c in self.curves.values()])
+        # utf-8-sig agrega el BOM que Excel en Windows necesita para mostrar bien los acentos.
+        with open(path, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.writer(f)
+            writer.writerow(names)
+            for row in columns:
+                writer.writerow(["" if np.isnan(v) else f"{v:.5f}" for v in row])
+
+
+def detect_encoding(path: str | Path) -> str:
+    """Codificación de un archivo de texto: UTF-8 (con o sin BOM), Windows-1252 o Latin-1.
+
+    Muchos LAS de compañías latinoamericanas vienen en Windows-1252 ("Compañía"); otros en UTF-8.
+    Sin esta detección lasio leería un UTF-8 como Windows-1252 y mostraría "CompaÃ±Ã­a".
+    """
+    raw = Path(path).read_bytes()
+    if raw.startswith(b"\xef\xbb\xbf"):
+        return "utf-8-sig"
+    for enc in ("utf-8", "cp1252"):
+        try:
+            raw.decode(enc)
+            return enc
+        except UnicodeDecodeError:
+            continue
+    return "latin-1"  # decodifica cualquier byte
 
 
 def _unique(name: str, existing: dict) -> str:
