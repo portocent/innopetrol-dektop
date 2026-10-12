@@ -72,13 +72,16 @@ class DepthTransform:
         return self.top + y / self.ppu
 
 
-@dataclass
+@dataclass(frozen=True)
 class RenderOptions:
     k: float = 1.0  # line width factor (1 on screen, dpi/96 when exporting)
     top_labels: bool = True
     draw_tops: bool = True  # the screen draws tops separately, over the cached tiles
     dpr: float = 1.0  # physical pixels per logical pixel (2 on Retina screens)
     frame_ends: bool = True  # top/bottom border of the body (tiles have none)
+
+
+DEFAULT_OPTIONS = RenderOptions()  # screen drawing; immutable, so it can be shared as a default
 
 
 def fmt(v: float | None) -> str:
@@ -123,7 +126,7 @@ def visible_slice(depth: np.ndarray, tf: DepthTransform, height: float, margin: 
 
 
 def draw_track_body(
-    p: QPainter, rect: QRectF, track: TrackSpec, well, tf: DepthTransform, opts: RenderOptions = RenderOptions()
+    p: QPainter, rect: QRectF, track: TrackSpec, well, tf: DepthTransform, opts: RenderOptions = DEFAULT_OPTIONS
 ) -> None:
     p.save()
     p.setClipRect(rect)
@@ -359,10 +362,27 @@ def _draw_fill(p, track, fill: FillSpec, well, sl, y, w, opts):
         pts = np.concatenate((xl[a:b], xr[a:b][::-1]))
         ys = np.concatenate((y[a:b], y[a:b][::-1]))
         path.addPolygon(polygon_from_arrays(pts, ys))
+    p.fillPath(path, pattern_brush(fill, opts.k))
+
+
+def pattern_brush(fill: FillSpec, k: float) -> QBrush:
+    """Brush of a solid/pattern fill; patterns are scaled with the line width factor when exporting."""
     brush = QBrush(QColor(fill.color), BRUSH_STYLES.get(fill.pattern, Qt.SolidPattern))
-    if opts.k != 1:
-        brush.setTransform(QTransform.fromScale(opts.k, opts.k))
-    p.fillPath(path, brush)
+    if k != 1:
+        brush.setTransform(QTransform.fromScale(k, k))
+    return brush
+
+
+def legend_brush(fill: FillSpec, box: QRectF, k: float) -> QBrush:
+    """Brush for a fill's legend box: its pattern, or the gradient of its color map."""
+    if not fill.colormap:
+        return pattern_brush(fill, k)
+    gradient = QLinearGradient(box.left(), 0, box.right(), 0)
+    colors = palette(fill.colormap)
+    for i in range(0, LEVELS, 6):
+        gradient.setColorAt(i / (LEVELS - 1), colors[i])
+    gradient.setColorAt(1.0, colors[-1])
+    return QBrush(gradient)
 
 
 def _rows(y: np.ndarray, opts: RenderOptions):
@@ -473,7 +493,7 @@ def draw_tops(p, tops, tf: DepthTransform, w, h, opts: RenderOptions, labels=Tru
 # ------------------------------------------------------------------------------ depth track
 
 
-def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: RenderOptions = RenderOptions()):
+def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: RenderOptions = DEFAULT_OPTIONS):
     p.save()
     p.setClipRect(rect)
     p.translate(rect.topLeft())
@@ -524,8 +544,30 @@ def backup_scale(style: CurveStyle) -> tuple[float, float]:
     return (right, right * right / left) if log else (right, right + (right - left))
 
 
+@dataclass
+class _Header:
+    """What every part of a track header needs: painter, width, text metrics and line factor."""
+
+    p: QPainter
+    w: float
+    fm: QFontMetricsF
+    k: float
+
+    @property
+    def line(self) -> float:
+        return self.fm.height()
+
+    @property
+    def pad(self) -> float:
+        return 4 * self.k
+
+    def text(self, rect: QRectF, align, text: str, width: float | None = None) -> None:
+        """Draws text, eliding it with "…" if it does not fit in `width` (default: the rect width)."""
+        self.p.drawText(rect, align, self.fm.elidedText(text, Qt.ElideRight, width or rect.width()))
+
+
 def draw_track_header(
-    p: QPainter, rect: QRectF, track: TrackSpec, well, opts: RenderOptions = RenderOptions(), selected: bool = False
+    p: QPainter, rect: QRectF, track: TrackSpec, well, opts: RenderOptions = DEFAULT_OPTIONS, selected: bool = False
 ) -> None:
     p.save()
     p.setClipRect(rect)
@@ -533,117 +575,113 @@ def draw_track_header(
     w, h = rect.width(), rect.height()
     p.fillRect(QRectF(0, 0, w, h), QColor("#eaf2f8") if selected else HEADER_BG)
     font = QFont(p.font())
-    bold = QFont(font)
-    bold.setBold(True)
-    fm = QFontMetricsF(font)
-    line = fm.height()
-    pad = 4 * opts.k
-
-    p.setFont(bold)
-    p.setPen(BORDER)
-    title = track.title or (pgettext("track title", "Depth") if track.is_depth else "")
-    p.drawText(
-        QRectF(pad, 2 * opts.k, w - 2 * pad, line),
-        Qt.AlignCenter,
-        QFontMetricsF(bold).elidedText(title, Qt.ElideRight, w - 2 * pad),
-    )
+    hd = _Header(p, w, QFontMetricsF(font), opts.k)
+    _header_title(hd, track)
     p.setFont(font)
-    y = line + 4 * opts.k
-
+    y = hd.line + 4 * opts.k
     if track.is_depth:
-        unit = _("feet (ft)") if well.depth_unit == "ft" else _("meters (m)")
-        p.drawText(QRectF(0, y, w, line), Qt.AlignCenter, well.depth_mnemonic)
-        p.drawText(QRectF(0, y + line, w, line), Qt.AlignCenter, unit)
+        _header_depth(hd, well, y)
     elif track.is_volumes:
-        for style in track.curves:
-            if not style.visible:
-                continue
-            box = QRectF(pad, y + 2 * opts.k, line * 1.6, line - 4 * opts.k)
-            p.fillRect(box, QColor(style.color))
-            p.setPen(QPen(QColor("#95a5a6"), 0.8 * opts.k))
-            p.drawRect(box)
-            curve = well.curves.get(style.mnemonic)
-            label = VOLUME_LABELS.get(style.mnemonic)
-            if curve is None:
-                name = _("{curve} — not available").format(curve=style.mnemonic)
-            else:
-                name = f"{_(label)} ({style.mnemonic})" if label else style.mnemonic
-            p.setPen(BORDER if curve else QColor("#999999"))
-            text_x = box.right() + 4 * opts.k
-            p.drawText(
-                QRectF(text_x, y, w - text_x - pad, line),
-                Qt.AlignLeft | Qt.AlignVCenter,
-                fm.elidedText(name, Qt.ElideRight, w - text_x - pad),
-            )
-            y += line + 2 * opts.k
-        p.setPen(BORDER)
-        p.drawText(QRectF(pad, y, w, line), Qt.AlignLeft | Qt.AlignVCenter, "0")
-        p.drawText(QRectF(0, y, w - pad, line), Qt.AlignRight | Qt.AlignVCenter, "1")
-        p.drawText(QRectF(0, y, w, line), Qt.AlignCenter, _("volume fraction"))
+        _header_volumes(hd, track, well, y)
     else:
         for style in track.curves:
-            if not style.visible:
-                continue
-            color = QColor(style.color)
-            curve = well.curves.get(style.mnemonic)
-            name = style.mnemonic + (f" ({curve.unit})" if curve and curve.unit else "")
-            if curve is None:
-                name = _("{curve} — not available").format(curve=name)
-                color = QColor("#999999")
-            p.setPen(color)
-            p.drawText(
-                QRectF(pad, y, w - 2 * pad, line), Qt.AlignCenter, fm.elidedText(name, Qt.ElideRight, w - 2 * pad)
-            )
-            left, right, _log = scale_of(style)
-            lt, rt = fmt(left), fmt(right)
-            p.drawText(QRectF(pad, y + line, w, line), Qt.AlignLeft | Qt.AlignVCenter, lt)
-            p.drawText(QRectF(0, y + line, w - pad, line), Qt.AlignRight | Qt.AlignVCenter, rt)
-            x0 = pad + fm.horizontalAdvance(lt) + 6 * opts.k
-            x1 = w - pad - fm.horizontalAdvance(rt) - 6 * opts.k
-            pen = QPen(color, style.width * opts.k, PEN_STYLES.get(style.style, Qt.SolidLine))
-            p.setPen(pen)
-            if x1 > x0:
-                p.drawLine(QPointF(x0, y + line * 1.5), QPointF(x1, y + line * 1.5))
-            y += 2 * line + 2 * opts.k
-            if style.wrap:
-                b_left, b_right = backup_scale(style)
-                p.setPen(color)
-                p.drawText(
-                    QRectF(pad, y - 2 * opts.k, w - 2 * pad, line),
-                    Qt.AlignCenter,
-                    fm.elidedText(
-                        _("backup {left} – {right}").format(left=fmt(b_left), right=fmt(b_right)),
-                        Qt.ElideRight,
-                        w - 2 * pad,
-                    ),
-                )
-                y += line
+            if style.visible:
+                y = _header_curve(hd, style, well, y)
         for fill in track.fills:
-            if not (fill.visible and fill.label):
-                continue
-            box = QRectF(pad, y + 1, w - 2 * pad, line - 2)
-            if fill.colormap:
-                gradient = QLinearGradient(box.left(), 0, box.right(), 0)
-                colors = palette(fill.colormap)
-                for i in range(0, LEVELS, 6):
-                    gradient.setColorAt(i / (LEVELS - 1), colors[i])
-                gradient.setColorAt(1.0, colors[-1])
-                brush = QBrush(gradient)
-            else:
-                brush = QBrush(QColor(fill.color), BRUSH_STYLES.get(fill.pattern, Qt.SolidPattern))
-                if opts.k != 1:
-                    brush.setTransform(QTransform.fromScale(opts.k, opts.k))
-            p.fillRect(box, brush)
-            p.setPen(QPen(QColor("#95a5a6"), 0.8 * opts.k))
-            p.drawRect(box)
-            tw = fm.horizontalAdvance(fill.label) + 8 * opts.k
-            label_box = QRectF(w / 2 - tw / 2, y + 1, tw, line - 2)
-            p.fillRect(label_box, QColor(255, 255, 255, 220))
-            p.setPen(BORDER)
-            p.drawText(label_box, Qt.AlignCenter, fill.label)
-            y += line
-
+            if fill.visible and fill.label:
+                y = _header_fill(hd, fill, y)
     p.setPen(QPen(BORDER, 1.2 * opts.k))
     p.setBrush(Qt.NoBrush)
     p.drawRect(QRectF(0, 0, w, h))
     p.restore()
+
+
+def _header_title(hd: _Header, track: TrackSpec) -> None:
+    bold = QFont(hd.p.font())
+    bold.setBold(True)
+    hd.p.setFont(bold)
+    hd.p.setPen(BORDER)
+    title = track.title or (pgettext("track title", "Depth") if track.is_depth else "")
+    width = hd.w - 2 * hd.pad
+    hd.p.drawText(
+        QRectF(hd.pad, 2 * hd.k, width, hd.line),
+        Qt.AlignCenter,
+        QFontMetricsF(bold).elidedText(title, Qt.ElideRight, width),
+    )
+
+
+def _header_depth(hd: _Header, well, y: float) -> None:
+    unit = _("feet (ft)") if well.depth_unit == "ft" else _("meters (m)")
+    hd.p.drawText(QRectF(0, y, hd.w, hd.line), Qt.AlignCenter, well.depth_mnemonic)
+    hd.p.drawText(QRectF(0, y + hd.line, hd.w, hd.line), Qt.AlignCenter, unit)
+
+
+def _header_volumes(hd: _Header, track: TrackSpec, well, y: float) -> None:
+    """One color box per component, then the 0–1 fraction scale."""
+    p, line, pad = hd.p, hd.line, hd.pad
+    for style in track.curves:
+        if not style.visible:
+            continue
+        box = QRectF(pad, y + 2 * hd.k, line * 1.6, line - 4 * hd.k)
+        p.fillRect(box, QColor(style.color))
+        p.setPen(QPen(QColor("#95a5a6"), 0.8 * hd.k))
+        p.drawRect(box)
+        curve = well.curves.get(style.mnemonic)
+        label = VOLUME_LABELS.get(style.mnemonic)
+        if curve is None:
+            name = _("{curve} — not available").format(curve=style.mnemonic)
+        else:
+            name = f"{_(label)} ({style.mnemonic})" if label else style.mnemonic
+        p.setPen(BORDER if curve else QColor("#999999"))
+        text_x = box.right() + 4 * hd.k
+        hd.text(QRectF(text_x, y, hd.w - text_x - pad, line), Qt.AlignLeft | Qt.AlignVCenter, name)
+        y += line + 2 * hd.k
+    p.setPen(BORDER)
+    p.drawText(QRectF(pad, y, hd.w, line), Qt.AlignLeft | Qt.AlignVCenter, "0")
+    p.drawText(QRectF(0, y, hd.w - pad, line), Qt.AlignRight | Qt.AlignVCenter, "1")
+    p.drawText(QRectF(0, y, hd.w, line), Qt.AlignCenter, _("volume fraction"))
+
+
+def _header_curve(hd: _Header, style: CurveStyle, well, y: float) -> float:
+    """Curve name and unit, its scale with a sample of the line, and the backup scale. Returns the next y."""
+    p, line, pad, w, fm = hd.p, hd.line, hd.pad, hd.w, hd.fm
+    color = QColor(style.color)
+    curve = well.curves.get(style.mnemonic)
+    name = style.mnemonic + (f" ({curve.unit})" if curve and curve.unit else "")
+    if curve is None:
+        name = _("{curve} — not available").format(curve=name)
+        color = QColor("#999999")
+    p.setPen(color)
+    hd.text(QRectF(pad, y, w - 2 * pad, line), Qt.AlignCenter, name)
+    left, right, _log = scale_of(style)
+    lt, rt = fmt(left), fmt(right)
+    p.drawText(QRectF(pad, y + line, w, line), Qt.AlignLeft | Qt.AlignVCenter, lt)
+    p.drawText(QRectF(0, y + line, w - pad, line), Qt.AlignRight | Qt.AlignVCenter, rt)
+    x0 = pad + fm.horizontalAdvance(lt) + 6 * hd.k
+    x1 = w - pad - fm.horizontalAdvance(rt) - 6 * hd.k
+    p.setPen(QPen(color, style.width * hd.k, PEN_STYLES.get(style.style, Qt.SolidLine)))
+    if x1 > x0:
+        p.drawLine(QPointF(x0, y + line * 1.5), QPointF(x1, y + line * 1.5))
+    y += 2 * line + 2 * hd.k
+    if style.wrap:
+        b_left, b_right = backup_scale(style)
+        p.setPen(color)
+        text = _("backup {left} – {right}").format(left=fmt(b_left), right=fmt(b_right))
+        hd.text(QRectF(pad, y - 2 * hd.k, w - 2 * pad, line), Qt.AlignCenter, text)
+        y += line
+    return y
+
+
+def _header_fill(hd: _Header, fill: FillSpec, y: float) -> float:
+    """Legend of a fill: a box with its pattern or gradient and the label on top. Returns the next y."""
+    p, line, pad = hd.p, hd.line, hd.pad
+    box = QRectF(pad, y + 1, hd.w - 2 * pad, line - 2)
+    p.fillRect(box, legend_brush(fill, box, hd.k))
+    p.setPen(QPen(QColor("#95a5a6"), 0.8 * hd.k))
+    p.drawRect(box)
+    tw = hd.fm.horizontalAdvance(fill.label) + 8 * hd.k
+    label_box = QRectF(hd.w / 2 - tw / 2, y + 1, tw, line - 2)
+    p.fillRect(label_box, QColor(255, 255, 255, 220))
+    p.setPen(BORDER)
+    p.drawText(label_box, Qt.AlignCenter, fill.label)
+    return y + line

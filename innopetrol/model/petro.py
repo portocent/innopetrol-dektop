@@ -217,75 +217,96 @@ def param_expr(well, p: PetroParams, key: str) -> str:
     return expr
 
 
-def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
-    """Formulas in dependency order, depending on which input curves are available."""
-    out: list[FormulaSpec] = []
-    has_vsh = has_phi = False
-    P = lambda key: param_expr(well, p, key)  # noqa: E731 - short local helper
+def _available(well, mnemonic: str | None) -> str | None:
+    """The mnemonic if the well has that curve, otherwise None."""
+    return mnemonic if mnemonic and mnemonic in well.curves else None
 
-    if p.gr_curve and p.gr_curve in well.curves:
-        clean, shale = P("gr_clean"), P("gr_shale")
-        igr = f"clip(({curve_ref(p.gr_curve)} - {clean}) / ({shale} - {clean}), 0, 1)"
+
+class _Builder:
+    """Builds the formulas of one calculation. Each step adds its curves; later steps refer to the
+    earlier results by name (VSH, PHIE, SW…), so the order of the steps is the dependency order."""
+
+    def __init__(self, well, p: PetroParams):
+        self.well, self.p = well, p
+        self.out: list[FormulaSpec] = []
+
+    def param(self, key: str) -> str:
+        return param_expr(self.well, self.p, key)
+
+    def add(self, mnemonic: str, unit: str, description: str, formula: str) -> None:
+        self.out.append(FormulaSpec(mnemonic, unit, description, formula))
+
+    def has(self, mnemonic: str) -> bool:
+        return any(f.mnemonic == mnemonic for f in self.out)
+
+    def vsh(self) -> None:
+        p = self.p
+        gr = _available(self.well, p.gr_curve)
+        if gr is None:
+            return
+        clean, shale = self.param("gr_clean"), self.param("gr_shale")
+        igr = f"clip(({curve_ref(gr)} - {clean}) / ({shale} - {clean}), 0, 1)"
         vsh = {
             "linear": igr,
             "larionov_tertiary": f"clip(0.083 * (2 ** (3.7 * {igr}) - 1), 0, 1)",
             "larionov_older": f"clip(0.33 * (2 ** (2 * {igr}) - 1), 0, 1)",
         }[p.vsh_method]
-        out.append(FormulaSpec("VSH", "v/v", _("Vsh - {method}").format(method=_(VSH_METHODS[p.vsh_method])), vsh))
-        has_vsh = True
+        self.add("VSH", "v/v", _("Vsh - {method}").format(method=_(VSH_METHODS[p.vsh_method])), vsh)
 
-    if p.rhob_curve and p.rhob_curve in well.curves:
-        rhob = input_ref(well, p.rhob_curve, "g/cm3")
-        rho_ma, rho_fl = P("rho_ma"), P("rho_fl")
+    def porosity(self) -> None:
+        p, well = self.p, self.well
+        density, neutron = _available(well, p.rhob_curve), _available(well, p.nphi_curve)
+        if density is None:
+            return
+        rhob = input_ref(well, density, "g/cm3")
+        rho_ma, rho_fl = self.param("rho_ma"), self.param("rho_fl")
         phid = f"({rho_ma} - {rhob}) / ({rho_ma} - {rho_fl})"
-        if p.phi_method != "density" and p.nphi_curve and p.nphi_curve in well.curves:
-            phin = input_ref(well, p.nphi_curve, "v/v")
-            out.append(FormulaSpec("PHID", "v/v", _("Density porosity"), f"clip({phid}, -0.15, 0.6)"))
-            if p.phi_method == "nd_average":
-                phit = f"(PHID + {phin}) / 2"
-            else:
-                phit = f"sqrt((PHID ** 2 + {phin} ** 2) / 2)"
-            method_key = p.phi_method
+        method_key = p.phi_method if neutron is not None else "density"
+        if method_key == "density" or neutron is None:
+            method_key, phit = "density", phid
         else:
-            phit = phid
-            method_key = "density"
+            phin = input_ref(well, neutron, "v/v")
+            self.add("PHID", "v/v", _("Density porosity"), f"clip({phid}, -0.15, 0.6)")
+            phit = f"(PHID + {phin}) / 2" if method_key == "nd_average" else f"sqrt((PHID ** 2 + {phin} ** 2) / 2)"
         method = _(PHI_METHODS[method_key])
-        out.append(
-            FormulaSpec("PHIT", "v/v", _("Total porosity - {method}").format(method=method), f"clip({phit}, 0, 0.6)")
-        )
-        phie = "clip(PHIT * (1 - VSH), 0, 0.6)" if has_vsh else "PHIT"
-        out.append(FormulaSpec("PHIE", "v/v", _("Effective porosity"), phie))
-        has_phi = True
+        self.add("PHIT", "v/v", _("Total porosity - {method}").format(method=method), f"clip({phit}, 0, 0.6)")
+        phie = "clip(PHIT * (1 - VSH), 0, 0.6)" if self.has("VSH") else "PHIT"
+        self.add("PHIE", "v/v", _("Effective porosity"), phie)
 
-    if has_phi and p.rt_curve and p.rt_curve in well.curves:
-        rt = curve_ref(p.rt_curve)
-        rw = P("rw")
+    def water_resistivity(self) -> str:
+        """Rw inside the Sw formula: a parameter, or the RWT curve when corrected for temperature (Arps)."""
+        p, well = self.p, self.well
         temperature = None
         if p.temp_mode == "gradient":
-            out.append(
-                FormulaSpec(
-                    "TFORM",
-                    p.temp_unit.upper(),
-                    _("Formation temperature from the geothermal gradient (TVD)"),
-                    f"{_num(p.surface_temp)} + {_num(p.gradient)} * TVD / 100",
-                )
+            self.add(
+                "TFORM",
+                p.temp_unit.upper(),
+                _("Formation temperature from the geothermal gradient (TVD)"),
+                f"{_num(p.surface_temp)} + {_num(p.gradient)} * TVD / 100",
             )
             temperature = "TFORM"
-        elif p.temp_mode == "curve" and p.temp_curve is not None and p.temp_curve in well.curves:
-            temperature = input_ref(well, p.temp_curve, p.temp_unit)
-        if temperature:
-            k = _num(ARPS_K[p.temp_unit])
-            out.append(
-                FormulaSpec(
-                    "RWT",
-                    "OHMM",
-                    _("Rw at formation temperature (Arps)"),
-                    f"{rw} * ({_num(p.rw_temp)} + {k}) / ({temperature} + {k})",
-                )
-            )
-            rw = "RWT"
-        a, m, n, rsh = P("a"), P("m"), P("n"), P("rsh")
-        model = p.sw_model if has_vsh and p.sw_model in SW_MODELS else "archie"
+        elif p.temp_mode == "curve" and (curve := _available(well, p.temp_curve)) is not None:
+            temperature = input_ref(well, curve, p.temp_unit)
+        if not temperature:
+            return self.param("rw")
+        k = _num(ARPS_K[p.temp_unit])
+        self.add(
+            "RWT",
+            "OHMM",
+            _("Rw at formation temperature (Arps)"),
+            f"{self.param('rw')} * ({_num(p.rw_temp)} + {k}) / ({temperature} + {k})",
+        )
+        return "RWT"
+
+    def saturation(self) -> None:
+        p = self.p
+        resistivity = _available(self.well, p.rt_curve)
+        if resistivity is None or not self.has("PHIE"):
+            return
+        rt = curve_ref(resistivity)
+        rw = self.water_resistivity()
+        a, m, n, rsh = self.param("a"), self.param("m"), self.param("n"), self.param("rsh")
+        model = p.sw_model if self.has("VSH") and p.sw_model in SW_MODELS else "archie"
         if model == "simandoux":
             core = (
                 f"({a} * {rw} / (2 * PHIE ** {m})) * "
@@ -299,33 +320,39 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
         else:
             core = f"(({a} * {rw}) / (PHIE ** {m} * {rt})) ** (1 / {n})"
         sw = f"where((PHIE > 0) & ({rt} > 0), clip({core}, 0, 1), nan)"
-        out.append(FormulaSpec("SW", "v/v", _("Sw - {model}").format(model=_(SW_MODELS[model])), sw))
+        self.add("SW", "v/v", _("Sw - {model}").format(model=_(SW_MODELS[model])), sw)
 
-    # Volumes for the lithology / fluids track: shale + matrix + porosity = 1, porosity split into
-    # water (BVW) and hydrocarbon (BVH).
-    if has_phi and has_vsh:
-        out.append(FormulaSpec("VMAT", "v/v", _("Matrix volume"), "clip(1 - VSH - PHIE, 0, 1)"))
-    if any(f.mnemonic == "SW" for f in out):
-        out.append(FormulaSpec("BVW", "v/v", _("Bulk volume water"), "PHIE * SW"))
-        out.append(FormulaSpec("BVH", "v/v", _("Bulk volume hydrocarbon"), "PHIE * (1 - SW)"))
+    def volumes(self) -> None:
+        """For the lithology / fluids track: shale + matrix + porosity = 1, porosity split into water
+        (BVW) and hydrocarbon (BVH)."""
+        if self.has("PHIE") and self.has("VSH"):
+            self.add("VMAT", "v/v", _("Matrix volume"), "clip(1 - VSH - PHIE, 0, 1)")
+        if self.has("SW"):
+            self.add("BVW", "v/v", _("Bulk volume water"), "PHIE * SW")
+            self.add("BVH", "v/v", _("Bulk volume hydrocarbon"), "PHIE * (1 - SW)")
 
-    if has_phi:
-        cond = f"(PHIE >= {P('phi_cut')})"
-        if has_vsh:
-            cond = f"(VSH <= {P('vsh_cut')}) & {cond}"
-        out.append(
-            FormulaSpec("RES_FLAG", "", _("Net reservoir flag"), f"where(isnan(PHIE), nan, where({cond}, 1, 0))")
-        )
-        if any(f.mnemonic == "SW" for f in out):
-            out.append(
-                FormulaSpec(
-                    "PAY_FLAG",
-                    "",
-                    _("Net pay flag"),
-                    f"where(isnan(SW), nan, where((RES_FLAG > 0) & (SW <= {P('sw_cut')}), 1, 0))",
-                )
+    def flags(self) -> None:
+        if not self.has("PHIE"):
+            return
+        cond = f"(PHIE >= {self.param('phi_cut')})"
+        if self.has("VSH"):
+            cond = f"(VSH <= {self.param('vsh_cut')}) & {cond}"
+        self.add("RES_FLAG", "", _("Net reservoir flag"), f"where(isnan(PHIE), nan, where({cond}, 1, 0))")
+        if self.has("SW"):
+            self.add(
+                "PAY_FLAG",
+                "",
+                _("Net pay flag"),
+                f"where(isnan(SW), nan, where((RES_FLAG > 0) & (SW <= {self.param('sw_cut')}), 1, 0))",
             )
-    return out
+
+
+def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
+    """Formulas in dependency order, depending on which input curves are available."""
+    b = _Builder(well, p)
+    for step in (b.vsh, b.porosity, b.saturation, b.volumes, b.flags):
+        step()
+    return b.out
 
 
 def compute(well, p: PetroParams) -> list[Curve]:
