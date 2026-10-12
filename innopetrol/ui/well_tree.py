@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QMenu, QTreeWidget, QTreeWidgetItem
 
 from innopetrol.i18n import _
 from innopetrol.model import units
+from innopetrol.model.equations import EQUATIONS, curve_equations
 from innopetrol.model.mnemonics import FAMILIES, family_of
 from innopetrol.ui.document import WellDocument
 
@@ -138,7 +139,7 @@ class WellTree(QTreeWidget):
             ci.setData(0, ROLE_NAME, m)
             if c.formula:
                 ci.setForeground(0, QBrush(QColor("#1f618d")))
-            ci.setToolTip(0, _curve_tooltip(c))
+            ci.setToolTip(0, _curve_tooltip(c, curve_equations(m, doc.petro, "VSH" in w.curves)))
 
     @staticmethod
     def _add_tops(parent: QTreeWidgetItem, doc: WellDocument) -> None:
@@ -223,7 +224,7 @@ def _curve_label(doc: WellDocument, mnemonic: str, curve) -> str:
     return label + ("  " + _("(computed)") if curve.formula else "")
 
 
-def _curve_tooltip(curve) -> str:
+def _curve_tooltip(curve, equations: tuple[str, ...] = ()) -> str:
     tip = [curve.description] if curve.description else []
     if curve.has_data:
         tip.append(
@@ -233,4 +234,6 @@ def _curve_tooltip(curve) -> str:
         )
     if curve.formula:
         tip.append(f"= {curve.formula}")
+    for key in equations:  # where the equation comes from (Help ▸ Equations and references)
+        tip.append(f"{_(EQUATIONS[key].name)} — {EQUATIONS[key].reference}")
     return "\n".join(tip)

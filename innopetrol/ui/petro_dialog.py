@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -30,12 +31,14 @@ from PySide6.QtWidgets import (
 from innopetrol.i18n import _
 from innopetrol.model import petro, units
 from innopetrol.model.calculator import CalculatorError
+from innopetrol.model.equations import TEMPERATURE_EQUATIONS
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.mnemonics import find_curve
 from innopetrol.model.petro_layout import place_tracks, results_tracks
 from innopetrol.model.tops import zones_from_tops
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
+from innopetrol.ui.equations_dialog import show_equation
 from innopetrol.ui.widgets import choice_combo, curve_combo, parse_float, row_of, spin
 
 
@@ -96,7 +99,7 @@ class PetroDialog(QDialog):
         pick_gr.clicked.connect(lambda: self._pick_gr(None))
         f1.addRow(_("GR curve:"), self.gr)
         f1.addRow(row_of(QLabel(_("Clean GR")), self.gr_clean, QLabel(_("Shale GR")), self.gr_shale, pick_gr))
-        f1.addRow(_("Method:"), self.vsh_method)
+        f1.addRow(_("Method:"), self._with_equation(self.vsh_method, lambda: (self.vsh_method.currentData(),)))
         page_lay.addWidget(g1)
 
         g2 = QGroupBox(_("Porosity"))
@@ -109,7 +112,7 @@ class PetroDialog(QDialog):
         f2.addRow(_("Density (RHOB):"), self.rhob)
         f2.addRow(_("Neutron (NPHI):"), self.nphi)
         f2.addRow(row_of(QLabel(_("ρ matrix")), self.rho_ma, QLabel(_("ρ fluid")), self.rho_fl))
-        f2.addRow(_("Method:"), self.phi_method)
+        f2.addRow(_("Method:"), self._with_equation(self.phi_method, self._porosity_equations))
         page_lay.addWidget(g2)
         page_lay.addStretch()
         return page
@@ -136,7 +139,7 @@ class PetroDialog(QDialog):
         f3.addWidget(QLabel(_("Resistivity Rt:")), 0, 0)
         f3.addWidget(self.rt, 0, 1, 1, 9)
         f3.addWidget(QLabel(_("Model:")), 1, 0)
-        f3.addWidget(self.sw_model, 1, 1, 1, 9)
+        f3.addWidget(self._with_equation(self.sw_model, lambda: (self.sw_model.currentData(),)), 1, 1, 1, 9)
         for i, (lbl, box) in enumerate(
             (("Rw", self.rw), ("a", self.a), ("m", self.m), ("n", self.n), ("Rsh", self.rsh))
         ):
@@ -164,7 +167,10 @@ class PetroDialog(QDialog):
         self.gradient = spin(p.gradient, 0, 20, 0.1, 2)
         self.temp_curve = curve_combo(self.doc.well, p.temp_curve)
         self.gradient_label = QLabel()
-        form.addRow(_("Formation temperature:"), self.temp_mode)
+        form.addRow(
+            _("Formation temperature:"),
+            self._with_equation(self.temp_mode, lambda: TEMPERATURE_EQUATIONS[self.temp_mode.currentData()]),
+        )
         form.addRow(_("Temperature unit:"), self.temp_unit)
         form.addRow(_("Rw measured at:"), self.rw_temp)
         form.addRow(_("Surface temperature:"), self.surface_temp)
@@ -211,6 +217,23 @@ class PetroDialog(QDialog):
             page_lay.addWidget(no_tops)
             page.setEnabled(False)
         return page
+
+    def _with_equation(self, combo: QComboBox, keys) -> QWidget:
+        """The combo box with a "?" button that shows the equation of the chosen method."""
+        button = QToolButton()
+        button.setText("?")
+        button.setToolTip(_("Show the equation and its reference"))
+        button.clicked.connect(lambda: show_equation(self, keys()))
+        box = QWidget()
+        row = QHBoxLayout(box)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.addWidget(combo, 1)
+        row.addWidget(button)
+        return box
+
+    def _porosity_equations(self) -> tuple[str, ...]:
+        method = self.phi_method.currentData()
+        return ("density",) if method == "density" else ("density", method)
 
     def _build_cutoffs(self, p: petro.PetroParams) -> QGroupBox:
         group = QGroupBox(_("Cutoffs (net reservoir / net pay)"))

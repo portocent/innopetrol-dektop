@@ -180,6 +180,7 @@ class MainWindow(QMainWindow):
 
         self.a_help = A(lambda: show_help(self), "F1", needs_doc=False)
         self.a_about = A(lambda: show_about(self), needs_doc=False)
+        self.a_equations = A(self.show_equations, needs_doc=False)
 
     def _build_undo_actions(self):
         self.a_undo = self._action(self.undo_group.undo, QKeySequence.StandardKey.Undo, needs_doc=False)
@@ -287,6 +288,7 @@ class MainWindow(QMainWindow):
 
         self.m_help = mb.addMenu("")
         self.m_help.addAction(self.a_help)
+        self.m_help.addAction(self.a_equations)
         self.m_help.addAction(self.a_about)
 
     def _build_toolbar(self):
@@ -389,6 +391,7 @@ class MainWindow(QMainWindow):
             self.a_tabs: (_("Show as tabs"), None, None),
             self.a_help: (_("Navigation and shortcuts"), None, None),
             self.a_about: (_("About InnoPetrol"), None, None),
+            self.a_equations: (_("Equations and references"), None, None),
         }
         for action, (text, icon_text, tip) in texts.items():
             action.setText(text)
@@ -1110,6 +1113,11 @@ class MainWindow(QMainWindow):
                     docs, setup.datum.currentData(), self, setup.tracks.currentData(), setup.reference.currentData()
                 )
             )
+
+    def show_equations(self):
+        from innopetrol.ui.equations_dialog import EquationsDialog
+
+        self._modeless(EquationsDialog(self))
 
     def _modeless(self, w):
         w.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)

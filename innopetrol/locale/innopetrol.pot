@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 12:42-0500\n"
+"POT-Creation-Date: 2026-10-12 12:45-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -61,6 +61,9 @@ msgid "(none)"
 msgstr ""
 
 msgid "+ Track"
+msgstr ""
+
+msgid "21.5 for °C, 6.77 for °F"
 msgstr ""
 
 msgid "<b>Pickett</b> (Sw lines)"
@@ -298,6 +301,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Corrections on load ({count})"
+msgstr ""
+
+msgid "Corrects for the effect of gas, which lowers the neutron and raises the density porosity."
 msgstr ""
 
 #, python-brace-format
@@ -581,8 +587,19 @@ msgstr ""
 msgid "Enter both coordinates of the surface location."
 msgstr ""
 
+msgid "Equation"
+msgstr ""
+
+msgid "Equations and references"
+msgstr ""
+
 #, python-brace-format
 msgid "Error: {error}"
+msgstr ""
+
+msgid ""
+"Every result is computed with these equations. Computed curves also keep their exact formula, "
+"shown in the well tree."
 msgstr ""
 
 msgid "Exact scale: type 1:300 in the “Scale” field"
@@ -669,7 +686,16 @@ msgstr ""
 msgid "Follow the log cursor"
 msgstr ""
 
+msgid "For older, consolidated rocks."
+msgstr ""
+
+msgid "For young, unconsolidated rocks."
+msgstr ""
+
 msgid "Format:"
+msgstr ""
+
+msgid "Formation temperature from a geothermal gradient"
 msgstr ""
 
 msgid "Formation temperature from the geothermal gradient (TVD)"
@@ -958,6 +984,9 @@ msgstr ""
 msgid "NEW"
 msgstr ""
 
+msgid "NaCl solutions; the usual correction in log analysis."
+msgstr ""
+
 msgid "Name"
 msgstr ""
 
@@ -1009,6 +1038,12 @@ msgstr ""
 msgid "Neutron-density crossplot…"
 msgstr ""
 
+msgid "Neutron-density porosity (RMS, gas zones)"
+msgstr ""
+
+msgid "Neutron-density porosity (average)"
+msgstr ""
+
 msgid "New top"
 msgstr ""
 
@@ -1019,6 +1054,9 @@ msgid "No (solid color)"
 msgstr ""
 
 msgid "No data in the interval"
+msgstr ""
+
+msgid "No equation: Rw is the same at every depth."
 msgstr ""
 
 msgid "No flattening (depth)"
@@ -1299,6 +1337,9 @@ msgstr ""
 msgid "Rw at formation temperature (Arps)"
 msgstr ""
 
+msgid "Rw at formation temperature, Arps"
+msgstr ""
+
 msgid "Rw is the same at every depth"
 msgstr ""
 
@@ -1402,7 +1443,24 @@ msgstr ""
 msgid "Shale volume (Vsh) from gamma ray"
 msgstr ""
 
+msgid "Shale volume, Larionov (older rocks)"
+msgstr ""
+
+msgid "Shale volume, Larionov (tertiary rocks)"
+msgstr ""
+
+msgid "Shale volume, linear"
+msgstr ""
+
 msgid "Shallow resistivity"
+msgstr ""
+
+msgid "Shaly sands with fresh formation water. Equals Archie when V<sub>sh</sub> = 0."
+msgstr ""
+
+msgid ""
+"Shaly sands. Total-shale form solved for n = 2 (the n entered is not used). Equals Archie when "
+"V<sub>sh</sub> = 0."
 msgstr ""
 
 msgid ""
@@ -1415,6 +1473,9 @@ msgid "Shortcuts"
 msgstr ""
 
 msgid "Show as tabs"
+msgstr ""
+
+msgid "Show the equation and its reference"
 msgstr ""
 
 msgid "Show well window"
@@ -1483,6 +1544,9 @@ msgstr ""
 msgid "TVD ({unit})"
 msgstr ""
 
+msgid "TVD is measured from the depth reference of the well (KB/DF), not from the ground."
+msgstr ""
+
 msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
 msgstr ""
 
@@ -1516,6 +1580,11 @@ msgid "The Pickett plot needs the resistivity and density curves."
 msgstr ""
 
 msgid "The fill takes the color of its curve's value at each depth, along the curve's scale."
+msgstr ""
+
+msgid ""
+"The hole between stations is a circular arc; log samples between stations are placed on the arc "
+"(north and east are computed the same way)."
 msgstr ""
 
 msgid "The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first."
@@ -1560,6 +1629,11 @@ msgstr ""
 
 #, python-brace-format
 msgid "Total porosity - {method}"
+msgstr ""
+
+msgid ""
+"Total porosity limited to 0–0.6. Effective porosity: φ<sub>e</sub> = φ<sub>T</sub>·(1 − "
+"V<sub>sh</sub>)."
 msgstr ""
 
 msgid "Track title…"
@@ -1613,6 +1687,12 @@ msgid "Use the active well's layout as the default template"
 msgstr ""
 
 msgid "Uses Qt for Python (PySide6, LGPLv3), lasio (MIT) and NumPy (BSD)."
+msgstr ""
+
+msgid "Usually overestimates the shale volume; Larionov's corrections are often preferred."
+msgstr ""
+
+msgid "Valid in clean (shale-free) rock. Limited to 0–1."
 msgstr ""
 
 #, python-brace-format
@@ -1670,7 +1750,19 @@ msgstr ""
 msgid "Water"
 msgstr ""
 
+msgid "Water resistivity and temperature"
+msgstr ""
+
 msgid "Water saturation"
+msgstr ""
+
+msgid "Water saturation, Archie"
+msgstr ""
+
+msgid "Water saturation, Indonesia"
+msgstr ""
+
+msgid "Water saturation, Simandoux"
 msgstr ""
 
 msgid "Well"
@@ -1699,6 +1791,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Well: {name}"
+msgstr ""
+
+msgid "Wellbore trajectory, minimum curvature"
 msgstr ""
 
 msgid "Wells"
@@ -1825,6 +1920,9 @@ msgstr ""
 msgid "backup {left} – {right}"
 msgstr ""
 
+msgid "bulk density from the log (g/cm³)"
+msgstr ""
+
 msgid "comparison not allowed"
 msgstr ""
 
@@ -1839,13 +1937,22 @@ msgstr ""
 msgid "could not save the image"
 msgstr ""
 
+msgid "density and neutron porosity (fraction)"
+msgstr ""
+
 msgid "depth was not always increasing; samples were sorted by depth"
+msgstr ""
+
+msgid "dogleg angle between the stations"
 msgstr ""
 
 msgid "e.g. 435050.2"
 msgstr ""
 
 msgid "e.g. 58° 26' 29.9\" N or -58.4416"
+msgstr ""
+
+msgid "effective porosity (fraction)"
 msgstr ""
 
 #, python-brace-format
@@ -1862,12 +1969,29 @@ msgstr ""
 msgid "flattened on “{top}”"
 msgstr ""
 
+msgid "formation temperature"
+msgstr ""
+
+msgid "formation water resistivity at formation temperature (ohm·m)"
+msgstr ""
+
 #, python-brace-format
 msgid "frames not indexed by depth were skipped: {frames}"
 msgstr ""
 
 #, python-brace-format
 msgid "function not allowed: {function}"
+msgstr ""
+
+msgid ""
+"gamma-ray index = (GR − GR<sub>clean</sub>) / (GR<sub>shale</sub> − GR<sub>clean</sub>), limited "
+"to 0–1"
+msgstr ""
+
+msgid "geothermal gradient, degrees per 100 depth units"
+msgstr ""
+
+msgid "inclination at two survey stations"
 msgstr ""
 
 msgid "inclinations must be between 0 and 180 degrees"
@@ -1887,6 +2011,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "light gray: shaly (Vsh > {cutoff}), not used by the automatic fit"
+msgstr ""
+
+msgid "matrix and fluid density (g/cm³)"
 msgstr ""
 
 msgid "measured depth (MD)"
@@ -1917,6 +2044,12 @@ msgid "only numbers are allowed"
 msgstr ""
 
 msgid "project"
+msgstr ""
+
+msgid "resistivity of the shale (ohm·m)"
+msgstr ""
+
+msgid "shale volume (fraction)"
 msgstr ""
 
 #, python-brace-format
@@ -1973,6 +2106,15 @@ msgstr ""
 msgid "too many curves for the page height"
 msgstr ""
 
+msgid "tortuosity factor, cementation exponent and saturation exponent"
+msgstr ""
+
+msgid "true formation resistivity (ohm·m), the deep resistivity curve"
+msgstr ""
+
+msgid "true vertical depth"
+msgstr ""
+
 msgid "true vertical depth (TVD)"
 msgstr ""
 
@@ -1990,6 +2132,9 @@ msgid "usage: curve(\"NAME\")"
 msgstr ""
 
 msgid "volume fraction"
+msgstr ""
+
+msgid "water resistivity and the temperature it was measured at"
 msgstr ""
 
 msgid "whole well"
@@ -2152,6 +2297,11 @@ msgid "ρ matrix"
 msgstr ""
 
 msgid "ρ matrix and ρ fluid cannot be equal."
+msgstr ""
+
+msgid ""
+"φ<sub>D</sub> limited to −0.15–0.6 and φ<sub>T</sub> to 0–0.6; neutron in the matrix of the "
+"density."
 msgstr ""
 
 msgid "— choose —"

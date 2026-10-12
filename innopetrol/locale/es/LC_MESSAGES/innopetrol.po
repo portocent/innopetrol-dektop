@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 12:42-0500\n"
+"POT-Creation-Date: 2026-10-12 12:45-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -63,6 +63,9 @@ msgstr "(ninguna)"
 
 msgid "+ Track"
 msgstr "+ Track"
+
+msgid "21.5 for °C, 6.77 for °F"
+msgstr "21,5 para °C, 6,77 para °F"
 
 msgid "<b>Pickett</b> (Sw lines)"
 msgstr "<b>Pickett</b> (líneas de Sw)"
@@ -305,6 +308,9 @@ msgstr ""
 #, python-brace-format
 msgid "Corrections on load ({count})"
 msgstr "Correcciones al cargar ({count})"
+
+msgid "Corrects for the effect of gas, which lowers the neutron and raises the density porosity."
+msgstr "Corrige el efecto del gas, que baja la porosidad neutrón y sube la de densidad."
 
 #, python-brace-format
 msgid "Correlate selected ({count})"
@@ -591,9 +597,20 @@ msgstr "Elevación:"
 msgid "Enter both coordinates of the surface location."
 msgstr "Ingrese las dos coordenadas de la ubicación de superficie."
 
+msgid "Equation"
+msgstr "Ecuación"
+
+msgid "Equations and references"
+msgstr "Ecuaciones y referencias"
+
 #, python-brace-format
 msgid "Error: {error}"
 msgstr "Error: {error}"
+
+msgid "Every result is computed with these equations. Computed curves also keep their exact formula, shown in the well tree."
+msgstr ""
+"Cada resultado se calcula con estas ecuaciones. Las curvas calculadas además guardan su fórmula exacta, visible en el"
+" árbol del pozo."
 
 msgid "Exact scale: type 1:300 in the “Scale” field"
 msgstr "Escala exacta: escribir 1:300 en el campo «Escala»"
@@ -679,8 +696,17 @@ msgstr "Aplanar en tope: {name}"
 msgid "Follow the log cursor"
 msgstr "Seguir el cursor del registro"
 
+msgid "For older, consolidated rocks."
+msgstr "Para rocas más antiguas y consolidadas."
+
+msgid "For young, unconsolidated rocks."
+msgstr "Para rocas jóvenes, no consolidadas."
+
 msgid "Format:"
 msgstr "Formato:"
+
+msgid "Formation temperature from a geothermal gradient"
+msgstr "Temperatura de formación por gradiente geotérmico"
 
 msgid "Formation temperature from the geothermal gradient (TVD)"
 msgstr "Temperatura de formación por gradiente geotérmico (TVD)"
@@ -968,6 +994,9 @@ msgstr "Mover track"
 msgid "NEW"
 msgstr "NUEVA"
 
+msgid "NaCl solutions; the usual correction in log analysis."
+msgstr "Soluciones de NaCl; la corrección habitual en interpretación de registros."
+
 msgid "Name"
 msgstr "Nombre"
 
@@ -1019,6 +1048,12 @@ msgstr "Neutrón-densidad (promedio)"
 msgid "Neutron-density crossplot…"
 msgstr "Crossplot neutrón-densidad…"
 
+msgid "Neutron-density porosity (RMS, gas zones)"
+msgstr "Porosidad neutrón-densidad (RMS, zonas de gas)"
+
+msgid "Neutron-density porosity (average)"
+msgstr "Porosidad neutrón-densidad (promedio)"
+
 msgid "New top"
 msgstr "Nuevo tope"
 
@@ -1030,6 +1065,9 @@ msgstr "No (color sólido)"
 
 msgid "No data in the interval"
 msgstr "Sin datos en el intervalo"
+
+msgid "No equation: Rw is the same at every depth."
+msgstr "Sin ecuación: Rw es igual a toda profundidad."
 
 msgid "No flattening (depth)"
 msgstr "Sin aplanar (profundidad)"
@@ -1313,6 +1351,9 @@ msgstr "Fila {row}: nombre y profundidad numérica son obligatorios"
 msgid "Rw at formation temperature (Arps)"
 msgstr "Rw a temperatura de formación (Arps)"
 
+msgid "Rw at formation temperature, Arps"
+msgstr "Rw a temperatura de formación, Arps"
+
 msgid "Rw is the same at every depth"
 msgstr "Rw igual a toda profundidad"
 
@@ -1418,8 +1459,25 @@ msgstr "Volumen de arcilla"
 msgid "Shale volume (Vsh) from gamma ray"
 msgstr "Volumen de arcilla (Vsh) desde rayos gamma"
 
+msgid "Shale volume, Larionov (older rocks)"
+msgstr "Volumen de arcilla, Larionov (rocas antiguas)"
+
+msgid "Shale volume, Larionov (tertiary rocks)"
+msgstr "Volumen de arcilla, Larionov (rocas terciarias)"
+
+msgid "Shale volume, linear"
+msgstr "Volumen de arcilla, lineal"
+
 msgid "Shallow resistivity"
 msgstr "Resistividad somera"
+
+msgid "Shaly sands with fresh formation water. Equals Archie when V<sub>sh</sub> = 0."
+msgstr "Arenas arcillosas con agua de formación dulce. Es igual a Archie cuando V<sub>sh</sub> = 0."
+
+msgid "Shaly sands. Total-shale form solved for n = 2 (the n entered is not used). Equals Archie when V<sub>sh</sub> = 0."
+msgstr ""
+"Arenas arcillosas. Forma de arcilla total resuelta para n = 2 (el n ingresado no se usa). Es igual a Archie cuando "
+"V<sub>sh</sub> = 0."
 
 msgid ""
 "Sheet “Data”: blue columns are inputs (in the units the equations use) and the parameters of each sample's zone; "
@@ -1435,6 +1493,9 @@ msgstr "Atajos"
 
 msgid "Show as tabs"
 msgstr "Ver como pestañas"
+
+msgid "Show the equation and its reference"
+msgstr "Mostrar la ecuación y su referencia"
 
 msgid "Show well window"
 msgstr "Mostrar ventana del pozo"
@@ -1502,6 +1563,9 @@ msgstr "Sw - {model}"
 msgid "TVD ({unit})"
 msgstr "TVD ({unit})"
 
+msgid "TVD is measured from the depth reference of the well (KB/DF), not from the ground."
+msgstr "La TVD se mide desde la referencia de profundidad del pozo (KB/DF), no desde el terreno."
+
 msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
 msgstr "TVDSS necesita la elevación de la referencia de profundidad (Pozo ▸ Survey de desviación y elevación…)."
 
@@ -1536,6 +1600,13 @@ msgstr "El gráfico de Pickett necesita las curvas de resistividad y densidad."
 
 msgid "The fill takes the color of its curve's value at each depth, along the curve's scale."
 msgstr "El relleno toma, en cada profundidad, el color del valor de su curva según la escala de la curva."
+
+msgid ""
+"The hole between stations is a circular arc; log samples between stations are placed on the arc (north and east are "
+"computed the same way)."
+msgstr ""
+"El pozo entre estaciones es un arco de circunferencia; las muestras del registro entre estaciones se ubican sobre el "
+"arco (norte y este se calculan igual)."
 
 msgid "The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first."
 msgstr "El track de volúmenes necesita VSH y VMAT: primero ejecute Pozo ▸ Petrofísica."
@@ -1580,6 +1651,9 @@ msgstr "Topes ({count})"
 #, python-brace-format
 msgid "Total porosity - {method}"
 msgstr "Porosidad total - {method}"
+
+msgid "Total porosity limited to 0–0.6. Effective porosity: φ<sub>e</sub> = φ<sub>T</sub>·(1 − V<sub>sh</sub>)."
+msgstr "Porosidad total limitada a 0–0,6. Porosidad efectiva: φ<sub>e</sub> = φ<sub>T</sub>·(1 − V<sub>sh</sub>)."
 
 msgid "Track title…"
 msgstr "Título del track…"
@@ -1633,6 +1707,12 @@ msgstr "Usar el layout del pozo activo como plantilla por defecto"
 
 msgid "Uses Qt for Python (PySide6, LGPLv3), lasio (MIT) and NumPy (BSD)."
 msgstr "Usa Qt for Python (PySide6, LGPLv3), lasio (MIT) y NumPy (BSD)."
+
+msgid "Usually overestimates the shale volume; Larionov's corrections are often preferred."
+msgstr "Suele sobreestimar el volumen de arcilla; a menudo se prefieren las correcciones de Larionov."
+
+msgid "Valid in clean (shale-free) rock. Limited to 0–1."
+msgstr "Válida en roca limpia (sin arcilla). Limitada a 0–1."
 
 #, python-brace-format
 msgid "Valid samples: {valid} of {total}"
@@ -1689,8 +1769,20 @@ msgstr "Vsh y porosidad"
 msgid "Water"
 msgstr "Agua"
 
+msgid "Water resistivity and temperature"
+msgstr "Resistividad del agua y temperatura"
+
 msgid "Water saturation"
 msgstr "Saturación de agua"
+
+msgid "Water saturation, Archie"
+msgstr "Saturación de agua, Archie"
+
+msgid "Water saturation, Indonesia"
+msgstr "Saturación de agua, Indonesia"
+
+msgid "Water saturation, Simandoux"
+msgstr "Saturación de agua, Simandoux"
 
 msgid "Well"
 msgstr "Pozo"
@@ -1720,6 +1812,9 @@ msgstr "Árbol de pozos"
 #, python-brace-format
 msgid "Well: {name}"
 msgstr "Pozo: {name}"
+
+msgid "Wellbore trajectory, minimum curvature"
+msgstr "Trayectoria del pozo, mínima curvatura"
 
 msgid "Wells"
 msgstr "Pozos"
@@ -1847,6 +1942,9 @@ msgstr "Triple Combo automático"
 msgid "backup {left} – {right}"
 msgstr "respaldo {left} – {right}"
 
+msgid "bulk density from the log (g/cm³)"
+msgstr "densidad total del registro (g/cm³)"
+
 msgid "comparison not allowed"
 msgstr "comparación no permitida"
 
@@ -1861,14 +1959,23 @@ msgstr "no se pudo leer el proyecto: {error}"
 msgid "could not save the image"
 msgstr "no se pudo guardar la imagen"
 
+msgid "density and neutron porosity (fraction)"
+msgstr "porosidad de densidad y de neutrón (fracción)"
+
 msgid "depth was not always increasing; samples were sorted by depth"
 msgstr "la profundidad no siempre era creciente; las muestras se ordenaron por profundidad"
+
+msgid "dogleg angle between the stations"
+msgstr "ángulo de dogleg entre las estaciones"
 
 msgid "e.g. 435050.2"
 msgstr "p. ej. 435050.2"
 
 msgid "e.g. 58° 26' 29.9\" N or -58.4416"
 msgstr "p. ej. 58° 26' 29.9\" N o -58.4416"
+
+msgid "effective porosity (fraction)"
+msgstr "porosidad efectiva (fracción)"
 
 #, python-brace-format
 msgid "element not allowed in the expression: {element}"
@@ -1884,6 +1991,12 @@ msgstr "pies (ft)"
 msgid "flattened on “{top}”"
 msgstr "aplanado en «{top}»"
 
+msgid "formation temperature"
+msgstr "temperatura de formación"
+
+msgid "formation water resistivity at formation temperature (ohm·m)"
+msgstr "resistividad del agua de formación a temperatura de formación (ohm·m)"
+
 #, python-brace-format
 msgid "frames not indexed by depth were skipped: {frames}"
 msgstr "se omitieron frames no indexados por profundidad: {frames}"
@@ -1891,6 +2004,15 @@ msgstr "se omitieron frames no indexados por profundidad: {frames}"
 #, python-brace-format
 msgid "function not allowed: {function}"
 msgstr "función no permitida: {function}"
+
+msgid "gamma-ray index = (GR − GR<sub>clean</sub>) / (GR<sub>shale</sub> − GR<sub>clean</sub>), limited to 0–1"
+msgstr "índice de rayos gamma = (GR − GR<sub>limpio</sub>) / (GR<sub>arcilla</sub> − GR<sub>limpio</sub>), limitado a 0–1"
+
+msgid "geothermal gradient, degrees per 100 depth units"
+msgstr "gradiente geotérmico, grados cada 100 unidades de profundidad"
+
+msgid "inclination at two survey stations"
+msgstr "inclinación en dos estaciones del survey"
 
 msgid "inclinations must be between 0 and 180 degrees"
 msgstr "las inclinaciones deben estar entre 0 y 180 grados"
@@ -1910,6 +2032,9 @@ msgstr "layout de {well}"
 #, python-brace-format
 msgid "light gray: shaly (Vsh > {cutoff}), not used by the automatic fit"
 msgstr "gris claro: arcilloso (Vsh > {cutoff}), no se usa en el ajuste automático"
+
+msgid "matrix and fluid density (g/cm³)"
+msgstr "densidad de matriz y de fluido (g/cm³)"
 
 msgid "measured depth (MD)"
 msgstr "profundidad medida (MD)"
@@ -1940,6 +2065,12 @@ msgstr "sólo se permiten números"
 
 msgid "project"
 msgstr "proyecto"
+
+msgid "resistivity of the shale (ohm·m)"
+msgstr "resistividad de la arcilla (ohm·m)"
+
+msgid "shale volume (fraction)"
+msgstr "volumen de arcilla (fracción)"
 
 #, python-brace-format
 msgid "syntax error near column {column}"
@@ -1995,6 +2126,15 @@ msgstr "la plantilla fue creada con una versión más nueva del programa"
 msgid "too many curves for the page height"
 msgstr "demasiadas curvas para el alto de la página"
 
+msgid "tortuosity factor, cementation exponent and saturation exponent"
+msgstr "factor de tortuosidad, exponente de cementación y exponente de saturación"
+
+msgid "true formation resistivity (ohm·m), the deep resistivity curve"
+msgstr "resistividad verdadera de la formación (ohm·m), la curva de resistividad profunda"
+
+msgid "true vertical depth"
+msgstr "profundidad vertical verdadera"
+
 msgid "true vertical depth (TVD)"
 msgstr "profundidad vertical verdadera (TVD)"
 
@@ -2013,6 +2153,9 @@ msgstr "uso: curve(\"NOMBRE\")"
 
 msgid "volume fraction"
 msgstr "fracción de volumen"
+
+msgid "water resistivity and the temperature it was measured at"
+msgstr "resistividad del agua y la temperatura a la que se midió"
 
 msgid "whole well"
 msgstr "pozo completo"
@@ -2175,6 +2318,9 @@ msgstr "ρ matriz"
 
 msgid "ρ matrix and ρ fluid cannot be equal."
 msgstr "ρ matriz y ρ fluido no pueden ser iguales."
+
+msgid "φ<sub>D</sub> limited to −0.15–0.6 and φ<sub>T</sub> to 0–0.6; neutron in the matrix of the density."
+msgstr "φ<sub>D</sub> limitada a −0,15–0,6 y φ<sub>T</sub> a 0–0,6; el neutrón en la matriz de la densidad."
 
 msgid "— choose —"
 msgstr "— elegir —"
