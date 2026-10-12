@@ -208,3 +208,43 @@ def test_tiles_have_no_horizontal_frame(win, qtbot):
     dpr = img.devicePixelRatio()
     for row in (0, img.height() - 1):
         assert img.pixelColor(x * dpr, row).name() != BORDER.name()
+
+
+def test_slow_machine_uses_previews(win, qtbot, monkeypatch):
+    """Si dibujar es caro, el zoom muestra tiles estirados y el dibujo final llega al detenerse."""
+    from innopetrol.ui import log_canvas
+
+    c = win.views[win.docs[0]].canvas
+    qtbot.waitExposed(c)
+    c.set_scale(500)
+    c.repaint()
+    c._tile_ms = 50.0  # simula una máquina lenta
+    renders = []
+    original = c._render_tile
+    monkeypatch.setattr(c, "_render_tile", lambda k: renders.append(k) or original(k))
+    for _ in range(5):
+        c.zoom(1.1, interactive=True)
+        c.repaint()
+    assert c._previewing and renders == []
+    qtbot.waitUntil(lambda: not c._previewing, timeout=2000)
+    c.repaint()
+    assert renders  # calidad completa al terminar el gesto
+    assert c.current_scale() == pytest.approx(500 / 1.1 ** 5)
+
+    # Arrastre de borde: guía mientras se arrastra, ancho aplicado al soltar
+    from PySide6.QtCore import QEvent, QPointF, Qt
+    from PySide6.QtGui import QMouseEvent
+
+    c._tile_ms = 50.0
+    w0 = win.docs[0].layout.tracks[0].width
+    x = w0 - c.x_offset
+
+    def ev(kind, x, buttons):
+        return QMouseEvent(kind, QPointF(x, 300), QPointF(x, 300), Qt.LeftButton, buttons, Qt.NoModifier)
+
+    c.mousePressEvent(ev(QEvent.MouseButtonPress, x, Qt.LeftButton))
+    c.mouseMoveEvent(ev(QEvent.MouseMove, x + 40, Qt.LeftButton))
+    assert win.docs[0].layout.tracks[0].width == w0 and c._drag_pending == (0, w0 + 40)
+    c.mouseReleaseEvent(ev(QEvent.MouseButtonRelease, x + 40, Qt.NoButton))
+    assert win.docs[0].layout.tracks[0].width == w0 + 40 and c._drag_pending is None
+    assert log_canvas.FRAME_BUDGET_MS < 50

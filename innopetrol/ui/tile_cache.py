@@ -21,6 +21,13 @@ class TileCache:
         self._bytes = 0
         self._key = None
 
+    @property
+    def key(self):
+        return self._key
+
+    def items(self):
+        return list(self._tiles.items())
+
     def validate(self, key) -> None:
         """Si cambia algo que afecta al dibujo (layout, escala, ancho, dpr…), se descarta todo."""
         if key != self._key:
