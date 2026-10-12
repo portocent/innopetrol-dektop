@@ -34,7 +34,7 @@ def test_dialog_and_settings(qtbot, tmp_path, monkeypatch):
     from innopetrol.ui import aliases_dialog
     from innopetrol.ui.main_window import MainWindow
 
-    settings = QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat)
+    settings = QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat)
     w = MainWindow(settings)
     qtbot.addWidget(w)
 
@@ -47,7 +47,7 @@ def test_dialog_and_settings(qtbot, tmp_path, monkeypatch):
     w.edit_aliases()
     assert mnemonics.family_of("GR_COMPANY") == "gamma_ray"
     mnemonics.set_user_aliases({})
-    again = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat))  # restored at start
+    again = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat))  # restored at start
     qtbot.addWidget(again)
     assert mnemonics.family_of("GRX") == "gamma_ray"
 

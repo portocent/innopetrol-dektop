@@ -62,7 +62,7 @@ class GrPickHistogram(Histogram):
             w = fm.horizontalAdvance(label) + 8
             box = QRectF(min(max(x - w / 2, r.left()), r.right() - w), r.top() + 2, w, fm.height() + 2)
             p.fillRect(box, QColor(255, 255, 255, 220))
-            p.drawText(box, Qt.AlignCenter, label)
+            p.drawText(box, Qt.AlignmentFlag.AlignCenter, label)
 
     def _x(self, key: str) -> float | None:
         r, xa = self.plot_area, self.x_axis
@@ -82,7 +82,7 @@ class GrPickHistogram(Histogram):
         return min(dist, key=lambda k: dist[k]) if dist else None
 
     def mousePressEvent(self, e):
-        if e.button() != Qt.LeftButton or self.x_axis is None:
+        if e.button() != Qt.MouseButton.LeftButton or self.x_axis is None:
             return
         x = e.position().x()
         # A click away from the lines moves the nearest one there: quicker than dragging.
@@ -101,7 +101,7 @@ class GrPickHistogram(Histogram):
             return
         key = self._nearest(x)
         near = key is not None and abs(self._x(key) - x) <= GRAB_PX
-        self.setCursor(Qt.SplitHCursor if near else Qt.ArrowCursor)
+        self.setCursor(Qt.CursorShape.SplitHCursor if near else Qt.CursorShape.ArrowCursor)
 
     def mouseReleaseEvent(self, e):
         self._drag = None
@@ -142,7 +142,7 @@ class GrPickerDialog(QDialog):
         row.addWidget(auto)
         row.addStretch()
         lay.addLayout(row)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self._accept)
         buttons.rejected.connect(self.reject)
         lay.addWidget(buttons)
@@ -207,7 +207,7 @@ class PickettPicker(QWidget):
 
     def paintEvent(self, e):
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.fillRect(self.rect(), QColor("#f7f8f9"))
         fm = QFontMetricsF(self.font())
         r = self.plot_area
@@ -228,7 +228,7 @@ class PickettPicker(QWidget):
             ys = r.bottom() - self.ya.map(phi, r.height())
             pen = QPen(QColor(color), width + (1 if sw == 1 and self._drag else 0))
             if sw < 1:
-                pen.setStyle(Qt.DashLine)
+                pen.setStyle(Qt.PenStyle.DashLine)
             p.setPen(pen)
             pts = [QPointF(x, y) for x, y in zip(xs, ys, strict=True) if math.isfinite(x) and math.isfinite(y)]
             for a, b in pairwise(pts):
@@ -241,7 +241,7 @@ class PickettPicker(QWidget):
         p.setPen(QColor("#1a5276"))
         p.drawText(
             QRectF(r.left() + 8, r.top() + 4, r.width() - 16, fm.height() * 1.3),
-            Qt.AlignRight,
+            Qt.AlignmentFlag.AlignRight,
             f"Rw = {self.rw:.4g}  ·  a = {self.a:g}  ·  m = {self.m:g}  ·  n = {self.n:g}",
         )
         p.end()
@@ -268,7 +268,7 @@ class PickettPicker(QWidget):
         return math.isfinite(x) and abs(x - pos.x()) <= GRAB_PX
 
     def mousePressEvent(self, e):
-        if e.button() == Qt.LeftButton:
+        if e.button() == Qt.MouseButton.LeftButton:
             rw = self._rw_at(e.position())
             if rw is not None:
                 self._drag = True
@@ -280,7 +280,9 @@ class PickettPicker(QWidget):
             if rw is not None:
                 self.set_rw(rw)
             return
-        self.setCursor(Qt.SizeAllCursor if self._near_water_line(e.position()) else Qt.ArrowCursor)
+        self.setCursor(
+            Qt.CursorShape.SizeAllCursor if self._near_water_line(e.position()) else Qt.CursorShape.ArrowCursor
+        )
 
     def mouseReleaseEvent(self, e):
         self._drag = False
@@ -358,7 +360,7 @@ class PickettPickerDialog(QDialog):
         self.points_label = QLabel(text)
         self.points_label.setStyleSheet("color: #566573")
         lay.addWidget(self.points_label)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         lay.addWidget(buttons)

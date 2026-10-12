@@ -98,7 +98,7 @@ class BaseMapWidget(QWidget):
 
     def paintEvent(self, e):
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.fillRect(self.rect(), QColor("#fbfcfc"))
         self._draw_grid(p)
         fm = QFontMetricsF(self.font())
@@ -112,7 +112,7 @@ class BaseMapWidget(QWidget):
                 p.drawEllipse(QPointF(sx[-1], sy[-1]), 2.5, 2.5)  # bottom of the hole
         if len(self.selected) > 1:  # the correlation section
             pts = [self.to_screen(i.location.x, i.location.y) for i in self.selected]
-            p.setPen(QPen(SELECTED, 2.2, Qt.DashLine))
+            p.setPen(QPen(SELECTED, 2.2, Qt.PenStyle.DashLine))
             for (ax, ay), (bx, by) in pairwise(pts):
                 p.drawLine(QPointF(ax, ay), QPointF(bx, by))
         bold = QFont(self.font())
@@ -131,7 +131,7 @@ class BaseMapWidget(QWidget):
             box = QRectF(sx + 8, sy - fm.height() - 2, w, fm.height())
             p.fillRect(box, QColor(255, 255, 255, 200))
             p.setPen(BORDER)
-            p.drawText(box, Qt.AlignCenter, label)
+            p.drawText(box, Qt.AlignmentFlag.AlignCenter, label)
         p.end()
 
     def _draw_grid(self, p: QPainter):
@@ -145,21 +145,27 @@ class BaseMapWidget(QWidget):
             p.drawLine(QPointF(sx, 0), QPointF(sx, self.height()))
             p.setPen(QColor("#566573"))
             p.drawText(
-                QRectF(sx - 60, self.height() - fm.height() - 2, 120, fm.height()), Qt.AlignCenter, self._label(v)
+                QRectF(sx - 60, self.height() - fm.height() - 2, 120, fm.height()),
+                Qt.AlignmentFlag.AlignCenter,
+                self._label(v),
             )
         for v in linear_ticks(y0, y1, max(int(self.height() / 90), 2)):
             sy = float(self.to_screen(0, v)[1])
             p.setPen(QPen(GRID_MAJOR, 0.6))
             p.drawLine(QPointF(0, sy), QPointF(self.width(), sy))
             p.setPen(QColor("#566573"))
-            p.drawText(QRectF(4, sy - fm.height(), 140, fm.height()), Qt.AlignLeft | Qt.AlignBottom, self._label(v))
+            p.drawText(
+                QRectF(4, sy - fm.height(), 140, fm.height()),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom,
+                self._label(v),
+            )
 
     def _label(self, v: float) -> str:
         return f"{v:.4f}°" if self.geographic else fmt(v)
 
     # ---------------------------------------------------------------- interaction
     def mousePressEvent(self, e):
-        if e.button() == Qt.LeftButton:
+        if e.button() == Qt.MouseButton.LeftButton:
             self._press = e.position()
             self._moved = False
 
@@ -172,7 +178,7 @@ class BaseMapWidget(QWidget):
                 self._press = e.position()
                 self.update()
             return
-        self.setCursor(Qt.PointingHandCursor if self.item_at(e.position()) else Qt.ArrowCursor)
+        self.setCursor(Qt.CursorShape.PointingHandCursor if self.item_at(e.position()) else Qt.CursorShape.ArrowCursor)
         x, y = self.to_map(e.position())
         self.cursorText.emit(
             _("Lat {lat} · Lon {lon}").format(lat=f"{y:.5f}°", lon=f"{x:.5f}°")

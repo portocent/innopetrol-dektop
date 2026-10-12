@@ -27,9 +27,9 @@ class Session:
     def data_dir(self) -> Path:
         """Folder for the autosave and the error log. Next to the settings file when the settings are
         an .ini file (tests, portable use), otherwise the system's application data folder."""
-        if self.settings.format() == QSettings.IniFormat:
+        if self.settings.format() == QSettings.Format.IniFormat:
             return Path(self.settings.fileName()).parent
-        return Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
+        return Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation))
 
     # ---------------------------------------------------------------- recent files
     def recent(self) -> list[str]:

@@ -13,7 +13,7 @@ from innopetrol.ui.main_window import MainWindow
 
 @pytest.fixture
 def win(qtbot, tmp_path, samples):
-    w = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat))
+    w = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat))
     qtbot.addWidget(w)
     w.resize(1300, 850)
     w.show()

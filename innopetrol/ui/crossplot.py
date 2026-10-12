@@ -48,7 +48,7 @@ class CrossplotWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumSize(520, 420)
-        self.x = self.y = self.c = np.array([])
+        self.x_values = self.y_values = self.c_values = np.array([])
         self.xa = Axis(0, 1, False, "")
         self.ya = Axis(0, 1, False, "")
         self.c_range = (0.0, 1.0)
@@ -68,15 +68,15 @@ class CrossplotWidget(QWidget):
 
     def paint_plot(self, p: QPainter, area: QRectF):
         p.fillRect(area, QColor("#f7f8f9"))
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         fm = QFontMetricsF(p.font())
-        bar_w = 150 if self.groups else 96 if self.c.size else 0
+        bar_w = 150 if self.groups else 96 if self.c_values.size else 0
         r = plot_rect(QRectF(area.left(), area.top(), area.width() - bar_w, area.height()), fm)
         draw_axes(p, r, self.xa, self.ya)
         p.save()
         p.setClipRect(r)
-        px = r.left() + self.xa.map(self.x, r.width())
-        py = r.bottom() - self.ya.map(self.y, r.height())
+        px = r.left() + self.xa.map(self.x_values, r.width())
+        py = r.bottom() - self.ya.map(self.y_values, r.height())
         ok = np.isfinite(px) & np.isfinite(py)
         self._drawpolygon_from_arrays(p, px, py, ok)
         self._draw_overlay(p, r)
@@ -84,31 +84,31 @@ class CrossplotWidget(QWidget):
         p.setPen(BORDER)
         p.drawText(
             QRectF(r.left() + 6, r.top() + 4, r.width() - 12, fm.height()),
-            Qt.AlignRight,
+            Qt.AlignmentFlag.AlignRight,
             _("{count} points").format(count=int(ok.sum())),
         )
         if self.groups:
             self._draw_legend(p, QRectF(r.right() + 14, r.top(), bar_w - 18, r.height()), fm)
-        elif self.c.size:
+        elif self.c_values.size:
             self._draw_colorbar(p, QRectF(r.right() + 18, r.top(), 16, r.height()), fm)
 
     def _draw_legend(self, p, r, fm):
         for i, (name, color) in enumerate(self.groups):
             y = r.top() + i * (fm.height() + 6)
-            p.setPen(Qt.NoPen)
+            p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QColor(color))
             p.drawEllipse(QPointF(r.left() + 6, y + fm.height() / 2), 5, 5)
             p.setPen(BORDER)
             p.drawText(
                 QRectF(r.left() + 16, y, r.width() - 16, fm.height()),
-                Qt.AlignLeft | Qt.AlignVCenter,
-                fm.elidedText(name, Qt.ElideRight, r.width() - 16),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                fm.elidedText(name, Qt.TextElideMode.ElideRight, r.width() - 16),
             )
 
     def _drawpolygon_from_arrays(self, p: QPainter, px, py, ok):
         """Points grouped into color levels: one drawPoints call per level instead of one
         drawEllipse per point (higher levels are drawn last, so they end up on top)."""
-        pen = QPen(QColor("#2e86c1"), 4.8, Qt.SolidLine, Qt.RoundCap)
+        pen = QPen(QColor("#2e86c1"), 4.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
         if self.groups:
             for i, (_name, color) in enumerate(self.groups):
                 sel = ok & (self.g == i)
@@ -119,15 +119,15 @@ class CrossplotWidget(QWidget):
                     p.setPen(pen)
                     p.drawPoints(polygon_from_arrays(px[sel], py[sel]))
             return
-        if not self.c.size:
-            color = QColor("#2e86c1")
-            color.setAlpha(150)
-            pen.setColor(color)
+        if not self.c_values.size:
+            point_color = QColor("#2e86c1")
+            point_color.setAlpha(150)
+            pen.setColor(point_color)
             p.setPen(pen)
             p.drawPoints(polygon_from_arrays(px[ok], py[ok]))
             return
         lo, hi = self.c_range
-        t = (self.c - lo) / (hi - lo) if hi != lo else np.zeros_like(self.c)
+        t = (self.c_values - lo) / (hi - lo) if hi != lo else np.zeros_like(self.c_values)
         no_color = ok & ~np.isfinite(t)
         pen.setColor(QColor(160, 160, 160, 120))
         p.setPen(pen)
@@ -161,7 +161,7 @@ class CrossplotWidget(QWidget):
             p.setPen(QColor("#566573"))
             p.drawText(
                 QRectF(r.left() + 6, r.bottom() - 20, r.width(), 18),
-                Qt.AlignLeft,
+                Qt.AlignmentFlag.AlignLeft,
                 _("Approximate lines (limestone neutron); marks every 10 p.u."),
             )
         elif self.overlay == "pickett" and self.pickett:
@@ -171,7 +171,7 @@ class CrossplotWidget(QWidget):
                 rt = pp.a * pp.rw / (phi**pp.m * sw**pp.n)
                 xs = r.left() + self.xa.map(self.x_from_ref(phi), r.width())
                 ys = r.bottom() - self.ya.map(rt, r.height())
-                p.setPen(QPen(QColor(color), 1.8, Qt.DashLine))
+                p.setPen(QPen(QColor(color), 1.8, Qt.PenStyle.DashLine))
                 valid = np.isfinite(xs) & np.isfinite(ys)
                 pts = [QPointF(a, b) for a, b, v in zip(xs, ys, valid, strict=True) if v]
                 for a, b in pairwise(pts):
@@ -187,20 +187,26 @@ class CrossplotWidget(QWidget):
             col = colors[n - 1 - i]
             p.fillRect(QRectF(r.left(), r.top() + r.height() * i / n, r.width(), r.height() / n + 1), col)
         p.setPen(BORDER)
-        p.setBrush(Qt.NoBrush)
+        p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawRect(r)
         lo, hi = self.c_range
-        p.drawText(QRectF(r.right() + 4, r.top(), 60, fm.height()), Qt.AlignLeft | Qt.AlignVCenter, fmt(round(hi, 4)))
+        p.drawText(
+            QRectF(r.right() + 4, r.top(), 60, fm.height()),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            fmt(round(hi, 4)),
+        )
         p.drawText(
             QRectF(r.right() + 4, r.bottom() - fm.height(), 60, fm.height()),
-            Qt.AlignLeft | Qt.AlignVCenter,
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             fmt(round(lo, 4)),
         )
         p.save()
         p.translate(r.right() + 4, r.center().y())
         p.rotate(90)
         p.drawText(
-            QRectF(-r.height() / 2, -fm.height() - 4 - 50, r.height(), fm.height()), Qt.AlignCenter, self.c_label
+            QRectF(-r.height() / 2, -fm.height() - 4 - 50, r.height(), fm.height()),
+            Qt.AlignmentFlag.AlignCenter,
+            self.c_label,
         )
         p.restore()
 
@@ -238,12 +244,12 @@ class CrossplotWindow(QDialog):
         self.mode = QComboBox()
         for k, v in (("free", _("Free")), ("nd", _("Neutron - Density")), ("pickett", _("Pickett (φ vs Rt)"))):
             self.mode.addItem(v, k)
-        self.x, self.y, self.c = QComboBox(), QComboBox(), QComboBox()
-        self.c.addItem(_("(no color)"), None)
+        self.x_curve, self.y_curve, self.color_curve = QComboBox(), QComboBox(), QComboBox()
+        self.color_curve.addItem(_("(no color)"), None)
         if len(self.docs) > 1:
-            self.c.addItem(_("(by well)"), BY_WELL)
+            self.color_curve.addItem(_("(by well)"), BY_WELL)
         for m in self.doc.well.curves:
-            for combo in (self.x, self.y, self.c):
+            for combo in (self.x_curve, self.y_curve, self.color_curve):
                 combo.addItem(m, m)
         self.logx, self.logy = QCheckBox(_("Logarithmic X")), QCheckBox(_("Logarithmic Y"))
         self.wells = well_list(self.docs, self.doc) if len(self.docs) > 1 else None
@@ -260,9 +266,9 @@ class CrossplotWindow(QDialog):
         self.n = spin(pp.n, 1, 4, 0.1, 2)
         self.a = spin(pp.a, 0.1, 5, 0.05, 2)
         form.addRow(_("Type:"), self.mode)
-        form.addRow(_("X axis:"), self.x)
-        form.addRow(_("Y axis:"), self.y)
-        form.addRow(_("Color:"), self.c)
+        form.addRow(_("X axis:"), self.x_curve)
+        form.addRow(_("Y axis:"), self.y_curve)
+        form.addRow(_("Color:"), self.color_curve)
         if self.wells is not None:
             form.addRow(_("Wells:"), self.wells)
         form.addRow(_("Interval:"), self.zone)
@@ -284,7 +290,7 @@ class CrossplotWindow(QDialog):
         self.mode.currentIndexChanged.connect(self._mode_changed)
         if self.wells is not None:
             self.wells.itemChanged.connect(self._wells_changed)
-        for combo in (self.x, self.y, self.c, self.zone):
+        for combo in (self.x_curve, self.y_curve, self.color_curve, self.zone):
             combo.currentIndexChanged.connect(self._update)
         for check in (self.logx, self.logy):
             check.toggled.connect(self._update)
@@ -304,7 +310,7 @@ class CrossplotWindow(QDialog):
         names = [d.title for d in checked_docs(self.wells)]
         self.setWindowTitle(_("Crossplot — {well}").format(well=", ".join(names) or self.doc.title))
         if len(names) > 1 and self._n_wells <= 1:
-            self.c.setCurrentIndex(self.c.findData(BY_WELL))  # a second well added: tell them apart
+            self.color_curve.setCurrentIndex(self.color_curve.findData(BY_WELL))  # a second well added: tell them apart
         self._n_wells = len(names)
         self._fill_zones()
         self._update()
@@ -344,25 +350,25 @@ class CrossplotWindow(QDialog):
         for e in (self.xmin, self.xmax, self.ymin, self.ymax):
             e.clear()
         if mode == "nd":
-            self._select(self.x, find_curve(w, "neutron"))
-            self._select(self.y, find_curve(w, "density"))
-            self._select(self.c, find_curve(w, "gamma_ray"))
+            self._select(self.x_curve, find_curve(w, "neutron"))
+            self._select(self.y_curve, find_curve(w, "density"))
+            self._select(self.color_curve, find_curve(w, "gamma_ray"))
             self.logx.setChecked(False)
             self.logy.setChecked(False)
-            x_lo, x_hi = self._from_ref(self.x.currentData(), np.array([-0.15, 0.45]), "v/v")
-            y_lo, y_hi = self._from_ref(self.y.currentData(), np.array([3.0, 1.9]), "g/cm3")
+            x_lo, x_hi = self._from_ref(self.x_curve.currentData(), np.array([-0.15, 0.45]), "v/v")
+            y_lo, y_hi = self._from_ref(self.y_curve.currentData(), np.array([3.0, 1.9]), "g/cm3")
             self.xmin.setText(fmt(round(float(x_lo), 6)))
             self.xmax.setText(fmt(round(float(x_hi), 6)))
             self.ymin.setText(fmt(round(float(y_lo), 6)))
             self.ymax.setText(fmt(round(float(y_hi), 6)))
         elif mode == "pickett":
             phi = "PHIE" if "PHIE" in w.curves else find_curve(w, "effective_porosity")
-            self._select(self.x, phi)
-            self._select(self.y, find_curve(w, "deep_res"))
-            self._select(self.c, "VSH" if "VSH" in w.curves else find_curve(w, "gamma_ray"))
+            self._select(self.x_curve, phi)
+            self._select(self.y_curve, find_curve(w, "deep_res"))
+            self._select(self.color_curve, "VSH" if "VSH" in w.curves else find_curve(w, "gamma_ray"))
             self.logx.setChecked(True)
             self.logy.setChecked(True)
-            x_lo, x_hi = self._from_ref(self.x.currentData(), np.array([0.01, 1.0]), "v/v")
+            x_lo, x_hi = self._from_ref(self.x_curve.currentData(), np.array([0.01, 1.0]), "v/v")
             self.xmin.setText(fmt(round(float(x_lo), 6)))
             self.xmax.setText(fmt(round(float(x_hi), 6)))
         for wdg in (self.pickett_label, self.rw, self.a, self.m, self.n):
@@ -405,7 +411,7 @@ class CrossplotWindow(QDialog):
         if self._setting_mode:
             return
         shown = self.doc.view.curves  # values and units as displayed
-        mx, my, mc = self.x.currentData(), self.y.currentData(), self.c.currentData()
+        mx, my, mc = self.x_curve.currentData(), self.y_curve.currentData(), self.color_curve.currentData()
         if not mx or not my:
             return
         series = self.series(mx, my, mc)
@@ -416,7 +422,7 @@ class CrossplotWindow(QDialog):
             c = np.concatenate([s[3] for s in series]) if mc and mc != BY_WELL else np.array([])
         else:
             x = y = c = np.array([])
-        plot.x, plot.y, plot.c = x, y, c
+        plot.x_values, plot.y_values, plot.c_values = x, y, c
         if mc == BY_WELL:
             plot.groups = [(d.title, color_of(self.wells, d)) for d, *_rest in series]
             plot.g = np.concatenate([np.full(s[1].size, i) for i, s in enumerate(series)]) if series else np.array([])
@@ -441,9 +447,9 @@ class CrossplotWindow(QDialog):
             self, _("Save crossplot"), f"{self.doc.title}_crossplot.png", "PNG (*.png)"
         )
         if path:
-            img = QImage(self.plot.size() * 2, QImage.Format_ARGB32)
+            img = QImage(self.plot.size() * 2, QImage.Format.Format_ARGB32)
             img.setDevicePixelRatio(2)
-            img.fill(Qt.white)
+            img.fill(Qt.GlobalColor.white)
             p = QPainter(img)
             self.plot.paint_plot(p, QRectF(0, 0, self.plot.width(), self.plot.height()))
             p.end()

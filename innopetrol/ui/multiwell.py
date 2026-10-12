@@ -86,22 +86,26 @@ def well_list(docs, active) -> QListWidget:
     )
     for i, d in enumerate(docs):
         item = QListWidgetItem(d.title)
-        item.setData(Qt.UserRole, d)
-        item.setForeground(Qt.black)
-        item.setCheckState(Qt.Checked if d is active else Qt.Unchecked)
-        item.setData(Qt.DecorationRole, _swatch(WELL_COLORS[i % len(WELL_COLORS)]))
+        item.setData(Qt.ItemDataRole.UserRole, d)
+        item.setForeground(Qt.GlobalColor.black)
+        item.setCheckState(Qt.CheckState.Checked if d is active else Qt.CheckState.Unchecked)
+        item.setData(Qt.ItemDataRole.DecorationRole, _swatch(WELL_COLORS[i % len(WELL_COLORS)]))
         lst.addItem(item)
     lst.setMaximumHeight(min(28 * len(docs) + 6, 160))
     return lst
 
 
 def checked_docs(lst: QListWidget) -> list:
-    return [lst.item(i).data(Qt.UserRole) for i in range(lst.count()) if lst.item(i).checkState() == Qt.Checked]
+    return [
+        lst.item(i).data(Qt.ItemDataRole.UserRole)
+        for i in range(lst.count())
+        if lst.item(i).checkState() == Qt.CheckState.Checked
+    ]
 
 
 def color_of(lst: QListWidget, doc) -> str:
     for i in range(lst.count()):
-        if lst.item(i).data(Qt.UserRole) is doc:
+        if lst.item(i).data(Qt.ItemDataRole.UserRole) is doc:
             return WELL_COLORS[i % len(WELL_COLORS)]
     return WELL_COLORS[0]
 

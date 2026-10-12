@@ -72,7 +72,7 @@ def win(qtbot, tmp_path, samples):
 
     from innopetrol.ui.main_window import MainWindow
 
-    w = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat))
+    w = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat))
     qtbot.addWidget(w)
     w.show()
     w.open_las([str(samples / "Testdata.las")])

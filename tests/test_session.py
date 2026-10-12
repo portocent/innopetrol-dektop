@@ -8,7 +8,7 @@ from innopetrol.ui.session import MAX_RECENT, Session
 
 
 def make(tmp_path) -> Session:
-    return Session(QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat))
+    return Session(QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat))
 
 
 def test_recent_files_most_recent_first_without_duplicates(tmp_path):

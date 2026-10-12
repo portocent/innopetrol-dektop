@@ -11,7 +11,7 @@ from innopetrol.ui.main_window import MainWindow
 
 
 def make_window(qtbot, tmp_path):
-    w = MainWindow(QSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat))
+    w = MainWindow(QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat))
     qtbot.addWidget(w)
     return w
 

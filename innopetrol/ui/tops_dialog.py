@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypeVar
+
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDialog,
@@ -23,6 +25,8 @@ from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.widgets import ColorButton, parse_float
 
+T = TypeVar("T")
+
 
 class TopsDialog(QDialog):
     def __init__(self, doc: WellDocument, parent=None):
@@ -41,8 +45,8 @@ class TopsDialog(QDialog):
         lay.addWidget(hint)
         self.table = QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels([_("Name"), _("Depth"), _("Color")])
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         lay.addWidget(self.table, 1)
         row = QHBoxLayout()
         for text, slot in (
@@ -55,7 +59,7 @@ class TopsDialog(QDialog):
             b.clicked.connect(slot)
             row.addWidget(b)
         lay.addLayout(row)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self._ok)
         buttons.rejected.connect(self.reject)
         lay.addWidget(buttons)
@@ -88,16 +92,23 @@ class TopsDialog(QDialog):
     def _read(self) -> tuple[list[Top], list[str]]:
         tops, errors = [], []
         for r in range(self.table.rowCount()):
-            name = self.table.cellWidget(r, 0).text().strip()
+            name_edit, depth_edit = self._cell(r, 0, QLineEdit), self._cell(r, 1, QLineEdit)
+            name = name_edit.text().strip()
             try:
-                depth = parse_float(self.table.cellWidget(r, 1).text())
+                depth = parse_float(depth_edit.text())
             except ValueError:
                 depth = None
             if not name or depth is None:
                 errors.append(_("Row {row}: a name and a numeric depth are required").format(row=r + 1))
                 continue
-            tops.append(Top(name, depth, self.table.cellWidget(r, 2).color()))
+            tops.append(Top(name, depth, self._cell(r, 2, ColorButton).color()))
         return tops, errors
+
+    def _cell(self, row: int, column: int, kind: type[T]) -> T:
+        """The editor widget in a cell (every row is created with a name, a depth and a color editor)."""
+        widget = self.table.cellWidget(row, column)
+        assert isinstance(widget, kind)
+        return widget
 
     def _import(self):
         path, _filter = QFileDialog.getOpenFileName(self, _("Import tops"), "", _("Tops (*.csv *.txt);;All files (*)"))

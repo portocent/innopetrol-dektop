@@ -62,7 +62,7 @@ def plot_rect(widget_rect: QRectF, fm: QFontMetricsF) -> QRectF:
 
 def draw_axes(p: QPainter, r: QRectF, xa: Axis, ya: Axis) -> None:
     fm = QFontMetricsF(p.font())
-    p.fillRect(r, Qt.white)
+    p.fillRect(r, Qt.GlobalColor.white)
     for axis, horizontal in ((xa, True), (ya, False)):
         for v, major in axis.ticks():
             if horizontal:
@@ -71,7 +71,7 @@ def draw_axes(p: QPainter, r: QRectF, xa: Axis, ya: Axis) -> None:
                 p.drawLine(QPointF(x, r.top()), QPointF(x, r.bottom()))
                 if major:
                     p.setPen(BORDER)
-                    p.drawText(QRectF(x - 40, r.bottom() + 2, 80, fm.height()), Qt.AlignHCenter, fmt(v))
+                    p.drawText(QRectF(x - 40, r.bottom() + 2, 80, fm.height()), Qt.AlignmentFlag.AlignHCenter, fmt(v))
             else:
                 y = r.bottom() - axis.map_one(v, r.height())
                 p.setPen(QPen(GRID_MAJOR if major else GRID_MINOR, 0.8))
@@ -80,15 +80,17 @@ def draw_axes(p: QPainter, r: QRectF, xa: Axis, ya: Axis) -> None:
                     p.setPen(BORDER)
                     p.drawText(
                         QRectF(r.left() - 64, y - fm.height() / 2, 60, fm.height()),
-                        Qt.AlignRight | Qt.AlignVCenter,
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
                         fmt(v),
                     )
     p.setPen(QPen(BORDER, 1))
-    p.setBrush(Qt.NoBrush)
+    p.setBrush(Qt.BrushStyle.NoBrush)
     p.drawRect(r)
-    p.drawText(QRectF(r.left(), r.bottom() + fm.height() + 2, r.width(), fm.height()), Qt.AlignCenter, xa.label)
+    p.drawText(
+        QRectF(r.left(), r.bottom() + fm.height() + 2, r.width(), fm.height()), Qt.AlignmentFlag.AlignCenter, xa.label
+    )
     p.save()
     p.translate(r.left() - fm.horizontalAdvance("00000.0") - fm.height() - 4, r.center().y())
     p.rotate(-90)
-    p.drawText(QRectF(-r.height() / 2, 0, r.height(), fm.height()), Qt.AlignCenter, ya.label)
+    p.drawText(QRectF(-r.height() / 2, 0, r.height(), fm.height()), Qt.AlignmentFlag.AlignCenter, ya.label)
     p.restore()

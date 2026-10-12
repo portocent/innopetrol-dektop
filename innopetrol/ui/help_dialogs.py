@@ -22,7 +22,7 @@ def show_help(parent: QWidget) -> None:
                 _(
                     "<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale "
                     "({out} / {in_})"
-                ).format(out=k(QKeySequence.ZoomOut), in_=k(QKeySequence.ZoomIn)),
+                ).format(out=k(QKeySequence.StandardKey.ZoomOut), in_=k(QKeySequence.StandardKey.ZoomIn)),
                 _("“Fit”: whole well ({shortcut})").format(shortcut=k("Ctrl+0")),
                 _("{modifier} + wheel or trackpad pinch: continuous zoom at the cursor").format(modifier=MOD),
                 _("Exact scale: type 1:300 in the “Scale” field"),
@@ -48,8 +48,8 @@ def show_help(parent: QWidget) -> None:
                 _(
                     "{open} open LAS · {save} save project · {export} export · {tsave} / {tload} save / load template"
                 ).format(
-                    open=k(QKeySequence.Open),
-                    save=k(QKeySequence.Save),
+                    open=k(QKeySequence.StandardKey.Open),
+                    save=k(QKeySequence.StandardKey.Save),
                     export=k("Ctrl+E"),
                     tsave=k("Ctrl+T"),
                     tload=k("Ctrl+L"),

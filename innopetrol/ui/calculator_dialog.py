@@ -68,8 +68,8 @@ class CalculatorDialog(QDialog):
         test.clicked.connect(self._test)
         row.addWidget(test)
         row.addStretch()
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText(_("Create curve"))
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(_("Create curve"))
         buttons.accepted.connect(self._ok)
         buttons.rejected.connect(self.reject)
         row.addWidget(buttons)
@@ -86,9 +86,11 @@ class CalculatorDialog(QDialog):
         for m in doc.well.curves:
             unit = doc.well.curves[m].unit
             item = QListWidgetItem(f"{m}  [{unit}]" if unit else m)
-            item.setData(Qt.UserRole, m)
+            item.setData(Qt.ItemDataRole.UserRole, m)
             self.list.addItem(item)
-        self.list.itemDoubleClicked.connect(lambda it: self.expr.insertPlainText(curve_ref(it.data(Qt.UserRole))))
+        self.list.itemDoubleClicked.connect(
+            lambda it: self.expr.insertPlainText(curve_ref(it.data(Qt.ItemDataRole.UserRole)))
+        )
         right.addWidget(self.list)
         lay.addLayout(right)
 

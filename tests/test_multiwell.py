@@ -35,8 +35,8 @@ def test_equivalent_curves_and_units(docs):
 
 def check_well(lst, doc):
     for i in range(lst.count()):
-        if lst.item(i).data(Qt.UserRole) is doc:
-            lst.item(i).setCheckState(Qt.Checked)
+        if lst.item(i).data(Qt.ItemDataRole.UserRole) is doc:
+            lst.item(i).setCheckState(Qt.CheckState.Checked)
 
 
 def test_crossplot_with_two_wells(docs, qtbot):
@@ -45,14 +45,14 @@ def test_crossplot_with_two_wells(docs, qtbot):
     a, b = docs
     win = CrossplotWindow(a, "nd", None, docs)
     qtbot.addWidget(win)
-    n_one = win.plot.x.size
+    n_one = win.plot.x_values.size
     check_well(win.wells, b)
-    assert win.c.currentData() == BY_WELL  # switched to color by well
-    assert win.plot.x.size == 2 * n_one and [g[0] for g in win.plot.groups] == ["Test Well 1", "Other"]
+    assert win.color_curve.currentData() == BY_WELL  # switched to color by well
+    assert win.plot.x_values.size == 2 * n_one and [g[0] for g in win.plot.groups] == ["Test Well 1", "Other"]
     # Density of the second well arrives in g/cm³ like the first one.
-    assert np.nanmax(win.plot.y) < 4
+    assert np.nanmax(win.plot.y_values) < 4
     win.zone.setCurrentIndex(win.zone.findData("A"))
-    assert win.plot.x.size == zone_mask(a, "A").sum() + zone_mask(b, "A").sum()
+    assert win.plot.x_values.size == zone_mask(a, "A").sum() + zone_mask(b, "A").sum()
 
 
 def test_histogram_with_two_wells(docs, qtbot):

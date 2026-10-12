@@ -112,7 +112,11 @@ def draw_heading(p: QPainter, rect: QRectF, well, rows: list[tuple[str, str]]) -
     p.fillRect(band, QColor("#eaf2f8"))
     p.setPen(BORDER)
     p.setFont(big)
-    p.drawText(band.adjusted(line * 0.6, 0, -line * 0.6, 0), Qt.AlignLeft | Qt.AlignVCenter, well.name)
+    p.drawText(
+        band.adjusted(line * 0.6, 0, -line * 0.6, 0),
+        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+        well.name,
+    )
 
     half = box.width() / 2
     row_h = line * 1.45
@@ -127,20 +131,24 @@ def draw_heading(p: QPainter, rect: QRectF, well, rows: list[tuple[str, str]]) -
         p.drawLine(cell.bottomLeft(), cell.bottomRight())
         p.setPen(QColor("#566573"))
         p.setFont(bold)
-        p.drawText(QRectF(cell.left() + line * 0.6, cell.top(), label_w, row_h), Qt.AlignLeft | Qt.AlignVCenter, label)
+        p.drawText(
+            QRectF(cell.left() + line * 0.6, cell.top(), label_w, row_h),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            label,
+        )
         p.setPen(BORDER)
         p.setFont(base)
         vx = cell.left() + line * 0.6 + label_w
         room = cell.right() - vx - line * 0.4
         p.drawText(
             QRectF(vx, cell.top(), room, row_h),
-            Qt.AlignLeft | Qt.AlignVCenter,
-            fm.elidedText(value, Qt.ElideRight, room),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            fm.elidedText(value, Qt.TextElideMode.ElideRight, room),
         )
     p.setPen(QPen(QColor("#d5d8dc"), line / 14))
     p.drawLine(QPointF(box.left() + half, band.bottom()), QPointF(box.left() + half, box.bottom()))
     p.setPen(QPen(BORDER, line / 10))
-    p.setBrush(Qt.NoBrush)
+    p.setBrush(Qt.BrushStyle.NoBrush)
     p.drawLine(band.bottomLeft(), band.bottomRight())
     p.drawRect(box)
     p.restore()
@@ -154,13 +162,17 @@ def _draw_title(p: QPainter, rect: QRectF, lines: list[str]) -> None:
     p.setPen(BORDER)
     p.setFont(bold)
     fm_b = QFontMetricsF(bold)
-    p.drawText(QRectF(rect.left(), rect.top(), rect.width(), fm_b.height()), Qt.AlignLeft | Qt.AlignVCenter, lines[0])
+    p.drawText(
+        QRectF(rect.left(), rect.top(), rect.width(), fm_b.height()),
+        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+        lines[0],
+    )
     p.restore()
     fm = QFontMetricsF(p.font())
     p.setPen(QColor("#566573"))
     p.drawText(
         QRectF(rect.left(), rect.top() + fm_b.height(), rect.width(), fm.height()),
-        Qt.AlignLeft | Qt.AlignVCenter,
+        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
         lines[1],
     )
 
@@ -187,7 +199,7 @@ def export_png(
     margin = 12 * k
     width = int(total_width(layout, k) + 2 * margin)
 
-    probe = QImage(1, 1, QImage.Format_ARGB32)
+    probe = QImage(1, 1, QImage.Format.Format_ARGB32)
     _set_dpi(probe, dpi)
     rows = heading_rows(well, scale_ratio, top, bottom)
     with _painter(probe) as p:
@@ -201,9 +213,9 @@ def export_png(
             )
         )
 
-    img = QImage(width, height, QImage.Format_ARGB32)
+    img = QImage(width, height, QImage.Format.Format_ARGB32)
     _set_dpi(img, dpi)
-    img.fill(Qt.white)
+    img.fill(Qt.GlobalColor.white)
     with _painter(img) as p:
         title_rect = QRectF(margin, margin, width - 2 * margin, title_h)
         if heading:
@@ -236,19 +248,25 @@ def export_pdf(
     ppu = px_per_unit(scale_ratio, dpi, well.depth_unit)
     margin_mm = 10
     track_w_mm = total_width(layout, k) / dpi * 25.4
-    base = QPageSize(QPageSize.A3 if page == "A3" else QPageSize.Letter if page == "Letter" else QPageSize.A4)
-    base_mm = base.size(QPageSize.Millimeter)
+    base = QPageSize(
+        QPageSize.PageSizeId.A3
+        if page == "A3"
+        else QPageSize.PageSizeId.Letter
+        if page == "Letter"
+        else QPageSize.PageSizeId.A4
+    )
+    base_mm = base.size(QPageSize.Unit.Millimeter)
     page_w = max(base_mm.width(), track_w_mm + 2 * margin_mm)
-    page_size = QPageSize(QSizeF(page_w, base_mm.height()), QPageSize.Millimeter, "InnoPetrol")
+    page_size = QPageSize(QSizeF(page_w, base_mm.height()), QPageSize.Unit.Millimeter, "InnoPetrol")
 
     writer = QPdfWriter(str(path))
     writer.setResolution(dpi)
     writer.setPageLayout(
         QPageLayout(
             page_size,
-            QPageLayout.Portrait,
+            QPageLayout.Orientation.Portrait,
             QMarginsF(margin_mm, margin_mm, margin_mm, margin_mm),
-            QPageLayout.Millimeter,
+            QPageLayout.Unit.Millimeter,
         )
     )
     writer.setTitle(_("{well} - log 1:{scale}").format(well=well.name, scale=f"{scale_ratio:g}"))
@@ -306,7 +324,7 @@ class _painter:
 
     def __enter__(self) -> QPainter:
         self.p = QPainter(self.device)
-        self.p.setRenderHint(QPainter.TextAntialiasing)
+        self.p.setRenderHint(QPainter.RenderHint.TextAntialiasing)
         return self.p
 
     def __exit__(self, *exc):

@@ -60,8 +60,8 @@ class PetroDialog(QDialog):
         self.add_track.setChecked(True)
         lay.addWidget(self.add_track)
         lay.addWidget(QLabel(_("Curves are computed with formulas shown in the well tree and can be exported to LAS.")))
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText(_("Compute"))
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(_("Compute"))
         buttons.accepted.connect(self._run)
         buttons.rejected.connect(self.reject)
         lay.addWidget(buttons)
@@ -134,7 +134,7 @@ class PetroDialog(QDialog):
             f3.addWidget(box, 2, i * 2 + 1)
         pick_rw = QPushButton(_("Pick Rw on Pickett plot…"))
         pick_rw.clicked.connect(lambda: self._pick_rw(None))
-        f3.addWidget(pick_rw, 3, 0, 1, 10, Qt.AlignLeft)
+        f3.addWidget(pick_rw, 3, 0, 1, 10, Qt.AlignmentFlag.AlignLeft)
         page_lay.addWidget(g3)
         page_lay.addWidget(self._build_temperature(p))
         page_lay.addStretch()
@@ -178,7 +178,7 @@ class PetroDialog(QDialog):
         self.zone_table.setHorizontalHeaderLabels([_(v) for v in petro.ZONE_PARAMS.values()])
         self.zone_table.setVerticalHeaderLabels([f"{z.name}  ({z.top:g}–{z.base:g})" for z in self.zones])
         header = self.zone_table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         header.setMinimumSectionSize(52)
         header.setStretchLastSection(True)
         for r, z in enumerate(self.zones):
@@ -287,7 +287,9 @@ class PetroDialog(QDialog):
                 self.zone_table.item(row, c).setText("")
 
     def _zone_cell(self, row: int, key: str) -> QTableWidgetItem:
-        return self.zone_table.item(row, list(petro.ZONE_PARAMS).index(key))
+        item = self.zone_table.item(row, list(petro.ZONE_PARAMS).index(key))
+        assert item is not None  # every cell is created with the table
+        return item
 
     def _zone_number(self, row: int, key: str, default: float) -> float:
         try:

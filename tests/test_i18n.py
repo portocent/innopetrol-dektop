@@ -91,7 +91,7 @@ def test_model_messages_follow_the_language():
 def test_live_language_switch(qtbot, tmp_path, samples):
     from innopetrol.ui.main_window import MainWindow
 
-    settings = QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat)
+    settings = QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat)
     w = MainWindow(settings)
     qtbot.addWidget(w)
     w.open_las([str(samples / "Testdata.las")])

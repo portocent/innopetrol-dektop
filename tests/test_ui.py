@@ -11,7 +11,7 @@ from innopetrol.ui.main_window import MainWindow
 
 @pytest.fixture
 def win(qtbot, tmp_path, samples):
-    settings = QSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat)
+    settings = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
     w = MainWindow(settings)
     qtbot.addWidget(w)
     w.resize(1400, 900)
@@ -185,7 +185,14 @@ def test_cursor_and_scroll_reuse_tiles(win, qtbot, monkeypatch):
     original = c._render_tile
     monkeypatch.setattr(c, "_render_tile", lambda k: renders.append(k) or original(k))
     for y in range(int(c.header_h) + 20, int(c.height()) - 20, 15):
-        ev = QMouseEvent(QEvent.MouseMove, QPointF(80, y), QPointF(80, y), Qt.NoButton, Qt.NoButton, Qt.NoModifier)
+        ev = QMouseEvent(
+            QEvent.Type.MouseMove,
+            QPointF(80, y),
+            QPointF(80, y),
+            Qt.MouseButton.NoButton,
+            Qt.MouseButton.NoButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
         c.mouseMoveEvent(ev)
         c.repaint()
     assert renders == []
@@ -241,12 +248,14 @@ def test_slow_machine_uses_previews(win, qtbot, monkeypatch):
     x = w0 - c.x_offset
 
     def ev(kind, x, buttons):
-        return QMouseEvent(kind, QPointF(x, 300), QPointF(x, 300), Qt.LeftButton, buttons, Qt.NoModifier)
+        return QMouseEvent(
+            kind, QPointF(x, 300), QPointF(x, 300), Qt.MouseButton.LeftButton, buttons, Qt.KeyboardModifier.NoModifier
+        )
 
-    c.mousePressEvent(ev(QEvent.MouseButtonPress, x, Qt.LeftButton))
-    c.mouseMoveEvent(ev(QEvent.MouseMove, x + 40, Qt.LeftButton))
+    c.mousePressEvent(ev(QEvent.Type.MouseButtonPress, x, Qt.MouseButton.LeftButton))
+    c.mouseMoveEvent(ev(QEvent.Type.MouseMove, x + 40, Qt.MouseButton.LeftButton))
     assert win.docs[0].layout.tracks[0].width == w0 and c._drag_pending == (0, w0 + 40)
-    c.mouseReleaseEvent(ev(QEvent.MouseButtonRelease, x + 40, Qt.NoButton))
+    c.mouseReleaseEvent(ev(QEvent.Type.MouseButtonRelease, x + 40, Qt.MouseButton.NoButton))
     assert win.docs[0].layout.tracks[0].width == w0 + 40 and c._drag_pending is None
     assert log_canvas.FRAME_BUDGET_MS < 50
 
@@ -291,7 +300,7 @@ def test_zoom_buttons_and_pinch(win, qtbot):
 def test_zoom_actions_disabled_without_wells(qtbot, tmp_path):
     from PySide6.QtCore import QSettings
 
-    w = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat))
+    w = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat))
     qtbot.addWidget(w)
     assert not w.a_zoom_in.isEnabled() and not w.a_zoom_out.isEnabled() and not w.a_fit.isEnabled()
 

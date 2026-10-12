@@ -18,7 +18,7 @@ MOD = "⌘" if sys.platform == "darwin" else "Ctrl"
 
 def key_text(seq) -> str:
     """Shortcut in the platform's notation: ⌘O on Mac, Ctrl+O on Windows/Linux."""
-    return QKeySequence(seq).toString(QKeySequence.NativeText)
+    return QKeySequence(seq).toString(QKeySequence.SequenceFormat.NativeText)
 
 
 def spin(value: float, lo: float, hi: float, step: float = 0.01, decimals: int = 3) -> QDoubleSpinBox:

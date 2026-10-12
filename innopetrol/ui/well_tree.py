@@ -16,9 +16,9 @@ from innopetrol.model import units
 from innopetrol.model.mnemonics import FAMILIES, family_of
 from innopetrol.ui.document import WellDocument
 
-ROLE_DOC = Qt.UserRole
-ROLE_KIND = Qt.UserRole + 1
-ROLE_NAME = Qt.UserRole + 2
+ROLE_DOC = Qt.ItemDataRole.UserRole
+ROLE_KIND = Qt.ItemDataRole.UserRole + 1
+ROLE_NAME = Qt.ItemDataRole.UserRole + 2
 
 
 class WellTree(QTreeWidget):
@@ -32,7 +32,7 @@ class WellTree(QTreeWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setHeaderHidden(True)
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
         self.itemDoubleClicked.connect(self._double_click)
         self.template_item = QTreeWidgetItem([""])
@@ -55,7 +55,7 @@ class WellTree(QTreeWidget):
     def _item_for(self, doc) -> QTreeWidgetItem | None:
         for i in range(self.topLevelItemCount()):
             it = self.topLevelItem(i)
-            if it.data(0, ROLE_DOC) is doc:
+            if it is not None and it.data(0, ROLE_DOC) is doc:
                 return it
         return None
 

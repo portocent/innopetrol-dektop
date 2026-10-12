@@ -72,7 +72,7 @@ class SurveyDialog(QDialog):
 
         lay.addWidget(self._build_location(w.location))
         lay.addStretch()
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self._ok)
         buttons.rejected.connect(self.reject)
         lay.addWidget(buttons)

@@ -24,8 +24,8 @@ def synthetic(**curves) -> Well:
 
 
 def render(track: TrackSpec, well) -> QImage:
-    img = QImage(W, H, QImage.Format_RGB32)
-    img.fill(Qt.white)
+    img = QImage(W, H, QImage.Format.Format_RGB32)
+    img.fill(Qt.GlobalColor.white)
     p = QPainter(img)
     draw_track_body(p, QRectF(0, 0, W, H), track, well, DepthTransform(0, 1.0))
     p.end()
@@ -74,7 +74,7 @@ def test_fill_colored_by_value(qapp):
     track.fills = [FillSpec(right_curve="GR", colormap="gamma_ray")]  # from the left edge to the curve
     img = render(track, well)
     assert is_close(color_at(img, W / 2, 75), colors[-1])  # shale: last color
-    assert is_close(color_at(img, W / 2, 23), QColor(Qt.white))  # GR 0: nothing to fill
+    assert is_close(color_at(img, W / 2, 23), QColor(Qt.GlobalColor.white))  # GR 0: nothing to fill
 
 
 def test_volumes_track_stacks_fractions(qapp):
@@ -185,7 +185,7 @@ def test_pick_tops_in_correlation(correlation, qtbot):
     win.pick.setChecked(True)
     canvas = win.canvases[1]
     y = canvas.header_h + 100
-    qtbot.mouseClick(canvas, Qt.LeftButton, pos=QPointF(40, y).toPoint())
+    qtbot.mouseClick(canvas, Qt.MouseButton.LeftButton, pos=QPointF(40, y).toPoint())
     top = next(t for t in b.well.tops if t.name == "Sand A")
     assert top.depth == pytest.approx(canvas.depth_at(y), abs=0.5)
     assert top.color == "#123456"  # same name, same color in every well

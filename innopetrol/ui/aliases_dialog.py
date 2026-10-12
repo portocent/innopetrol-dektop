@@ -47,16 +47,16 @@ class AliasesDialog(QDialog):
         self.table.setHorizontalHeaderLabels([_("Family"), _("Built-in names"), _("Your names")])
         self.table.verticalHeader().setVisible(False)
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(COL_FAMILY, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(COL_BUILTIN, QHeaderView.Stretch)
-        header.setSectionResizeMode(COL_USER, QHeaderView.Stretch)
+        header.setSectionResizeMode(COL_FAMILY, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(COL_BUILTIN, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(COL_USER, QHeaderView.ResizeMode.Stretch)
         self.keys = list(mnemonics.FAMILIES)
         current = mnemonics.user_aliases()
         for r, key in enumerate(self.keys):
             fam = mnemonics.FAMILIES[key]
             for c, text in ((COL_FAMILY, _(fam.name)), (COL_BUILTIN, ", ".join(fam.aliases))):
                 item = QTableWidgetItem(text)
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 if c == COL_BUILTIN:
                     item.setToolTip(text)
                 self.table.setItem(r, c, item)
@@ -68,7 +68,7 @@ class AliasesDialog(QDialog):
             b.clicked.connect(slot)
             row.addWidget(b)
         row.addStretch()
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self._ok)
         buttons.rejected.connect(self.reject)
         row.addWidget(buttons)

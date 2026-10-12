@@ -26,6 +26,11 @@ uv run mypy                      # types
 
 A change is ready when all of them pass. Bug fixes come with a test that failed before the fix.
 
+Qt enums are written in full (`Qt.AlignmentFlag.AlignCenter`, `QMessageBox.StandardButton.Yes`): the
+short forms work at runtime but are not in PySide6's type information, so mypy rejects them. If mypy
+passes locally but fails in CI, the local PySide6 may lack its type stubs (`.pyi` files); reinstall it
+with `uv sync --reinstall-package pyside6-essentials`.
+
 ## Conventions
 
 **Code**

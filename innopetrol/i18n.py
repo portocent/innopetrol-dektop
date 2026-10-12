@@ -89,6 +89,6 @@ def install_qt_translator(app, code: str) -> None:
     if code == DEFAULT:
         return
     translator = QTranslator(app)
-    if translator.load(f"qtbase_{code}", QLibraryInfo.path(QLibraryInfo.TranslationsPath)):
+    if translator.load(f"qtbase_{code}", QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)):
         app.installTranslator(translator)
         _qt_translators.append(translator)

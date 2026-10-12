@@ -96,7 +96,7 @@ def test_base_map_selects_a_section(qtbot, samples, qapp):
     for name in ("B", "A"):
         item = next(i for i in m.items if i.doc.title == name)
         sx, sy = (float(v) for v in m.to_screen(item.location.x, item.location.y))
-        qtbot.mouseClick(m, Qt.LeftButton, pos=QPointF(sx, sy).toPoint())
+        qtbot.mouseClick(m, Qt.MouseButton.LeftButton, pos=QPointF(sx, sy).toPoint())
     assert win.correlate.isEnabled()
     win.correlate.click()
     assert [d.title for d in sent[0]] == ["B", "A"]  # in the order they were picked
@@ -114,5 +114,16 @@ def test_map_zoom_keeps_the_point_under_the_mouse(qtbot, samples, qapp):
     m.fit()
     pos = QPointF(200, 150)
     before = m.to_map(pos)
-    m.wheelEvent(QWheelEvent(pos, pos, QPoint(), QPoint(0, 240), Qt.NoButton, Qt.NoModifier, Qt.NoScrollPhase, False))
+    m.wheelEvent(
+        QWheelEvent(
+            pos,
+            pos,
+            QPoint(),
+            QPoint(0, 240),
+            Qt.MouseButton.NoButton,
+            Qt.KeyboardModifier.NoModifier,
+            Qt.ScrollPhase.NoScrollPhase,
+            False,
+        )
+    )
     assert m.to_map(pos) == pytest.approx(before)

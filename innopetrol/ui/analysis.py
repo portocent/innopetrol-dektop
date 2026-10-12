@@ -6,7 +6,7 @@ import math
 from itertools import pairwise
 
 import numpy as np
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPointF, QRectF, Qt
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -76,7 +76,7 @@ class Histogram(QWidget):
         p.fillRect(self.rect(), QColor("#f7f8f9"))
         r = self.plot_area
         if self.values.size == 0:
-            p.drawText(self.rect(), Qt.AlignCenter, _("No data in the interval"))
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, _("No data in the interval"))
             p.end()
             return
         xa = self.x_axis
@@ -117,7 +117,7 @@ class Histogram(QWidget):
         ymax = max(max((float(f.max()) for f in freqs), default=1) * 1.1, 1)
         draw_axes(p, r, xa, Axis(0, ymax, False, _("Frequency (%)")))
         xs = r.left() + xa.map(edges, r.width())
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         fm = QFontMetricsF(self.font())
         for i, ((_v, color, name), f) in enumerate(zip(self.series, freqs, strict=True)):
             ys = r.bottom() - f / ymax * r.height()
@@ -132,8 +132,8 @@ class Histogram(QWidget):
             p.setPen(QColor("#2c3e50"))
             p.drawText(
                 QRectF(r.right() - 125, ly, 120, fm.height()),
-                Qt.AlignLeft | Qt.AlignVCenter,
-                fm.elidedText(name, Qt.ElideRight, 120),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                fm.elidedText(name, Qt.TextElideMode.ElideRight, 120),
             )
 
     def paint_overlay(self, p: QPainter, r: QRectF, xa: Axis) -> None:
@@ -165,8 +165,8 @@ class StatsDialog(QDialog):
         self.bins.setRange(5, 200)
         self.bins.setValue(40)
         self.stats = QLabel()
-        self.stats.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.stats.setAlignment(Qt.AlignTop)
+        self.stats.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.stats.setAlignment(Qt.AlignmentFlag.AlignTop)
         side.addRow(_("Curve:"), self.curve)
         if self.wells is not None:
             side.addRow(_("Wells:"), self.wells)
@@ -301,26 +301,26 @@ class CurveTableModel(QAbstractTableModel):
         self.endResetModel()
 
     # A flat table: only the invisible root (no parent, or an invalid one) has rows and columns.
-    def rowCount(self, parent: QModelIndex | None = None):
+    def rowCount(self, parent: QModelIndex | QPersistentModelIndex | None = None):
         return 0 if parent is not None and parent.isValid() else self.well.depth.size
 
-    def columnCount(self, parent: QModelIndex | None = None):
+    def columnCount(self, parent: QModelIndex | QPersistentModelIndex | None = None):
         return 0 if parent is not None and parent.isValid() else len(self.names) + len(self.depths)
 
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole:
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole:
             r, c = index.row(), index.column()
             nd = len(self.depths)
             v = self.depths[c][1][r] if c < nd else self.curves[self.names[c - nd]].values[r]
             return "" if not np.isfinite(v) else f"{v:.4f}".rstrip("0").rstrip(".")
-        if role == Qt.TextAlignmentRole:
-            return int(Qt.AlignRight | Qt.AlignVCenter)
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            return int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         return None
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role != Qt.DisplayRole:
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
-        if orientation == Qt.Horizontal:
+        if orientation == Qt.Orientation.Horizontal:
             if section < len(self.depths):
                 return self.depths[section][0]
             c = self.curves[self.names[section - len(self.depths)]]
@@ -346,7 +346,7 @@ class DataTableWindow(QDialog):
         self.model = CurveTableModel(doc, self)
         self.view = QTableView()
         self.view.setModel(self.model)
-        self.view.setSelectionBehavior(QTableView.SelectRows)
+        self.view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.view.verticalHeader().setDefaultSectionSize(20)
         lay.addWidget(self.view)
         doc.cursorMoved.connect(self._follow)
@@ -361,7 +361,7 @@ class DataTableWindow(QDialog):
         r = int(np.clip(np.searchsorted(self.doc.well.depth, depth), 0, self.doc.well.depth.size - 1))
         self._internal = True
         self.view.selectRow(r)
-        self.view.scrollTo(self.model.index(r, 0), QTableView.PositionAtCenter)
+        self.view.scrollTo(self.model.index(r, 0), QTableView.ScrollHint.PositionAtCenter)
         self._internal = False
 
     def _row_changed(self, current, _previous):

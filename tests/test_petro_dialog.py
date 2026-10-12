@@ -82,7 +82,7 @@ def test_gr_picker_lines_follow_the_mouse(qtbot):
     qtbot.waitExposed(d)
     r, xa = d.hist.plot_area, d.hist.x_axis
     x = r.left() + float(xa.map(np.array([130.0]), r.width())[0])
-    qtbot.mouseClick(d.hist, Qt.LeftButton, pos=QPointF(x, r.center().y()).toPoint())
+    qtbot.mouseClick(d.hist, Qt.MouseButton.LeftButton, pos=QPointF(x, r.center().y()).toPoint())
     assert d.shale.value() == pytest.approx(130, abs=1.5)  # nearest line moved to the click
     assert d.clean.value() == 40
     d._percentiles()
@@ -107,7 +107,7 @@ def test_pickett_fit_and_drag(qtbot):
     pos = QPointF(r.left() + r.width() * 0.5, r.top() + r.height() * 0.4)
     got = []
     plot.rwChanged.connect(got.append)
-    qtbot.mousePress(plot, Qt.LeftButton, pos=pos.toPoint())
+    qtbot.mousePress(plot, Qt.MouseButton.LeftButton, pos=pos.toPoint())
     rt_here = plot.xa.value_at(pos.toPoint().x() - r.left(), r.width())
     phi_here = plot.ya.value_at(r.bottom() - pos.toPoint().y(), r.height())
     assert got and got[-1] == pytest.approx(rt_here * phi_here**2, rel=1e-3)

@@ -39,7 +39,7 @@ def no_modal_boxes(monkeypatch):
     calls = []
     for name in ("warning", "information", "critical"):
         monkeypatch.setattr(QMessageBox, name, staticmethod(lambda *a, _n=name, **k: calls.append((_n, a))))
-    monkeypatch.setattr(QMessageBox, "question", staticmethod(lambda *a, **k: QMessageBox.Yes))
+    monkeypatch.setattr(QMessageBox, "question", staticmethod(lambda *a, **k: QMessageBox.StandardButton.Yes))
     return calls
 
 

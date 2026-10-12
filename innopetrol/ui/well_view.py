@@ -27,8 +27,8 @@ class WellView(QWidget):
         super().__init__(parent)
         self.doc = doc
         self.canvas = LogCanvas(doc, self)
-        self.vbar = QScrollBar(Qt.Vertical, self)
-        self.hbar = QScrollBar(Qt.Horizontal, self)
+        self.vbar = QScrollBar(Qt.Orientation.Vertical, self)
+        self.hbar = QScrollBar(Qt.Orientation.Horizontal, self)
         lay = QGridLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
@@ -125,7 +125,7 @@ class WellView(QWidget):
             r = QMessageBox.question(
                 self, _("Remove track"), _("Remove the track “{title}” and its settings?").format(title=track.title)
             )
-            if r != QMessageBox.Yes:
+            if r != QMessageBox.StandardButton.Yes:
                 return
         self.canvas.selected = -1
         self.doc.remove_track(index)
@@ -210,7 +210,7 @@ class WellView(QWidget):
     def closeEvent(self, e):
         if self.confirm_close:
             r = QMessageBox.question(self, _("Close well"), _("Close the well “{name}”?").format(name=self.doc.title))
-            if r != QMessageBox.Yes:  # formerly: retval == 1024 (a magic number)
+            if r != QMessageBox.StandardButton.Yes:  # formerly: retval == 1024 (a magic number)
                 e.ignore()
                 return
         e.accept()

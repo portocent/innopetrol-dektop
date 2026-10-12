@@ -32,23 +32,23 @@ from innopetrol.model.scales import depth_ticks, log_grid_positions, map_value, 
 from innopetrol.render.colormaps import LEVELS, palette
 
 PEN_STYLES = {
-    "solid": Qt.SolidLine,
-    "dash": Qt.DashLine,
-    "dashdot": Qt.DashDotLine,
-    "dot": Qt.DotLine,
-    "dashdotdot": Qt.DashDotDotLine,
+    "solid": Qt.PenStyle.SolidLine,
+    "dash": Qt.PenStyle.DashLine,
+    "dashdot": Qt.PenStyle.DashDotLine,
+    "dot": Qt.PenStyle.DotLine,
+    "dashdotdot": Qt.PenStyle.DashDotDotLine,
 }
 BRUSH_STYLES = {
-    "solid": Qt.SolidPattern,
-    "dense1": Qt.Dense1Pattern,
-    "dense2": Qt.Dense2Pattern,
-    "dense3": Qt.Dense3Pattern,
-    "dense5": Qt.Dense5Pattern,
-    "dense6": Qt.Dense6Pattern,
-    "hor": Qt.HorPattern,
-    "ver": Qt.VerPattern,
-    "bdiag": Qt.BDiagPattern,
-    "diagcross": Qt.DiagCrossPattern,
+    "solid": Qt.BrushStyle.SolidPattern,
+    "dense1": Qt.BrushStyle.Dense1Pattern,
+    "dense2": Qt.BrushStyle.Dense2Pattern,
+    "dense3": Qt.BrushStyle.Dense3Pattern,
+    "dense5": Qt.BrushStyle.Dense5Pattern,
+    "dense6": Qt.BrushStyle.Dense6Pattern,
+    "hor": Qt.BrushStyle.HorPattern,
+    "ver": Qt.BrushStyle.VerPattern,
+    "bdiag": Qt.BrushStyle.BDiagPattern,
+    "diagcross": Qt.BrushStyle.DiagCrossPattern,
 }
 
 GRID_MINOR = QColor("#e3e6e8")
@@ -132,7 +132,7 @@ def draw_track_body(
     p.setClipRect(rect)
     p.translate(rect.topLeft())
     w, h = rect.width(), rect.height()
-    p.fillRect(QRectF(0, 0, w, h), Qt.white)
+    p.fillRect(QRectF(0, 0, w, h), Qt.GlobalColor.white)
 
     _draw_vertical_grid(p, track, w, h, opts)
     _draw_depth_lines(p, tf, w, h, opts)
@@ -156,7 +156,7 @@ def draw_track_body(
 
 def _draw_frame(p, w, h, opts):
     p.setPen(QPen(BORDER, 1.2 * opts.k))
-    p.setBrush(Qt.NoBrush)
+    p.setBrush(Qt.BrushStyle.NoBrush)
     if opts.frame_ends:
         p.drawRect(QRectF(0, 0, w, h))
     else:
@@ -204,8 +204,8 @@ def _qpolygon(n: int) -> tuple[QPolygonF, np.ndarray]:
     if n == 0:  # no points, no memory to write into
         return poly, np.empty((0, 2))
     poly.resize(n)
-    # The shiboken6 stub only declares VoidPtr(address); the size and writable arguments exist at runtime.
-    memory = shiboken6.VoidPtr(poly.data(), n * 16, True)  # type: ignore[call-arg]
+    # The shiboken6 stub only declares VoidPtr(int); the pointer, size and writable flag work at runtime.
+    memory = shiboken6.VoidPtr(poly.data(), n * 16, True)  # type: ignore[call-arg, arg-type]
     view = np.frombuffer(memory, dtype=np.float64).reshape(n, 2)
     return poly, view
 
@@ -227,7 +227,7 @@ def _hlines(p: QPainter, ys: np.ndarray, x0, x1) -> None:
     view[1::2, 0] = x1
     view[0::2, 1] = ys
     view[1::2, 1] = ys
-    p.drawLines(poly)
+    p.drawLines(poly)  # type: ignore[call-overload]  # pairs of points; the stub omits QPolygonF
 
 
 def _runs(valid: np.ndarray) -> list[tuple[int, int]]:
@@ -285,12 +285,12 @@ def _stroke(p, style: CurveStyle, line_style: str, x, valid, y, opts):
     for a, b in _runs(valid):
         if b - a < 3:
             # Isolated samples (e.g. core data) are drawn as a visible dot.
-            p.setRenderHint(QPainter.Antialiasing, True)
-            p.setPen(Qt.NoPen)
+            p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(color)
             for xi, yi in zip(x[a:b], y[a:b], strict=True):
                 p.drawEllipse(QPointF(xi, yi), r, r)
-            p.setBrush(Qt.NoBrush)
+            p.setBrush(Qt.BrushStyle.NoBrush)
             continue
         xs, ys = x[a:b], y[a:b]
         span_rows = (ys[-1] - ys[0]) * opts.dpr
@@ -302,23 +302,23 @@ def _stroke(p, style: CurveStyle, line_style: str, x, valid, y, opts):
             span_color = QColor(color)
             if line_style != "solid":
                 span_color.setAlphaF(0.45)
-            pen = QPen(span_color, 1, Qt.SolidLine, Qt.FlatCap)
+            pen = QPen(span_color, 1, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap)
             pen.setCosmetic(True)
-            p.setRenderHint(QPainter.Antialiasing, False)
+            p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
             p.setPen(pen)
             _hlines(p, yc, lo - width / 2, hi + width / 2)
         else:
             pen = QPen(
                 color,
                 width,
-                PEN_STYLES.get(line_style, Qt.SolidLine),
-                Qt.FlatCap,
-                Qt.RoundJoin if width >= 2 else Qt.MiterJoin,
+                PEN_STYLES.get(line_style, Qt.PenStyle.SolidLine),
+                Qt.PenCapStyle.FlatCap,
+                Qt.PenJoinStyle.RoundJoin if width >= 2 else Qt.PenJoinStyle.MiterJoin,
             )
-            p.setRenderHint(QPainter.Antialiasing, True)
+            p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             p.setPen(pen)
             p.drawPolyline(polygon_from_arrays(xs, ys))
-    p.setRenderHint(QPainter.Antialiasing, False)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
 
 
 def _fill_bound(track, fill: FillSpec, side: str, well, sl, w, n):
@@ -355,7 +355,7 @@ def _draw_fill(p, track, fill: FillSpec, well, sl, y, w, opts):
     valid = np.isfinite(xl) & np.isfinite(xr)
     xr = np.where(valid, np.maximum(xl, xr), xr)  # only where the left bound is to the left
     path = QPainterPath()
-    path.setFillRule(Qt.WindingFill)
+    path.setFillRule(Qt.FillRule.WindingFill)
     for a, b in _runs(valid):
         if b - a < 2:
             continue
@@ -367,7 +367,7 @@ def _draw_fill(p, track, fill: FillSpec, well, sl, y, w, opts):
 
 def pattern_brush(fill: FillSpec, k: float) -> QBrush:
     """Brush of a solid/pattern fill; patterns are scaled with the line width factor when exporting."""
-    brush = QBrush(QColor(fill.color), BRUSH_STYLES.get(fill.pattern, Qt.SolidPattern))
+    brush = QBrush(QColor(fill.color), BRUSH_STYLES.get(fill.pattern, Qt.BrushStyle.SolidPattern))
     if k != 1:
         brush.setTransform(QTransform.fromScale(k, k))
     return brush
@@ -415,8 +415,8 @@ def _draw_colormap_fill(p, name: str, xl, xr, t, y, opts):
     starts = np.flatnonzero(np.concatenate(([True], level[1:] != level[:-1])))
     ends = np.concatenate((starts[1:], [level.size]))
     p.save()
-    p.setPen(Qt.NoPen)
-    p.setRenderHint(QPainter.Antialiasing, False)
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
     for i0, i1 in zip(starts, ends, strict=True):
         if level[i0] < 0:
             continue
@@ -479,7 +479,7 @@ def draw_tops(p, tops, tf: DepthTransform, w, h, opts: RenderOptions, labels=Tru
         if y < -fm.height() or y > h + fm.height():
             continue
         color = QColor(top.color)
-        p.setPen(QPen(color, 1.6 * opts.k, Qt.DashLine))
+        p.setPen(QPen(color, 1.6 * opts.k, Qt.PenStyle.DashLine))
         p.drawLine(QPointF(0, y), QPointF(w, y))
         if labels:
             text = top.name
@@ -487,7 +487,7 @@ def draw_tops(p, tops, tf: DepthTransform, w, h, opts: RenderOptions, labels=Tru
             box = QRectF(3 * opts.k, y - fm.height() - 1 * opts.k, tw, fm.height())
             p.fillRect(box, QColor(255, 255, 255, 215))
             p.setPen(color)
-            p.drawText(box, Qt.AlignCenter, text)
+            p.drawText(box, Qt.AlignmentFlag.AlignCenter, text)
 
 
 # ------------------------------------------------------------------------------ depth track
@@ -515,7 +515,7 @@ def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: R
     for d, y in zip(ticks.labels, tf.y(ticks.labels), strict=True):
         p.setFont(bold if abs(d / big - round(d / big)) < 1e-9 else font)
         p.setPen(BORDER)
-        p.drawText(QRectF(0, y - fm.height() / 2, w, fm.height()), Qt.AlignCenter, f"{d:.{decimals}f}")
+        p.drawText(QRectF(0, y - fm.height() / 2, w, fm.height()), Qt.AlignmentFlag.AlignCenter, f"{d:.{decimals}f}")
     p.setFont(font)
     if opts.draw_tops:
         draw_tops(p, well.tops, tf, w, h, opts, labels=False)
@@ -563,7 +563,7 @@ class _Header:
 
     def text(self, rect: QRectF, align, text: str, width: float | None = None) -> None:
         """Draws text, eliding it with "…" if it does not fit in `width` (default: the rect width)."""
-        self.p.drawText(rect, align, self.fm.elidedText(text, Qt.ElideRight, width or rect.width()))
+        self.p.drawText(rect, align, self.fm.elidedText(text, Qt.TextElideMode.ElideRight, width or rect.width()))
 
 
 def draw_track_header(
@@ -591,7 +591,7 @@ def draw_track_header(
             if fill.visible and fill.label:
                 y = _header_fill(hd, fill, y)
     p.setPen(QPen(BORDER, 1.2 * opts.k))
-    p.setBrush(Qt.NoBrush)
+    p.setBrush(Qt.BrushStyle.NoBrush)
     p.drawRect(QRectF(0, 0, w, h))
     p.restore()
 
@@ -605,15 +605,15 @@ def _header_title(hd: _Header, track: TrackSpec) -> None:
     width = hd.w - 2 * hd.pad
     hd.p.drawText(
         QRectF(hd.pad, 2 * hd.k, width, hd.line),
-        Qt.AlignCenter,
-        QFontMetricsF(bold).elidedText(title, Qt.ElideRight, width),
+        Qt.AlignmentFlag.AlignCenter,
+        QFontMetricsF(bold).elidedText(title, Qt.TextElideMode.ElideRight, width),
     )
 
 
 def _header_depth(hd: _Header, well, y: float) -> None:
     unit = _("feet (ft)") if well.depth_unit == "ft" else _("meters (m)")
-    hd.p.drawText(QRectF(0, y, hd.w, hd.line), Qt.AlignCenter, well.depth_mnemonic)
-    hd.p.drawText(QRectF(0, y + hd.line, hd.w, hd.line), Qt.AlignCenter, unit)
+    hd.p.drawText(QRectF(0, y, hd.w, hd.line), Qt.AlignmentFlag.AlignCenter, well.depth_mnemonic)
+    hd.p.drawText(QRectF(0, y + hd.line, hd.w, hd.line), Qt.AlignmentFlag.AlignCenter, unit)
 
 
 def _header_volumes(hd: _Header, track: TrackSpec, well, y: float) -> None:
@@ -634,12 +634,16 @@ def _header_volumes(hd: _Header, track: TrackSpec, well, y: float) -> None:
             name = f"{_(label)} ({style.mnemonic})" if label else style.mnemonic
         p.setPen(BORDER if curve else QColor("#999999"))
         text_x = box.right() + 4 * hd.k
-        hd.text(QRectF(text_x, y, hd.w - text_x - pad, line), Qt.AlignLeft | Qt.AlignVCenter, name)
+        hd.text(
+            QRectF(text_x, y, hd.w - text_x - pad, line),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            name,
+        )
         y += line + 2 * hd.k
     p.setPen(BORDER)
-    p.drawText(QRectF(pad, y, hd.w, line), Qt.AlignLeft | Qt.AlignVCenter, "0")
-    p.drawText(QRectF(0, y, hd.w - pad, line), Qt.AlignRight | Qt.AlignVCenter, "1")
-    p.drawText(QRectF(0, y, hd.w, line), Qt.AlignCenter, _("volume fraction"))
+    p.drawText(QRectF(pad, y, hd.w, line), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "0")
+    p.drawText(QRectF(0, y, hd.w - pad, line), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, "1")
+    p.drawText(QRectF(0, y, hd.w, line), Qt.AlignmentFlag.AlignCenter, _("volume fraction"))
 
 
 def _header_curve(hd: _Header, style: CurveStyle, well, y: float) -> float:
@@ -652,14 +656,14 @@ def _header_curve(hd: _Header, style: CurveStyle, well, y: float) -> float:
         name = _("{curve} — not available").format(curve=name)
         color = QColor("#999999")
     p.setPen(color)
-    hd.text(QRectF(pad, y, w - 2 * pad, line), Qt.AlignCenter, name)
+    hd.text(QRectF(pad, y, w - 2 * pad, line), Qt.AlignmentFlag.AlignCenter, name)
     left, right, _log = scale_of(style)
     lt, rt = fmt(left), fmt(right)
-    p.drawText(QRectF(pad, y + line, w, line), Qt.AlignLeft | Qt.AlignVCenter, lt)
-    p.drawText(QRectF(0, y + line, w - pad, line), Qt.AlignRight | Qt.AlignVCenter, rt)
+    p.drawText(QRectF(pad, y + line, w, line), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, lt)
+    p.drawText(QRectF(0, y + line, w - pad, line), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, rt)
     x0 = pad + fm.horizontalAdvance(lt) + 6 * hd.k
     x1 = w - pad - fm.horizontalAdvance(rt) - 6 * hd.k
-    p.setPen(QPen(color, style.width * hd.k, PEN_STYLES.get(style.style, Qt.SolidLine)))
+    p.setPen(QPen(color, style.width * hd.k, PEN_STYLES.get(style.style, Qt.PenStyle.SolidLine)))
     if x1 > x0:
         p.drawLine(QPointF(x0, y + line * 1.5), QPointF(x1, y + line * 1.5))
     y += 2 * line + 2 * hd.k
@@ -667,7 +671,7 @@ def _header_curve(hd: _Header, style: CurveStyle, well, y: float) -> float:
         b_left, b_right = backup_scale(style)
         p.setPen(color)
         text = _("backup {left} – {right}").format(left=fmt(b_left), right=fmt(b_right))
-        hd.text(QRectF(pad, y - 2 * hd.k, w - 2 * pad, line), Qt.AlignCenter, text)
+        hd.text(QRectF(pad, y - 2 * hd.k, w - 2 * pad, line), Qt.AlignmentFlag.AlignCenter, text)
         y += line
     return y
 
@@ -683,5 +687,5 @@ def _header_fill(hd: _Header, fill: FillSpec, y: float) -> float:
     label_box = QRectF(hd.w / 2 - tw / 2, y + 1, tw, line - 2)
     p.fillRect(label_box, QColor(255, 255, 255, 220))
     p.setPen(BORDER)
-    p.drawText(label_box, Qt.AlignCenter, fill.label)
+    p.drawText(label_box, Qt.AlignmentFlag.AlignCenter, fill.label)
     return y + line

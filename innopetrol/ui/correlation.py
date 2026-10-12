@@ -50,10 +50,10 @@ class CorrelationSetup(QDialog):
         self.list = QListWidget()
         for d in docs:
             item = QListWidgetItem(d.title)
-            item.setData(Qt.UserRole, d)
-            item.setCheckState(Qt.Checked)
+            item.setData(Qt.ItemDataRole.UserRole, d)
+            item.setCheckState(Qt.CheckState.Checked)
             self.list.addItem(item)
-        self.list.setDragDropMode(QListWidget.InternalMove)
+        self.list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         lay.addWidget(self.list)
         self.reference = QComboBox()
         self.reference.addItem(_("Measured depth (MD)"), "md")
@@ -83,16 +83,16 @@ class CorrelationSetup(QDialog):
             hint.setStyleSheet("color:#566573")
             hint.setWordWrap(True)
             lay.addWidget(hint)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         lay.addWidget(buttons)
 
     def selected(self) -> list[WellDocument]:
         return [
-            self.list.item(i).data(Qt.UserRole)
+            self.list.item(i).data(Qt.ItemDataRole.UserRole)
             for i in range(self.list.count())
-            if self.list.item(i).checkState() == Qt.Checked
+            if self.list.item(i).checkState() == Qt.CheckState.Checked
         ]
 
 
@@ -107,7 +107,7 @@ class TopConnector(QWidget):
     def paintEvent(self, e):
         p = QPainter(self)
         p.fillRect(self.rect(), QColor("#d5d8dc"))
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         top_y = self.left.header_h
         rights = {t.name: t for t in self.right.well.tops}
         for t in self.left.well.tops:
@@ -117,7 +117,7 @@ class TopConnector(QWidget):
             y0, y1 = self.left.y_of(t.depth), self.right.y_of(other.depth)
             if max(y0, y1) < top_y or min(y0, y1) > self.height():
                 continue
-            p.setPen(QPen(QColor(t.color), 1.6, Qt.DashLine))
+            p.setPen(QPen(QColor(t.color), 1.6, Qt.PenStyle.DashLine))
             p.drawLine(QPointF(0, max(y0, top_y)), QPointF(self.width(), max(y1, top_y)))
         p.end()
 
@@ -155,7 +155,7 @@ class CorrelationWindow(QDialog):
         root.addLayout(self._build_toolbar(reference))
         body = QHBoxLayout()
         body.addWidget(self._build_columns(views), 1)
-        self.vbar = QScrollBar(Qt.Vertical)
+        self.vbar = QScrollBar(Qt.Orientation.Vertical)
         body.addWidget(self.vbar)
         root.addLayout(body, 1)
         self._refresh_names()
@@ -163,7 +163,7 @@ class CorrelationWindow(QDialog):
         self.vbar.valueChanged.connect(self._vbar_moved)
         self.scale.currentIndexChanged.connect(self._apply_scale)
         undo = QAction(self)
-        undo.setShortcut(QKeySequence.Undo)
+        undo.setShortcut(QKeySequence.StandardKey.Undo)
         undo.triggered.connect(self.undo_pick)
         self.addAction(undo)
 
@@ -192,7 +192,9 @@ class CorrelationWindow(QDialog):
         self.top_name = QComboBox()
         self.top_name.setEditable(True)
         self.top_name.setMinimumWidth(160)
-        self.top_name.lineEdit().setPlaceholderText(_("name of the top"))
+        line_edit = self.top_name.lineEdit()  # exists: the combo box is editable
+        if line_edit is not None:
+            line_edit.setPlaceholderText(_("name of the top"))
         bar.addWidget(self.top_name)
         self.pick = QPushButton(_("Pick tops"))
         self.pick.setCheckable(True)
@@ -207,7 +209,7 @@ class CorrelationWindow(QDialog):
         """One column per well (title + log), with the top connectors between them."""
         self.area = QScrollArea()
         self.area.setWidgetResizable(True)
-        self.area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         row_widget = QWidget()
         row = QHBoxLayout(row_widget)
         row.setSpacing(0)
@@ -250,7 +252,7 @@ class CorrelationWindow(QDialog):
         v.setContentsMargins(0, 0, 0, 0)
         label = QLabel(f"<b>{title}</b>" if title else "")
         label.setFixedHeight(TITLE_H)
-        label.setAlignment(Qt.AlignCenter)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         label.setStyleSheet("background:#2c3e50; color:white" if title else "background:#d5d8dc")
         v.addWidget(label)
         v.addWidget(widget, 1)
@@ -331,7 +333,7 @@ class CorrelationWindow(QDialog):
 
     def _pick_toggled(self, on: bool):
         for c in self.canvases:
-            c.setCursor(Qt.CrossCursor if on else Qt.ArrowCursor)
+            c.setCursor(Qt.CursorShape.CrossCursor if on else Qt.CursorShape.ArrowCursor)
         if on and not self.top_name.currentText().strip():
             self.top_name.setFocus()
 
@@ -340,8 +342,8 @@ class CorrelationWindow(QDialog):
             return False
         if (
             self.pick.isChecked()
-            and e.type() == QEvent.MouseButtonPress
-            and e.button() == Qt.LeftButton
+            and e.type() == QEvent.Type.MouseButtonPress
+            and e.button() == Qt.MouseButton.LeftButton
             and obj in self.canvases
             and e.position().y() > obj.header_h
         ):

@@ -51,7 +51,7 @@ def _centered(w: QWidget) -> QWidget:
     box = QWidget()
     lay = QHBoxLayout(box)
     lay.addWidget(w)
-    lay.setAlignment(Qt.AlignCenter)
+    lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
     lay.setContentsMargins(0, 0, 0, 0)
     return box
 
@@ -117,8 +117,8 @@ class TrackEditor(QDialog):
         self.fill_table.horizontalHeaderItem(F_COLORMAP).setToolTip(
             _("The fill takes the color of its curve's value at each depth, along the curve's scale.")
         )
-        self.curve_table.horizontalHeader().setSectionResizeMode(C_CURVE, QHeaderView.Stretch)
-        self.fill_table.horizontalHeader().setSectionResizeMode(F_LABEL, QHeaderView.Stretch)
+        self.curve_table.horizontalHeader().setSectionResizeMode(C_CURVE, QHeaderView.ResizeMode.Stretch)
+        self.fill_table.horizontalHeader().setSectionResizeMode(F_LABEL, QHeaderView.ResizeMode.Stretch)
         self.tabs.addTab(
             self._with_buttons(self.curve_table, self._add_curve, self._remove_curve, self._move_curve), _("Curves")
         )
@@ -128,10 +128,14 @@ class TrackEditor(QDialog):
         )
         self.tabs.currentChanged.connect(self._tab_changed)
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Apply | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Apply
+            | QDialogButtonBox.StandardButton.Cancel
+        )
         buttons.accepted.connect(self._ok)
         buttons.rejected.connect(self.reject)
-        buttons.button(QDialogButtonBox.Apply).clicked.connect(self._apply)
+        buttons.button(QDialogButtonBox.StandardButton.Apply).clicked.connect(self._apply)
         root.addWidget(buttons)
 
         self._fill_curves(self.track.curves)
@@ -142,10 +146,10 @@ class TrackEditor(QDialog):
     def _make_table(self, headers):
         t = QTableWidget(0, len(headers))
         t.setHorizontalHeaderLabels(headers)
-        t.setSelectionBehavior(QAbstractItemView.SelectRows)
-        t.setSelectionMode(QAbstractItemView.SingleSelection)
+        t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        t.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         t.verticalHeader().setDefaultSectionSize(30)
-        t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         return t
 
     def _with_buttons(self, table, add, remove, move):
@@ -187,7 +191,7 @@ class TrackEditor(QDialog):
             fam = FAMILIES.get(make_curve_style(self.doc.well, m).family or "")
             tip = f"{m} ({curve.unit})" + (f" — {_(fam.name)}" if fam else "")
             combo.addItem(m, m)
-            combo.setItemData(combo.count() - 1, tip, Qt.ToolTipRole)
+            combo.setItemData(combo.count() - 1, tip, Qt.ItemDataRole.ToolTipRole)
         if c.mnemonic and combo.findData(c.mnemonic) < 0:  # template curve missing from the well
             combo.addItem(_("{curve} (not available)").format(curve=c.mnemonic), c.mnemonic)
         combo.setCurrentIndex(max(combo.findData(c.mnemonic), 0))

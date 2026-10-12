@@ -78,8 +78,8 @@ class ZoneSummaryDialog(QDialog):
                 _("Avg Vsh"),
             ]
         )
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)  # zone names
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # zone names
         lay.addWidget(self.table, 1)
         out = QHBoxLayout()
         copy_btn = QPushButton(_("Copy (for Excel)"))
@@ -89,7 +89,7 @@ class ZoneSummaryDialog(QDialog):
         out.addWidget(copy_btn)
         out.addWidget(save_btn)
         out.addStretch()
-        close = QDialogButtonBox(QDialogButtonBox.Close)
+        close = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         close.rejected.connect(self.reject)
         out.addWidget(close)
         lay.addLayout(out)
@@ -154,7 +154,11 @@ class ZoneSummaryDialog(QDialog):
             self._rows.append(vals)
             for c, v in enumerate(vals):
                 item = QTableWidgetItem(v)
-                item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter if c else Qt.AlignLeft | Qt.AlignVCenter)
+                item.setTextAlignment(
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    if c
+                    else Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+                )
                 self.table.setItem(r, c, item)
 
     def _headers(self):

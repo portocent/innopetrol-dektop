@@ -82,8 +82,8 @@ class MainWindow(QMainWindow):
         self.autosave_timer.start()
 
         self.mdi = QMdiArea()
-        self.mdi.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.mdi.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.mdi.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.mdi.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.mdi.subWindowActivated.connect(self._active_changed)
         self.setCentralWidget(self.mdi)
 
@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
         self.dock = QDockWidget(self)
         self.dock.setObjectName("dock_wells")
         self.dock.setWidget(self.tree)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dock)
         self.tree.docActivated.connect(self.activate_doc)
         self.tree.curveStatsRequested.connect(self.show_stats)
         self.tree.curveDeleteRequested.connect(self._delete_curve)
@@ -123,14 +123,14 @@ class MainWindow(QMainWindow):
 
     def _build_actions(self):
         A = self._action
-        self.a_open = A(self.open_las_dialog, QKeySequence.Open, needs_doc=False)
+        self.a_open = A(self.open_las_dialog, QKeySequence.StandardKey.Open, needs_doc=False)
         self.a_open_proj = A(self.open_project_dialog, "Ctrl+Shift+O", needs_doc=False)
-        self.a_save_proj = A(self.save_project, QKeySequence.Save)
+        self.a_save_proj = A(self.save_project, QKeySequence.StandardKey.Save)
         self.a_save_proj_as = A(lambda: self.save_project(ask=True), "Ctrl+Shift+S")
         self.a_export = A(self.export_log, "Ctrl+E")
         self.a_export_las = A(self.export_las)
         self.a_export_csv = A(self.export_csv)
-        self.a_quit = A(self.close, QKeySequence.Quit, needs_doc=False)
+        self.a_quit = A(self.close, QKeySequence.StandardKey.Quit, needs_doc=False)
         self._build_undo_actions()
 
         self.a_tpl_save = A(self.save_template, "Ctrl+T")
@@ -164,10 +164,10 @@ class MainWindow(QMainWindow):
         self.a_corr = A(self.correlation, "Ctrl+R")
         self.a_map = A(self.base_map, "Ctrl+Shift+M")  # ⌘M minimizes on Mac
         self.a_fit = A(lambda: self._view_call_canvas("fit"), "Ctrl+0")
-        self.a_zoom_in = A(lambda: self._zoom_step(1), QKeySequence.ZoomIn)
-        self.a_zoom_out = A(lambda: self._zoom_step(-1), QKeySequence.ZoomOut)
+        self.a_zoom_in = A(lambda: self._zoom_step(1), QKeySequence.StandardKey.ZoomIn)
+        self.a_zoom_out = A(lambda: self._zoom_step(-1), QKeySequence.StandardKey.ZoomOut)
         # Ctrl+= as well as Ctrl++: on many keyboards "+" needs Shift.
-        self.a_zoom_in.setShortcuts([QKeySequence(QKeySequence.ZoomIn), QKeySequence("Ctrl+=")])
+        self.a_zoom_in.setShortcuts([QKeySequence(QKeySequence.StandardKey.ZoomIn), QKeySequence("Ctrl+=")])
         self.a_tile = A(self.mdi.tileSubWindows, needs_doc=False)
         self.a_cascade = A(self.mdi.cascadeSubWindows, needs_doc=False)
         self.a_tabs = A(self._toggle_tabs, needs_doc=False)
@@ -182,10 +182,10 @@ class MainWindow(QMainWindow):
         self.a_about = A(lambda: show_about(self), needs_doc=False)
 
     def _build_undo_actions(self):
-        self.a_undo = self._action(self.undo_group.undo, QKeySequence.Undo, needs_doc=False)
-        self.a_redo = self._action(self.undo_group.redo, QKeySequence.Redo, needs_doc=False)
+        self.a_undo = self._action(self.undo_group.undo, QKeySequence.StandardKey.Undo, needs_doc=False)
+        self.a_redo = self._action(self.undo_group.redo, QKeySequence.StandardKey.Redo, needs_doc=False)
         # Ctrl+Y as well: the usual redo shortcut on Windows besides Ctrl+Shift+Z.
-        self.a_redo.setShortcuts([QKeySequence(QKeySequence.Redo), QKeySequence("Ctrl+Y")])
+        self.a_redo.setShortcuts([QKeySequence(QKeySequence.StandardKey.Redo), QKeySequence("Ctrl+Y")])
         self.a_undo.setEnabled(False)
         self.a_redo.setEnabled(False)
         self.undo_group.canUndoChanged.connect(self.a_undo.setEnabled)
@@ -292,7 +292,7 @@ class MainWindow(QMainWindow):
     def _build_toolbar(self):
         self.toolbar = tb = QToolBar(self)
         tb.setObjectName("toolbar_main")
-        tb.setToolButtonStyle(Qt.ToolButtonTextOnly)
+        tb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         self.addToolBar(tb)
         tb.addAction(self.a_open)
         tb.addAction(self.a_save_proj)
@@ -427,7 +427,7 @@ class MainWindow(QMainWindow):
         self._update_title()
         self.statusBar().showMessage(
             _("Ready. Open a LAS file ({shortcut}) or drag it onto the window.").format(
-                shortcut=key_text(QKeySequence.Open)
+                shortcut=key_text(QKeySequence.StandardKey.Open)
             )
         )
         for view in self.views.values():
@@ -472,8 +472,9 @@ class MainWindow(QMainWindow):
 
     def active_view(self) -> WellView | None:
         sub = self.mdi.activeSubWindow() or self.mdi.currentSubWindow()
-        if sub is not None and isinstance(sub.widget(), WellView):
-            return sub.widget()
+        widget = sub.widget() if sub is not None else None
+        if isinstance(widget, WellView):
+            return widget
         return self.views.get(self.docs[0]) if len(self.docs) == 1 else None
 
     def active_doc(self) -> WellDocument | None:
@@ -640,7 +641,7 @@ class MainWindow(QMainWindow):
 
     def open_las(self, paths):
         errors, opened, corrected = [], [], []
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
             for path in paths:
                 try:
@@ -822,11 +823,11 @@ class MainWindow(QMainWindow):
             )
             + "\n\n"
             + _("If you choose No, the saved copy is deleted."),
-            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
         )
-        if r == QMessageBox.Yes:
+        if r == QMessageBox.StandardButton.Yes:
             self.restore_autosave()
-        elif r == QMessageBox.No:
+        elif r == QMessageBox.StandardButton.No:
             self.recovery.discard()
 
     def open_project(self, path) -> None:
@@ -897,11 +898,11 @@ class MainWindow(QMainWindow):
             self,
             _("Unsaved changes"),
             _("Save the current project before continuing?"),
-            QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+            QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
         )
-        if r == QMessageBox.Save:
+        if r == QMessageBox.StandardButton.Save:
             return self.save_project()
-        return r == QMessageBox.Discard
+        return r == QMessageBox.StandardButton.Discard
 
     def closeEvent(self, e):
         if self.docs and not self._confirm_discard():
@@ -1111,14 +1112,14 @@ class MainWindow(QMainWindow):
             )
 
     def _modeless(self, w):
-        w.setAttribute(Qt.WA_DeleteOnClose)
+        w.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self._windows.append(w)
         w.destroyed.connect(lambda _obj=None, w=w: self._windows.remove(w) if w in self._windows else None)
         w.show()
 
     def _delete_curve(self, doc, name):
         r = QMessageBox.question(self, _("Delete curve"), _("Delete the computed curve {name}?").format(name=name))
-        if r == QMessageBox.Yes:
+        if r == QMessageBox.StandardButton.Yes:
             doc.remove_curve(name)
 
     def export_log(self):
@@ -1154,6 +1155,8 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, _("Export CSV"), _("Could not export: {error}").format(error=e))
 
     def _toggle_tabs(self):
-        self.mdi.setViewMode(QMdiArea.TabbedView if self.a_tabs.isChecked() else QMdiArea.SubWindowView)
+        self.mdi.setViewMode(
+            QMdiArea.ViewMode.TabbedView if self.a_tabs.isChecked() else QMdiArea.ViewMode.SubWindowView
+        )
         self.mdi.setTabsClosable(True)
         self.mdi.setTabsMovable(True)

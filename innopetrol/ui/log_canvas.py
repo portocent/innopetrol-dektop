@@ -67,10 +67,10 @@ class LogCanvas(QWidget):
         self._settle.setSingleShot(True)
         self._settle.timeout.connect(self._end_preview)
         self._drag_pending: tuple[int, int] | None = None  # (track, width) while dragging in guide mode
-        self.setAttribute(Qt.WA_OpaquePaintEvent)  # we paint the whole background: Qt need not clear it
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)  # we paint the whole background: Qt need not clear it
         self.setMouseTracking(True)
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(200, 200)
         self.setAutoFillBackground(False)
         doc.layoutChanged.connect(self._layout_changed)
@@ -135,7 +135,7 @@ class LogCanvas(QWidget):
 
     def event(self, e):
         # macOS (and Wayland) deliver pinch as a native gesture; on Windows it arrives as Ctrl + wheel.
-        if e.type() == QEvent.NativeGesture and e.gestureType() == Qt.ZoomNativeGesture:
+        if e.type() == QEvent.Type.NativeGesture and e.gestureType() == Qt.NativeGestureType.ZoomNativeGesture:
             self._pinch(e.value(), e.position().y())
             return True
         return super().event(e)
@@ -259,7 +259,7 @@ class LogCanvas(QWidget):
     def paintEvent(self, e):
         p = QPainter(self)
         p.fillRect(e.rect(), QColor("#d5d8dc"))
-        p.setRenderHint(QPainter.TextAntialiasing)
+        p.setRenderHint(QPainter.RenderHint.TextAntialiasing)
         tf = self.transform()
         self._paint_header(p)
         self._paint_body(p, tf)
@@ -288,7 +288,7 @@ class LogCanvas(QWidget):
             pm.fill(QColor("#d5d8dc"))
             hp = QPainter(pm)
             hp.setFont(self.font())
-            hp.setRenderHint(QPainter.TextAntialiasing)
+            hp.setRenderHint(QPainter.RenderHint.TextAntialiasing)
             paint_headers(hp, self.doc.layout, self.well, 0, 0, self._header_h, RenderOptions(), self.selected)
             hp.end()
             self._header_pm, self._header_key = pm, key
@@ -342,7 +342,7 @@ class LogCanvas(QWidget):
             return
         i, width = self._drag_pending
         x = track_edges(self.doc.layout)[i][0] + width - self.x_offset
-        p.setPen(QPen(QColor("#2e86c1"), 2, Qt.DashLine))
+        p.setPen(QPen(QColor("#2e86c1"), 2, Qt.PenStyle.DashLine))
         p.drawLine(QPointF(x, 0), QPointF(x, self.height()))
 
     def _tile(self, k: int) -> QPixmap:
@@ -360,7 +360,7 @@ class LogCanvas(QWidget):
         pm.fill(QColor("#d5d8dc"))
         tp = QPainter(pm)
         tp.setFont(self.font())
-        tp.setRenderHint(QPainter.TextAntialiasing)
+        tp.setRenderHint(QPainter.RenderHint.TextAntialiasing)
         opts = RenderOptions(draw_tops=False, frame_ends=False, dpr=dpr)
         tf = DepthTransform(k * TILE_H / self.ppu, self.ppu)
         t0 = time.perf_counter()
@@ -383,7 +383,7 @@ class LogCanvas(QWidget):
 
     def _paint_cursor(self, p: QPainter, y: float):
         w = min(total_width(self.doc.layout) - self.x_offset, self.width())
-        p.setPen(QPen(QColor(231, 76, 60, 200), 1, Qt.SolidLine))
+        p.setPen(QPen(QColor(231, 76, 60, 200), 1, Qt.PenStyle.SolidLine))
         p.drawLine(QPointF(0, y), QPointF(w, y))
         depth = self.depth_at(y)
         text = f"{depth:.2f} {self.well.depth_unit}"
@@ -391,17 +391,17 @@ class LogCanvas(QWidget):
         box = QRectF(4, y - fm.height() - 2, fm.horizontalAdvance(text) + 8, fm.height())
         p.fillRect(box, QColor(255, 255, 255, 230))
         p.setPen(BORDER)
-        p.drawText(box, Qt.AlignCenter, text)
+        p.drawText(box, Qt.AlignmentFlag.AlignCenter, text)
 
     def wheelEvent(self, e):
         delta = e.angleDelta()
         steps = delta.y() / 120 if delta.y() else 0
-        if e.modifiers() & Qt.ControlModifier:
+        if e.modifiers() & Qt.KeyboardModifier.ControlModifier:
             anchor = self.depth_at(e.position().y()) if e.position().y() > self._header_h else None
             if anchor is not None:
                 anchor += self.depth_shift
             self.zoom(1.2**steps, anchor, interactive=True)
-        elif e.modifiers() & Qt.ShiftModifier or delta.x():
+        elif e.modifiers() & Qt.KeyboardModifier.ShiftModifier or delta.x():
             dx = delta.x() if delta.x() else delta.y()
             self.x_offset -= dx / 2
             self._clamp()
@@ -414,28 +414,28 @@ class LogCanvas(QWidget):
     def keyPressEvent(self, e):
         page = self.body_h * 0.9
         key = e.key()
-        if key == Qt.Key_PageDown:
+        if key == Qt.Key.Key_PageDown:
             self.scroll_by_px(page)
-        elif key == Qt.Key_PageUp:
+        elif key == Qt.Key.Key_PageUp:
             self.scroll_by_px(-page)
-        elif key == Qt.Key_Down:
+        elif key == Qt.Key.Key_Down:
             self.scroll_by_px(30)
-        elif key == Qt.Key_Up:
+        elif key == Qt.Key.Key_Up:
             self.scroll_by_px(-30)
-        elif key == Qt.Key_Home:
+        elif key == Qt.Key.Key_Home:
             self.set_top(self.scroll_range()[0])
-        elif key == Qt.Key_End:
+        elif key == Qt.Key.Key_End:
             self.set_top(self.scroll_range()[1])
-        elif key in (Qt.Key_Plus, Qt.Key_Equal):
+        elif key in (Qt.Key.Key_Plus, Qt.Key.Key_Equal):
             self.zoom_step(1)
-        elif key == Qt.Key_Minus:
+        elif key == Qt.Key.Key_Minus:
             self.zoom_step(-1)
         else:
             super().keyPressEvent(e)
 
     def mousePressEvent(self, e):
         x = e.position().x()
-        if e.button() == Qt.LeftButton:
+        if e.button() == Qt.MouseButton.LeftButton:
             edge = self._edge_at(x)
             if edge >= 0:
                 self._drag = (edge, x, self.doc.layout.tracks[edge].width)
@@ -460,7 +460,7 @@ class LogCanvas(QWidget):
                 self.doc.layout.tracks[i].width = width
                 self.invalidate()
             return
-        self.setCursor(Qt.SplitHCursor if self._edge_at(x) >= 0 else Qt.ArrowCursor)
+        self.setCursor(Qt.CursorShape.SplitHCursor if self._edge_at(x) >= 0 else Qt.CursorShape.ArrowCursor)
         if y > self._header_h and self.track_at(x) >= 0:
             self._set_cursor_y(y)
             self.doc.cursorMoved.emit(float(self.well.to_md(self.depth_at(y))))
