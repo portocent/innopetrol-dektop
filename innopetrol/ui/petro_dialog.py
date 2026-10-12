@@ -384,7 +384,7 @@ class ZoneSummaryDialog(QDialog):
     def _save(self):
         path, _ = QFileDialog.getSaveFileName(self, "Guardar resumen", f"{self.doc.title}_zonas.csv", "CSV (*.csv)")
         if path:
-            with open(path, "w", newline="", encoding="utf-8") as f:
+            with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel en Windows
                 csv.writer(f).writerows([self._headers()] + self._rows)
 
 

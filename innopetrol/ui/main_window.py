@@ -382,7 +382,7 @@ class MainWindow(QMainWindow):
         for p in recent:
             a = self.recent_menu.addAction(Path(p).name)
             a.setStatusTip(p)
-            if p.endswith(PROJECT_SUFFIX):
+            if p.lower().endswith(PROJECT_SUFFIX):
                 a.triggered.connect(lambda _=False, p=p: self.open_project(p))
             else:
                 a.triggered.connect(lambda _=False, p=p: self.open_las([p]))
@@ -394,7 +394,7 @@ class MainWindow(QMainWindow):
 
     def dropEvent(self, e):
         paths = [u.toLocalFile() for u in e.mimeData().urls() if u.isLocalFile()]
-        projects = [p for p in paths if p.endswith(PROJECT_SUFFIX)]
+        projects = [p for p in paths if p.lower().endswith(PROJECT_SUFFIX)]
         if projects:
             self.open_project(projects[0])
         las = [p for p in paths if p.lower().endswith(".las")]
@@ -437,7 +437,7 @@ class MainWindow(QMainWindow):
                                                   PROJECT_FILTER)
             if not name:
                 return False
-            path = Path(name if name.endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
+            path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
         try:
             save_project(path, [WellEntry(d.well, d.layout, d.petro) for d in self.docs])
         except OSError as e:
@@ -485,7 +485,7 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getSaveFileName(self, "Guardar plantilla", f"plantilla{TEMPLATE_SUFFIX}",
                                               TEMPLATE_FILTER)
         if path:
-            if not path.endswith(".json"):
+            if not path.lower().endswith(".json"):
                 path += TEMPLATE_SUFFIX
             save_template(path, doc.layout)
             self.statusBar().showMessage(f"Plantilla guardada: {path}", 5000)
