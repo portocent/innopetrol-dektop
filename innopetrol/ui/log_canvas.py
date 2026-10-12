@@ -11,6 +11,7 @@ Navegación:
 from __future__ import annotations
 
 import math
+import time
 
 import numpy as np
 from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt, QTimer, Signal
@@ -25,6 +26,10 @@ from innopetrol.ui.tile_cache import TILE_H, TileCache
 
 MIN_TRACK_W = 40
 EDGE_GRAB = 4
+# Si dibujar una pantalla completa cuesta más que esto, durante zoom/redimensionado/arrastre se muestra
+# una vista previa barata y el dibujo de calidad se hace cuando el gesto se detiene (equipos lentos).
+FRAME_BUDGET_MS = 30
+SETTLE_MS = 160
 
 
 class LogCanvas(QWidget):
@@ -55,6 +60,12 @@ class LogCanvas(QWidget):
         self._prefetch = QTimer(self)
         self._prefetch.setSingleShot(True)
         self._prefetch.timeout.connect(self._prefetch_tiles)
+        self._tile_ms = 0.0  # costo medido de dibujar un tile (promedio móvil)
+        self._previewing = False
+        self._settle = QTimer(self)
+        self._settle.setSingleShot(True)
+        self._settle.timeout.connect(self._end_preview)
+        self._drag_pending: tuple[int, int] | None = None  # (track, ancho) mientras se arrastra en modo guía
         self.setAttribute(Qt.WA_OpaquePaintEvent)  # pintamos todo el fondo: Qt no necesita borrarlo
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -105,9 +116,26 @@ class LogCanvas(QWidget):
         self.top = self.well.start + self.depth_shift
         self._changed()
 
-    def zoom(self, factor: float, anchor_depth: float | None = None) -> None:
+    def zoom(self, factor: float, anchor_depth: float | None = None, interactive: bool = False) -> None:
         self.fit_mode = False
+        if interactive:
+            self._begin_preview()
         self._set_ppu(self.ppu * factor, anchor_depth)
+
+    # ------------------------------------------------------------------ dibujo adaptativo
+
+    def frame_cost_ms(self) -> float:
+        """Costo estimado de dibujar toda la vista desde cero, según lo medido en esta máquina."""
+        return self._tile_ms * (math.ceil(self.body_h / TILE_H) + 1)
+
+    def _begin_preview(self):
+        if self.frame_cost_ms() > FRAME_BUDGET_MS:
+            self._previewing = True
+            self._settle.start(SETTLE_MS)
+
+    def _end_preview(self):
+        self._previewing = False
+        self.update()
 
     def _set_ppu(self, ppu: float, anchor_depth: float | None):
         min_ppu = self.body_h / max(self.well.stop - self.well.start, 1e-6) / 4
@@ -204,6 +232,7 @@ class LogCanvas(QWidget):
     def resizeEvent(self, e):
         super().resizeEvent(e)
         if self.fit_mode:
+            self._begin_preview()
             self.fit()
         else:
             self._clamp()
@@ -220,8 +249,11 @@ class LogCanvas(QWidget):
         paint_tops_overlay(p, self.doc.layout, self.well, tf, -self.x_offset, self._header_h, self.body_h, opts)
         if self._cursor_y is not None and self._cursor_y > self._header_h:
             self._paint_cursor(p, self._cursor_y)
+        if self._drag_pending:
+            self._paint_drag_guide(p)
         p.end()
-        self._prefetch.start(0)
+        if not self._previewing:
+            self._prefetch.start(0)
 
     def _dpr(self) -> float:
         return self.devicePixelRatioF() or 1.0
@@ -252,7 +284,13 @@ class LogCanvas(QWidget):
         width = total_width(self.doc.layout)
         if width <= 0:
             return
-        self._tiles.validate((self._version, self.ppu, self._dpr(), self.font().key()))
+        key = (self._version, self.ppu, self._dpr(), self.font().key())
+        old = self._tiles.key
+        if self._previewing and old is not None and old != key and old[0] == key[0] and old[2:] == key[2:] \
+                and len(self._tiles):
+            self._paint_preview(p, tf, old_ppu=old[1])
+            return
+        self._tiles.validate(key)
         k0, k1, base = self._tile_range(tf)
         p.save()
         p.setClipRect(QRectF(0, self._header_h, self.width(), self.body_h))
@@ -260,6 +298,26 @@ class LogCanvas(QWidget):
             pm = self._tile(k)
             p.drawPixmap(QPointF(-self.x_offset, round(self._header_h + k * TILE_H - base)), pm)
         p.restore()
+
+    def _paint_preview(self, p: QPainter, tf: DepthTransform, old_ppu: float):
+        """Vista previa durante el gesto: los tiles de la escala anterior, estirados a la nueva."""
+        p.save()
+        p.setClipRect(QRectF(0, self._header_h, self.width(), self.body_h))
+        ratio = self.ppu / old_ppu
+        for k, pm in self._tiles.items():
+            y = self._header_h + (k * TILE_H / old_ppu - tf.top) * self.ppu
+            h = TILE_H * ratio
+            if y + h < self._header_h or y > self.height():
+                continue
+            target = QRectF(-self.x_offset, y, pm.width() / pm.devicePixelRatio(), h)
+            p.drawPixmap(target, pm, QRectF(0, 0, pm.width(), pm.height()))
+        p.restore()
+
+    def _paint_drag_guide(self, p: QPainter):
+        i, width = self._drag_pending
+        x = track_edges(self.doc.layout)[i][0] + width - self.x_offset
+        p.setPen(QPen(QColor("#2e86c1"), 2, Qt.DashLine))
+        p.drawLine(QPointF(x, 0), QPointF(x, self.height()))
 
     def _tile(self, k: int) -> QPixmap:
         pm = self._tiles.get(k)
@@ -279,8 +337,11 @@ class LogCanvas(QWidget):
         tp.setRenderHint(QPainter.TextAntialiasing)
         opts = RenderOptions(draw_tops=False, frame_ends=False, dpr=dpr)
         tf = DepthTransform(k * TILE_H / self.ppu, self.ppu)
+        t0 = time.perf_counter()
         paint_log(tp, self.doc.layout, self.well, tf, 0, 0, 0, TILE_H, opts, draw_headers=False)
         tp.end()
+        ms = (time.perf_counter() - t0) * 1000
+        self._tile_ms = ms if self._tile_ms == 0 else 0.7 * self._tile_ms + 0.3 * ms
         return pm
 
     def _prefetch_tiles(self):
@@ -313,7 +374,7 @@ class LogCanvas(QWidget):
             anchor = self.depth_at(e.position().y()) if e.position().y() > self._header_h else None
             if anchor is not None:
                 anchor += self.depth_shift
-            self.zoom(1.2 ** steps, anchor)
+            self.zoom(1.2 ** steps, anchor, interactive=True)
         elif e.modifiers() & Qt.ShiftModifier or delta.x():
             dx = delta.x() if delta.x() else delta.y()
             self.x_offset -= dx / 2
@@ -340,9 +401,9 @@ class LogCanvas(QWidget):
         elif key == Qt.Key_End:
             self.set_top(self.scroll_range()[1])
         elif key in (Qt.Key_Plus, Qt.Key_Equal):
-            self.zoom(1.25)
+            self.zoom(1.25, interactive=True)
         elif key == Qt.Key_Minus:
-            self.zoom(0.8)
+            self.zoom(0.8, interactive=True)
         else:
             super().keyPressEvent(e)
 
@@ -364,8 +425,14 @@ class LogCanvas(QWidget):
         x, y = e.position().x(), e.position().y()
         if self._drag:
             i, x0, w0 = self._drag
-            self.doc.layout.tracks[i].width = int(max(MIN_TRACK_W, w0 + x - x0))
-            self.invalidate()
+            width = int(max(MIN_TRACK_W, w0 + x - x0))
+            if self.frame_cost_ms() > FRAME_BUDGET_MS:
+                # Equipo lento: se muestra una guía y el ancho se aplica al soltar.
+                self._drag_pending = (i, width)
+                self.update()
+            else:
+                self.doc.layout.tracks[i].width = width
+                self.invalidate()
             return
         self.setCursor(Qt.SplitHCursor if self._edge_at(x) >= 0 else Qt.ArrowCursor)
         if y > self._header_h and self.track_at(x) >= 0:
@@ -393,6 +460,10 @@ class LogCanvas(QWidget):
     def mouseReleaseEvent(self, e):
         if self._drag:
             self._drag = None
+            if self._drag_pending:
+                i, width = self._drag_pending
+                self._drag_pending = None
+                self.doc.layout.tracks[i].width = width
             self.doc.layoutChanged.emit()
             return
         super().mouseReleaseEvent(e)
