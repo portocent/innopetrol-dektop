@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout
                                QListWidgetItem, QScrollArea, QScrollBar, QVBoxLayout, QWidget)
 
 from innopetrol.i18n import _
-from innopetrol.model.scales import SCALE_PRESETS
+from innopetrol.model.scales import MM_PER_UNIT, SCALE_PRESETS
 from innopetrol.render.scene import total_width
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
@@ -187,9 +187,17 @@ class CorrelationWindow(QDialog):
         QTimer.singleShot(0, self._apply_scale)  # once the widgets have their final size
 
     # combined range in display coordinates (depth + shift)
+    # The first well is the reference: display coordinates are in its depth unit. Each well
+    # converts with `_factor` (its unit -> reference unit), so wells in feet and meters share
+    # the same physical scale and line up at the same true depth.
+    def _factor(self, c: LogCanvas) -> float:
+        ref_unit = self.canvases[0].well.depth_unit
+        return MM_PER_UNIT.get(c.well.depth_unit, 1000.0) / MM_PER_UNIT.get(ref_unit, 1000.0)
+
     def _display_range(self) -> tuple[float, float]:
-        lo = min(c.well.start + c.depth_shift for c in self.canvases)
-        hi = max(c.well.stop + c.depth_shift for c in self.canvases)
+        """Combined range in reference display coordinates (depth + shift, in the reference unit)."""
+        lo = min((c.well.start + c.depth_shift) * self._factor(c) for c in self.canvases)
+        hi = max((c.well.stop + c.depth_shift) * self._factor(c) for c in self.canvases)
         return lo, hi
 
     def _apply_scale(self):
@@ -211,17 +219,20 @@ class CorrelationWindow(QDialog):
         if self._sync:
             return
         self._sync = True
+        f = self._factor(source)
+        top, ppu = source.top * f, source.ppu / f  # in reference units
         for c in self.canvases:
             if c is not source:
-                c.set_view(source.top, source.ppu)
+                fc = self._factor(c)
+                c.set_view(top / fc, ppu * fc)
         for conn in self.findChildren(TopConnector):
             conn.update()
         lo, hi = self._display_range()
-        ppu = source.ppu
+        body_h = source.body_h
         pad = 50 / ppu
-        self.vbar.setRange(int((lo - pad) * ppu), int(max(lo - pad, hi + pad - source.body_h / ppu) * ppu))
-        self.vbar.setPageStep(int(source.body_h))
-        self.vbar.setValue(int(source.top * ppu))
+        self.vbar.setRange(int((lo - pad) * ppu), int(max(lo - pad, hi + pad - body_h / ppu) * ppu))
+        self.vbar.setPageStep(int(body_h))
+        self.vbar.setValue(int(top * ppu))
         self._sync = False
 
     def _vbar_moved(self, v):

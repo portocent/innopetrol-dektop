@@ -282,3 +282,37 @@ def test_zoom_actions_disabled_without_wells(qtbot, tmp_path):
     w = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat))
     qtbot.addWidget(w)
     assert not w.a_zoom_in.isEnabled() and not w.a_zoom_out.isEnabled() and not w.a_fit.isEnabled()
+
+
+def test_correlation_mixes_feet_and_meters(win, qtbot, samples):
+    """A well in meters next to one in feet: same physical scale and tops aligned."""
+    from innopetrol.model.mnemonics import build_triple_combo
+    from innopetrol.model.well import Well
+    from innopetrol.ui.correlation import CorrelationWindow
+    from innopetrol.ui.document import WellDocument
+
+    feet = win.docs[0]  # Testdata.las, in feet
+    metric = Well.from_las(samples / "TotalDepthPrueba.las")
+    metric.depth = metric.depth * 0.3048
+    metric.depth_unit = "m"
+    metric_doc = WellDocument(metric, build_triple_combo(metric), parent=win)
+    feet.set_tops([Top("X", 7800.0)])
+    metric_doc.set_tops([Top("X", 5550.0 * 0.3048)])
+
+    for datum in ("X", "__depth__"):
+        c = CorrelationWindow([feet, metric_doc], datum, win, 2)
+        c.show()
+        qtbot.waitUntil(lambda c=c: c.canvases[0].body_h > 100)
+        c._apply_scale()
+        a, b = c.canvases
+        # Same paper scale: pixels per meter must match.
+        assert b.ppu == pytest.approx(a.ppu / 0.3048)
+        assert a.current_scale() == pytest.approx(b.current_scale())
+        if datum == "X":
+            assert a.y_of(7800.0) == pytest.approx(b.y_of(5550.0 * 0.3048), abs=1)
+        else:
+            # Without flattening, the same true depth lines up across both wells.
+            a.center_on(5600.0)
+            c._propagate(a)
+            assert a.y_of(5600.0) == pytest.approx(b.y_of(5600.0 * 0.3048), abs=1)
+        c.close()
