@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from PySide6.QtCore import QRectF
 from PySide6.QtGui import QFontMetricsF, QPainter
 
 from innopetrol.model.layout import LogLayout
-from innopetrol.render.painter import (DepthTransform, RenderOptions, draw_depth_body, draw_track_body,
+from innopetrol.render.painter import (DepthTransform, RenderOptions, draw_depth_body, draw_tops, draw_track_body,
                                        draw_track_header, header_height)
 
 
@@ -42,5 +44,27 @@ def paint_log(p: QPainter, layout: LogLayout, well, tf: DepthTransform, x0: floa
         if track.is_depth:
             draw_depth_body(p, body, well, tf, opts)
         else:
-            track_opts = RenderOptions(k=opts.k, top_labels=opts.top_labels and i == first_curves)
+            track_opts = replace(opts, top_labels=opts.top_labels and i == first_curves)
             draw_track_body(p, body, track, well, tf, track_opts)
+
+
+def paint_headers(p: QPainter, layout: LogLayout, well, x0: float, y0: float, header_h: float,
+                  opts: RenderOptions, selected: int | None = None) -> None:
+    for i, ((x, w), track) in enumerate(zip(track_edges(layout, opts.k), layout.tracks)):
+        draw_track_header(p, QRectF(x0 + x, y0, w, header_h), track, well, opts, selected == i)
+
+
+def paint_tops_overlay(p: QPainter, layout: LogLayout, well, tf: DepthTransform, x0: float, y0: float,
+                       body_h: float, opts: RenderOptions) -> None:
+    """Topes dibujados encima del cuerpo (la pantalla los separa de los tiles para que las
+    etiquetas no queden cortadas en el borde de un tile)."""
+    if not well.tops:
+        return
+    first_curves = next((i for i, t in enumerate(layout.tracks) if not t.is_depth), None)
+    for i, (x, w) in enumerate(track_edges(layout, opts.k)):
+        p.save()
+        p.setClipRect(QRectF(x0 + x, y0, w, body_h))
+        p.translate(x0 + x, y0)
+        labels = opts.top_labels and i == first_curves
+        draw_tops(p, well.tops, tf, w, body_h, opts, labels=labels)
+        p.restore()

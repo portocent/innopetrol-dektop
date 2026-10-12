@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+import shiboken6
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QFontMetricsF, QPainter, QPainterPath, QPen, QPolygonF, QTransform
 
@@ -50,6 +51,9 @@ class DepthTransform:
 class RenderOptions:
     k: float = 1.0  # factor para grosores (1 en pantalla, dpi/96 al exportar)
     top_labels: bool = True
+    draw_tops: bool = True  # la pantalla dibuja los topes aparte, encima de los tiles en caché
+    dpr: float = 1.0  # píxeles físicos por píxel lógico (2 en pantallas Retina)
+    frame_ends: bool = True  # borde superior/inferior del cuerpo (los tiles no lo llevan)
 
 
 def fmt(v: float | None) -> str:
@@ -85,8 +89,9 @@ def grid_mode(track: TrackSpec) -> tuple[str, CurveStyle | None]:
 # ------------------------------------------------------------------------------ cuerpo de track
 
 
-def visible_slice(depth: np.ndarray, tf: DepthTransform, height: float) -> slice:
-    d0, d1 = tf.depth(0), tf.depth(height)
+def visible_slice(depth: np.ndarray, tf: DepthTransform, height: float, margin: float = 8) -> slice:
+    """Muestras dentro de la altura visible (más un margen para que nada se corte en los bordes)."""
+    d0, d1 = tf.depth(-margin), tf.depth(height + margin)
     i0 = max(int(np.searchsorted(depth, d0)) - 1, 0)
     i1 = min(int(np.searchsorted(depth, d1)) + 1, depth.size)
     return slice(i0, i1)
@@ -111,12 +116,21 @@ def draw_track_body(p: QPainter, rect: QRectF, track: TrackSpec, well, tf: Depth
         for style in track.curves:
             if style.visible and style.mnemonic in well.curves:
                 _draw_curve(p, style, well.curves[style.mnemonic].values[sl], y, w, h, opts)
-    draw_tops(p, well.tops, tf, w, h, opts, labels=opts.top_labels)
+    if opts.draw_tops:
+        draw_tops(p, well.tops, tf, w, h, opts, labels=opts.top_labels)
 
+    _draw_frame(p, w, h, opts)
+    p.restore()
+
+
+def _draw_frame(p, w, h, opts):
     p.setPen(QPen(BORDER, 1.2 * opts.k))
     p.setBrush(Qt.NoBrush)
-    p.drawRect(QRectF(0, 0, w, h))
-    p.restore()
+    if opts.frame_ends:
+        p.drawRect(QRectF(0, 0, w, h))
+    else:
+        p.drawLine(QPointF(0, 0), QPointF(0, h))
+        p.drawLine(QPointF(w, 0), QPointF(w, h))
 
 
 def _draw_vertical_grid(p, track, w, h, opts):
@@ -139,12 +153,45 @@ def _draw_vertical_grid(p, track, w, h, opts):
 
 
 def _draw_depth_lines(p, tf, w, h, opts):
-    ticks = depth_ticks(tf.depth(0), tf.depth(h), tf.ppu * 1 / opts.k)
+    ticks = depth_ticks(tf.depth(-2), tf.depth(h + 2), tf.ppu / opts.k)
     for values, color, width in ((ticks.minor, GRID_MINOR, 0.6), (ticks.major, GRID_MAJOR, 0.8),
                                  (ticks.labels, GRID_STRONG, 1.0)):
         p.setPen(QPen(color, width * opts.k))
-        for y in tf.y(values):
-            p.drawLine(QPointF(0, y), QPointF(w, y))
+        _hlines(p, tf.y(values), 0, w)
+
+
+def _qpolygon(n: int) -> tuple[QPolygonF, np.ndarray]:
+    """QPolygonF de n puntos y una vista numpy (n, 2) sobre su memoria.
+
+    Escribir en la vista llena el polígono sin crear un objeto QPointF por punto,
+    que era la parte lenta de convertir miles de muestras.
+    """
+    poly = QPolygonF()
+    if n == 0:  # sin puntos no hay memoria donde escribir
+        return poly, np.empty((0, 2))
+    poly.resize(n)
+    view = np.frombuffer(shiboken6.VoidPtr(poly.data(), n * 16, True), dtype=np.float64).reshape(n, 2)
+    return poly, view
+
+
+def polygon_from_arrays(x: np.ndarray, y: np.ndarray) -> QPolygonF:
+    poly, view = _qpolygon(x.size)
+    view[:, 0] = x
+    view[:, 1] = y
+    return poly
+
+
+def _hlines(p: QPainter, ys: np.ndarray, x0, x1) -> None:
+    """Líneas horizontales en una sola llamada (x0/x1 pueden ser escalares o arreglos)."""
+    n = len(ys)
+    if not n:
+        return
+    poly, view = _qpolygon(2 * n)
+    view[0::2, 0] = x0
+    view[1::2, 0] = x1
+    view[0::2, 1] = ys
+    view[1::2, 1] = ys
+    p.drawLines(poly)
 
 
 def _runs(valid: np.ndarray) -> list[tuple[int, int]]:
@@ -153,23 +200,21 @@ def _runs(valid: np.ndarray) -> list[tuple[int, int]]:
     return list(zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1)))
 
 
-def _decimate(x: np.ndarray, y: np.ndarray, max_points: int) -> tuple[np.ndarray, np.ndarray]:
-    """Si hay muchas más muestras que píxeles, conserva el mínimo y máximo de cada grupo."""
-    k = int(np.ceil(x.size / max_points))
-    if k <= 2:
-        return x, y
-    n = (x.size // k) * k
-    xs = x[:n].reshape(-1, k)
-    ys = y[:n].reshape(-1, k)
-    out_x = np.empty(xs.shape[0] * 2)
-    out_y = np.empty(xs.shape[0] * 2)
-    out_x[0::2], out_x[1::2] = xs.min(axis=1), xs.max(axis=1)
-    out_y[0::2], out_y[1::2] = ys[:, 0], ys[:, -1]
-    return np.concatenate((out_x, x[n:])), np.concatenate((out_y, y[n:]))
+def _envelope(x: np.ndarray, y: np.ndarray, dpr: float):
+    """Reduce una curva densa a un tramo horizontal [mín, máx] por fila de píxeles físicos.
 
-
-def _polygon(x: np.ndarray, y: np.ndarray) -> QPolygonF:
-    return QPolygonF([QPointF(a, b) for a, b in zip(x.tolist(), y.tolist())])
+    Con varias muestras por píxel, la polilínea en zigzag cubre exactamente esos píxeles, pero
+    trazarla con antialiasing es muy caro. Cada tramo incluye el último valor de la fila
+    anterior para que la curva quede continua.
+    """
+    rows = np.floor(y * dpr).astype(np.int64)
+    starts = np.flatnonzero(np.concatenate(([True], rows[1:] != rows[:-1])))
+    lo = np.minimum.reduceat(x, starts)
+    hi = np.maximum.reduceat(x, starts)
+    last = x[np.concatenate((starts[1:], [x.size])) - 1]
+    lo[1:] = np.minimum(lo[1:], last[:-1])
+    hi[1:] = np.maximum(hi[1:], last[:-1])
+    return lo, hi, (rows[starts] + 0.5) / dpr
 
 
 def _draw_curve(p, style: CurveStyle, values, y, w, h, opts):
@@ -177,22 +222,40 @@ def _draw_curve(p, style: CurveStyle, values, y, w, h, opts):
     x = map_values(values, left, right, log, w)
     valid = np.isfinite(x)
     np.clip(x, 0, w, out=x)
-    pen = QPen(QColor(style.color), style.width * opts.k, PEN_STYLES.get(style.style, Qt.SolidLine))
-    pen.setCapStyle(Qt.FlatCap)
-    pen.setJoinStyle(Qt.RoundJoin)
-    p.setPen(pen)
-    p.setRenderHint(QPainter.Antialiasing, True)
-    r = 1.5 * opts.k + style.width * opts.k / 2
+    color = QColor(style.color)
+    width = style.width * opts.k
+    r = 1.5 * opts.k + width / 2
     for a, b in _runs(valid):
         if b - a < 3:
             # Muestras aisladas (p. ej. datos de núcleo): se marcan con un punto visible.
-            p.setBrush(QColor(style.color))
+            p.setRenderHint(QPainter.Antialiasing, True)
+            p.setPen(Qt.NoPen)
+            p.setBrush(color)
             for xi, yi in zip(x[a:b], y[a:b]):
                 p.drawEllipse(QPointF(xi, yi), r, r)
             p.setBrush(Qt.NoBrush)
             continue
-        xs, ys = _decimate(x[a:b], y[a:b], int(h * 2) + 2)
-        p.drawPolyline(_polygon(xs, ys))
+        xs, ys = x[a:b], y[a:b]
+        span_rows = (ys[-1] - ys[0]) * opts.dpr
+        if span_rows > 0 and (b - a) / span_rows >= 1.5:
+            # Muchas muestras por fila de píxeles: dibujar la envolvente con líneas horizontales
+            # de un píxel físico de alto. Los guiones no se distinguen a esta densidad, así que las
+            # curvas no continuas se dibujan semitransparentes para diferenciarlas.
+            lo, hi, yc = _envelope(xs, ys, opts.dpr)
+            span_color = QColor(color)
+            if style.style != "solid":
+                span_color.setAlphaF(0.45)
+            pen = QPen(span_color, 1, Qt.SolidLine, Qt.FlatCap)
+            pen.setCosmetic(True)
+            p.setRenderHint(QPainter.Antialiasing, False)
+            p.setPen(pen)
+            _hlines(p, yc, lo - width / 2, hi + width / 2)
+        else:
+            pen = QPen(color, width, PEN_STYLES.get(style.style, Qt.SolidLine), Qt.FlatCap,
+                       Qt.RoundJoin if width >= 2 else Qt.MiterJoin)
+            p.setRenderHint(QPainter.Antialiasing, True)
+            p.setPen(pen)
+            p.drawPolyline(polygon_from_arrays(xs, ys))
     p.setRenderHint(QPainter.Antialiasing, False)
 
 
@@ -232,7 +295,7 @@ def _draw_fill(p, track, fill: FillSpec, well, sl, y, w, opts):
             continue
         pts = np.concatenate((xl[a:b], xr[a:b][::-1]))
         ys = np.concatenate((y[a:b], y[a:b][::-1]))
-        path.addPolygon(_polygon(pts, ys))
+        path.addPolygon(polygon_from_arrays(pts, ys))
     brush = QBrush(QColor(fill.color), BRUSH_STYLES.get(fill.pattern, Qt.SolidPattern))
     if opts.k != 1:
         brush.setTransform(QTransform.fromScale(opts.k, opts.k))
@@ -268,13 +331,14 @@ def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: R
     p.translate(rect.topLeft())
     w, h = rect.width(), rect.height()
     p.fillRect(QRectF(0, 0, w, h), HEADER_BG)
-    ticks = depth_ticks(tf.depth(0), tf.depth(h), tf.ppu / opts.k)
-    for values, length in ((ticks.minor, 4), (ticks.major, 8)):
-        p.setPen(QPen(GRID_STRONG, 0.8 * opts.k))
-        for y in tf.y(values):
-            p.drawLine(QPointF(0, y), QPointF(length * opts.k, y))
-            p.drawLine(QPointF(w - length * opts.k, y), QPointF(w, y))
     font = QFont(p.font())
+    margin = QFontMetricsF(font).height()  # etiquetas partidas entre dos tiles se dibujan en ambos
+    ticks = depth_ticks(tf.depth(-margin), tf.depth(h + margin), tf.ppu / opts.k)
+    p.setPen(QPen(GRID_STRONG, 0.8 * opts.k))
+    for values, length in ((ticks.minor, 4), (ticks.major, 8)):
+        ys = tf.y(values)
+        _hlines(p, ys, 0, length * opts.k)
+        _hlines(p, ys, w - length * opts.k, w)
     bold = QFont(font)
     bold.setBold(True)
     fm = QFontMetricsF(font)
@@ -285,14 +349,9 @@ def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: R
         p.setPen(BORDER)
         p.drawText(QRectF(0, y - fm.height() / 2, w, fm.height()), Qt.AlignCenter, f"{d:.{decimals}f}")
     p.setFont(font)
-    for top in well.tops:
-        y = float(tf.y(top.depth))
-        if -10 <= y <= h + 10:
-            p.setPen(QPen(QColor(top.color), 1.6 * opts.k, Qt.DashLine))
-            p.drawLine(QPointF(0, y), QPointF(w, y))
-    p.setPen(QPen(BORDER, 1.2 * opts.k))
-    p.setBrush(Qt.NoBrush)
-    p.drawRect(QRectF(0, 0, w, h))
+    if opts.draw_tops:
+        draw_tops(p, well.tops, tf, w, h, opts, labels=False)
+    _draw_frame(p, w, h, opts)
     p.restore()
 
 

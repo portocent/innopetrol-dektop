@@ -122,6 +122,37 @@ reversedR = copy.deepcopy(self.lines[...])  # copia profunda de miles de QPoint
 
 ---
 
+### 3.1 Segunda ronda: fluidez de la interfaz
+
+La primera versión 2.0 todavía se sentía lenta. Medido en una pantalla Retina, con el pozo ajustado a la
+ventana (la vista inicial):
+
+| Acción | Antes | Ahora |
+|---|---|---|
+| Mover el cursor (Testdata / CIRA3900) | 177 / 441 ms | ~1 ms |
+| Desplazarse (mediana) | 24–418 ms | ~2 ms |
+| Paso de zoom | 20–24 ms | 13–17 ms |
+| Dibujo completo desde cero | 177–441 ms | 6–27 ms |
+
+Tres causas y tres soluciones:
+
+1. **Todo se redibujaba al mover el mouse.** La línea del cursor pedía `update()` de todo el widget, y eso
+   recalculaba y trazaba todas las curvas. Ahora el registro se dibuja en **tiles** (franjas de 256 px
+   guardadas como imágenes, `ui/tile_cache.py`). Mover el cursor sólo copia imágenes y repinta la franja
+   donde está la línea. Al desplazarse se dibujan sólo las franjas nuevas, y con la aplicación inactiva se
+   prepara la siguiente por adelantado. Los topes y el cursor se dibujan encima de los tiles, así nunca
+   quedan cortados en un borde.
+2. **Trazar miles de segmentos en zigzag con antialiasing es carísimo.** Con el pozo completo en pantalla
+   hay varias muestras por píxel, y la polilínea va de lado a lado una y otra vez. Ahora, cuando hay más
+   de ~1.5 muestras por fila de píxeles, se dibuja la **envolvente**: una línea horizontal [mín, máx] por
+   fila física. Cubre los mismos píxeles y cuesta una fracción (`render/painter.py::_envelope`). A esa
+   densidad los guiones no se distinguen, así que las curvas no continuas se muestran semitransparentes.
+3. **Crear un objeto `QPointF` por muestra desde Python.** Ahora el `QPolygonF` se reserva una vez y
+   numpy escribe directamente en su memoria (`_qpolygon`), sin bucles Python.
+
+El crossplot dibuja los puntos agrupados en 32 niveles de color (una llamada por nivel en lugar de una por
+punto). Una prueba automática verifica que mover el cursor no vuelva a dibujar tiles.
+
 ## 4. Arquitectura
 
 ```
