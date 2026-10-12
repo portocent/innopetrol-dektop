@@ -11,10 +11,19 @@ from innopetrol.model.survey import Survey
 from innopetrol.model.well import HeaderItem, Well
 
 
-@pytest.mark.parametrize("text, expected", [
-    ("-58.4416", -58.4416), ("58,5 S", -58.5), ("58° 30' 0\" N", 58.5), ("N 58 30 36", 58.51),
-    ("3 15 W", -3.25), ("12.5E", 12.5), ("", None), ("abc", None),
-])
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("-58.4416", -58.4416),
+        ("58,5 S", -58.5),
+        ("58° 30' 0\" N", 58.5),
+        ("N 58 30 36", 58.51),
+        ("3 15 W", -3.25),
+        ("12.5E", 12.5),
+        ("", None),
+        ("abc", None),
+    ],
+)
 def test_parse_coordinate(text, expected):
     got = parse_coordinate(text)
     assert got == pytest.approx(expected) if expected is not None else got is None
@@ -25,8 +34,9 @@ def h(mnem, value, unit=""):
 
 
 def test_location_from_header():
-    assert location_from_header([h("LATI", "58 26 29.9 N"), h("LONG", "1 53 13.6 E")]) == \
-        Location(pytest.approx(1.88711, abs=1e-4), pytest.approx(58.44164, abs=1e-4), True)
+    assert location_from_header([h("LATI", "58 26 29.9 N"), h("LONG", "1 53 13.6 E")]) == Location(
+        pytest.approx(1.88711, abs=1e-4), pytest.approx(58.44164, abs=1e-4), True
+    )
     loc = location_from_header([h("XCOORD", "1520345.5", "FT"), h("YCOORD", "640210.0", "FT")])
     assert (loc.x, loc.y, loc.geographic, loc.unit) == (1520345.5, 640210.0, False, "ft")
     assert location_from_header([h("LATI", "0"), h("LONG", "0"), h("XCOORD", ""), h("YCOORD", "")]) is None
@@ -58,8 +68,12 @@ def located_docs(samples, qapp):
     from innopetrol.ui.document import WellDocument
 
     docs = []
-    for name, loc in (("A", Location(500000, 6000000)), ("B", Location(503000, 6001000)), ("C", None),
-                      ("D", Location(2.0, 58.0, True))):
+    for name, loc in (
+        ("A", Location(500000, 6000000)),
+        ("B", Location(503000, 6001000)),
+        ("C", None),
+        ("D", Location(2.0, 58.0, True)),
+    ):
         w = Well.from_las(samples / "Testdata.las")
         w.name, w.location = name, loc
         docs.append(WellDocument(w, build_triple_combo(w)))
@@ -100,6 +114,5 @@ def test_map_zoom_keeps_the_point_under_the_mouse(qtbot, samples, qapp):
     m.fit()
     pos = QPointF(200, 150)
     before = m.to_map(pos)
-    m.wheelEvent(QWheelEvent(pos, pos, QPoint(), QPoint(0, 240), Qt.NoButton, Qt.NoModifier, Qt.NoScrollPhase,
-                             False))
+    m.wheelEvent(QWheelEvent(pos, pos, QPoint(), QPoint(0, 240), Qt.NoButton, Qt.NoModifier, Qt.NoScrollPhase, False))
     assert m.to_map(pos) == pytest.approx(before)

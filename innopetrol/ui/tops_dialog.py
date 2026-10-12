@@ -32,9 +32,11 @@ class TopsDialog(QDialog):
         self.setWindowIcon(app_icon())
         self.resize(520, 460)
         lay = QVBoxLayout(self)
-        hint = QLabel(_("Depths in {unit} (log range: {start} – {stop}). You can also add a top by "
-                        "right-clicking on the log.").format(unit=doc.well.depth_unit, start=f"{doc.well.start:g}",
-                                                             stop=f"{doc.well.stop:g}"))
+        hint = QLabel(
+            _(
+                "Depths in {unit} (log range: {start} – {stop}). You can also add a top by right-clicking on the log."
+            ).format(unit=doc.well.depth_unit, start=f"{doc.well.start:g}", stop=f"{doc.well.stop:g}")
+        )
         hint.setWordWrap(True)
         lay.addWidget(hint)
         self.table = QTableWidget(0, 3)
@@ -43,8 +45,12 @@ class TopsDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         lay.addWidget(self.table, 1)
         row = QHBoxLayout()
-        for text, slot in ((_("Add"), self._add), (_("Remove"), self._remove), (_("Import CSV…"), self._import),
-                           (_("Export CSV…"), self._export)):
+        for text, slot in (
+            (_("Add"), self._add),
+            (_("Remove"), self._remove),
+            (_("Import CSV…"), self._import),
+            (_("Export CSV…"), self._export),
+        ):
             b = QPushButton(text)
             b.clicked.connect(slot)
             row.addWidget(b)
@@ -66,7 +72,13 @@ class TopsDialog(QDialog):
     def _add(self):
         tops, _errors = self._read()
         depth = (max((t.depth for t in tops), default=self.doc.well.start) + self.doc.well.stop) / 2
-        self._insert(Top(_("Top {number}").format(number=self.table.rowCount() + 1), round(depth, 1), PALETTE[self.table.rowCount() % len(PALETTE)]))
+        self._insert(
+            Top(
+                _("Top {number}").format(number=self.table.rowCount() + 1),
+                round(depth, 1),
+                PALETTE[self.table.rowCount() % len(PALETTE)],
+            )
+        )
 
     def _remove(self):
         r = self.table.currentRow()
@@ -88,8 +100,7 @@ class TopsDialog(QDialog):
         return tops, errors
 
     def _import(self):
-        path, _filter = QFileDialog.getOpenFileName(self, _("Import tops"), "",
-                                                     _("Tops (*.csv *.txt);;All files (*)"))
+        path, _filter = QFileDialog.getOpenFileName(self, _("Import tops"), "", _("Tops (*.csv *.txt);;All files (*)"))
         if not path:
             return
         try:
@@ -100,8 +111,11 @@ class TopsDialog(QDialog):
             QMessageBox.warning(self, _("Import tops"), str(e))
             return
         if not tops:
-            QMessageBox.information(self, _("Import tops"), _("No tops were found in the file.\n"
-                                    "Expected format: name, depth[, color] (with or without a header)."))
+            QMessageBox.information(
+                self,
+                _("Import tops"),
+                _("No tops were found in the file.\nExpected format: name, depth[, color] (with or without a header)."),
+            )
             return
         for t in tops:
             self._insert(t)
@@ -111,8 +125,7 @@ class TopsDialog(QDialog):
         if errors:
             QMessageBox.warning(self, _("Export"), "\n".join(errors))
             return
-        path, _filter = QFileDialog.getSaveFileName(self, _("Export tops"), f"{self.doc.title}_tops.csv",
-                                                     "CSV (*.csv)")
+        path, _filter = QFileDialog.getSaveFileName(self, _("Export tops"), f"{self.doc.title}_tops.csv", "CSV (*.csv)")
         if path:
             save_tops_csv(path, tops)
 

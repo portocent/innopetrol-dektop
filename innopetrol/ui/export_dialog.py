@@ -85,18 +85,35 @@ class ExportDialog(QDialog):
         kind = self.fmt.currentData()
         ext = "pdf" if kind == "pdf" else "png"
         scale = self.scale.currentData()
-        path, _filter = QFileDialog.getSaveFileName(self, _("Save as"), f"{self.doc.title}_1-{scale}.{ext}",
-                                              f"{ext.upper()} (*.{ext})")
+        path, _filter = QFileDialog.getSaveFileName(
+            self, _("Save as"), f"{self.doc.title}_1-{scale}.{ext}", f"{ext.upper()} (*.{ext})"
+        )
         if not path:
             return
         try:
             if kind == "pdf":
-                pages = export_pdf(path, self.doc.view, self.doc.layout, scale, top, base, page=self.page.currentData(),
-                                   heading=self.heading.isChecked())
+                pages = export_pdf(
+                    path,
+                    self.doc.view,
+                    self.doc.layout,
+                    scale,
+                    top,
+                    base,
+                    page=self.page.currentData(),
+                    heading=self.heading.isChecked(),
+                )
                 msg = ngettext("PDF saved ({pages} page).", "PDF saved ({pages} pages).", pages).format(pages=pages)
             else:
-                export_png(path, self.doc.view, self.doc.layout, scale, top, base, dpi=self.dpi.value(),
-                           heading=self.heading.isChecked())
+                export_png(
+                    path,
+                    self.doc.view,
+                    self.doc.layout,
+                    scale,
+                    top,
+                    base,
+                    dpi=self.dpi.value(),
+                    heading=self.heading.isChecked(),
+                )
                 msg = _("Image saved.")
         except (ExportError, OSError) as e:
             QMessageBox.warning(self, _("Export"), _("Could not export: {error}").format(error=e))

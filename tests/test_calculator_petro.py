@@ -16,16 +16,19 @@ def test_calculator_basic():
     assert np.allclose(evaluate("clip(RHOB, 2.2, 2.5)", C)[:3], [2.5, 2.4, 2.2])
 
 
-@pytest.mark.parametrize("expr", [
-    "__import__('os').system('echo hacked')",
-    "RHOB.__class__",
-    "[x for x in RHOB]",
-    "lambda: 1",
-    "open('/etc/passwd')",
-    "RHOB[0]",
-    "'texto'",
-    "FOO + 1",
-])
+@pytest.mark.parametrize(
+    "expr",
+    [
+        "__import__('os').system('echo hacked')",
+        "RHOB.__class__",
+        "[x for x in RHOB]",
+        "lambda: 1",
+        "open('/etc/passwd')",
+        "RHOB[0]",
+        "'texto'",
+        "FOO + 1",
+    ],
+)
 def test_calculator_rejects_unsafe(expr):
     with pytest.raises(CalculatorError):
         evaluate(expr, C)
@@ -33,7 +36,7 @@ def test_calculator_rejects_unsafe(expr):
 
 def test_reference_functions():
     assert petro.phi_density(2.4, 2.65, 1.0) == pytest.approx(0.25 / 1.65)
-    assert petro.vsh_larionov_tertiary(1.0) == pytest.approx(0.083 * (2 ** 3.7 - 1))
+    assert petro.vsh_larionov_tertiary(1.0) == pytest.approx(0.083 * (2**3.7 - 1))
     assert petro.vsh_larionov_older(0.5) == pytest.approx(0.33)
     # Archie: Rw=0.05, φ=0.2, Rt=20 → Sw = sqrt(0.05/(0.04*20)) = 0.25
     assert petro.sw_archie(20, 0.2, 0.05) == pytest.approx(0.25)
@@ -41,13 +44,23 @@ def test_reference_functions():
 
 def test_compute_matches_reference(testdata_well):
     w = testdata_well
-    p = petro.PetroParams(gr_curve="SGR", gr_clean=20, gr_shale=130, vsh_method="larionov_tertiary",
-                          rhob_curve="RHOB", nphi_curve="TNPH", phi_method="nd_average", rt_curve="LLD")
+    p = petro.PetroParams(
+        gr_curve="SGR",
+        gr_clean=20,
+        gr_shale=130,
+        vsh_method="larionov_tertiary",
+        rhob_curve="RHOB",
+        nphi_curve="TNPH",
+        phi_method="nd_average",
+        rt_curve="LLD",
+    )
     curves = {c.mnemonic: c for c in petro.compute(w, p)}
     assert list(curves) == ["VSH", "PHID", "PHIT", "PHIE", "SW", "VMAT", "BVW", "BVH", "RES_FLAG", "PAY_FLAG"]
     igr = petro.gr_index(w.curves["SGR"].values, 20, 130)
     assert np.allclose(curves["VSH"].values, np.clip(petro.vsh_larionov_tertiary(igr), 0, 1), equal_nan=True)
-    phit = np.clip((np.clip(petro.phi_density(w.curves["RHOB"].values), -0.15, 0.6) + w.curves["TNPH"].values) / 2, 0, 0.6)
+    phit = np.clip(
+        (np.clip(petro.phi_density(w.curves["RHOB"].values), -0.15, 0.6) + w.curves["TNPH"].values) / 2, 0, 0.6
+    )
     phie = np.clip(phit * (1 - curves["VSH"].values), 0, 0.6)
     assert np.allclose(curves["PHIE"].values, phie, equal_nan=True)
     sw = petro.sw_archie(w.curves["LLD"].values, phie, 0.05)
@@ -89,8 +102,7 @@ def test_results_do_not_depend_on_input_units(testdata_well):
     from innopetrol.model.well import Curve
 
     w = testdata_well
-    p = petro.PetroParams(gr_curve="SGR", rhob_curve="RHOB", nphi_curve="TNPH", phi_method="nd_average",
-                          rt_curve="LLD")
+    p = petro.PetroParams(gr_curve="SGR", rhob_curve="RHOB", nphi_curve="TNPH", phi_method="nd_average", rt_curve="LLD")
     reference = {c.mnemonic: c.values for c in petro.compute(w, p)}
     w.add_curve(Curve("RHOB", "KG/M3", "", w.curves["RHOB"].values * 1000))
     w.add_curve(Curve("TNPH", "PU", "", w.curves["TNPH"].values * 100))

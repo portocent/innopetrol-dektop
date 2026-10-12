@@ -31,52 +31,131 @@ class Family:
 
 
 # Unit in which each family's default scale is written.
-_FAMILY_UNITS = {"caliper": "in", "bit_size": "in", "density": "g/cm3", "density_corr": "g/cm3", "neutron": "v/v",
-                 "sonic": "us/ft", "porosity_density": "v/v", "effective_porosity": "v/v", "vsh": "v/v", "sw": "v/v",
-                 "matrix_volume": "v/v", "bvw": "v/v", "bvh": "v/v"}
+_FAMILY_UNITS = {
+    "caliper": "in",
+    "bit_size": "in",
+    "density": "g/cm3",
+    "density_corr": "g/cm3",
+    "neutron": "v/v",
+    "sonic": "us/ft",
+    "porosity_density": "v/v",
+    "effective_porosity": "v/v",
+    "vsh": "v/v",
+    "sw": "v/v",
+    "matrix_volume": "v/v",
+    "bvw": "v/v",
+    "bvh": "v/v",
+}
 
 
-FAMILIES: dict[str, Family] = {f.key: f for f in [
-    Family("gamma_ray", N_("Gamma ray"), ("GR", "SGR", "CGR", "GRC", "HGR", "ECGR", "GRD", "GAM", "GR_EDTC",
-                                         "HSGR", "GRGC", "GRS", "GRN"), 0, 150, color="#1e8449"),
-    Family("sp", N_("Spontaneous potential"), ("SP", "SPBR", "SPC", "SPR"), color="#1f3a93"),
-    Family("caliper", N_("Caliper"), ("CALI", "CAL", "HCAL", "CALS", "C1", "CAL1", "CALX", "CALY", "LCAL"),
-           6, 16, color="#5d6d7e", style="dash"),
-    Family("bit_size", N_("Bit size"), ("BS", "BIT"), 6, 16, color="#5d6d7e", style="dot"),
-    Family("deep_res", N_("Deep resistivity"), ("LLD", "ILD", "RT", "AT90", "RLA5", "HDRS", "RD", "RILD",
-                                                 "M2R9", "RDEP", "AHT90", "HLLD", "RLLD"),
-           0.2, 2000, log=True, color="#000000"),
-    Family("medium_res", N_("Medium resistivity"), ("LLS", "ILM", "AT30", "RLA3", "HMRS", "RM", "M2R3", "RMED",
-                                                "AHT30", "HLLS", "RLLS"),
-           0.2, 2000, log=True, color="#c0392b", style="dash"),
-    Family("shallow_res", N_("Shallow resistivity"), ("MSFL", "MSFLC", "SFLU", "SFL", "RXO", "AT10", "LL8", "RXOZ",
-                                                  "MLL", "RXO8", "AHT10", "RSHAL"),
-           0.2, 2000, log=True, color="#2471a3", style="dot"),
-    Family("density", N_("Density"), ("RHOB", "RHOZ", "DEN", "ZDEN", "RHO8", "DENS", "HROM", "RHOM"),
-           1.95, 2.95, color="#c0392b"),
-    Family("density_corr", N_("Density correction"), ("DRHO", "HDRA", "ZCOR", "DCOR"),
-           -0.25, 0.25, color="#a6acaf", style="dot"),
-    Family("neutron", N_("Neutron"), ("NPHI", "TNPH", "NPOR", "CNC", "NPHS", "CN", "NEU", "APLC", "NPLS",
-                                  "CNCF", "HNPO", "NPHZ"), 0.45, -0.15, color="#2471a3", style="dash"),
-    Family("pef", N_("Photoelectric factor"), ("PEF", "PE", "PEFZ", "PEF8", "HPEF"), 0, 10, color="#7d3c98"),
-    Family("sonic", N_("Sonic"), ("DT", "DTC", "DTCO", "DTLN", "AC", "DT4P", "DTL", "DTCM"),
-           140, 40, color="#7d3c98"),
-    Family("porosity_density", N_("Density porosity"), ("DPHI", "PHID", "DPHZ", "DPOR"),
-           0.45, -0.15, color="#c0392b"),
-    Family("effective_porosity", N_("Effective porosity"), ("PHIE", "PHI", "PHIT", "POR"), 0.5, 0,
-           color="#1f618d"),
-    Family("vsh", N_("Shale volume"), ("VSH", "VCL", "VSHALE", "VCLAY", "VSHGR"), 0, 1, color="#7e5109"),
-    Family("sw", N_("Water saturation"), ("SW", "SWE", "SWT", "SWA", "SWU"), 1, 0, color="#17202a",
-           style="dash"),
-    Family("permeability", N_("Permeability"), ("PERM", "K", "PERMCORE", "KCORE", "KINT", "KLOG"),
-           0.01, 10000, log=True, color="#117864"),
-    # Separate families: a template must never take water volume for hydrocarbon volume.
-    Family("matrix_volume", N_("Matrix volume"), ("VMAT", "VMATRIX"), 0, 1, color="#b7950b"),
-    Family("bvw", N_("Bulk volume water"), ("BVW", "BVWE", "BVWT"), 0.5, 0, color="#2471a3"),
-    Family("bvh", N_("Bulk volume hydrocarbon"), ("BVH", "BVHC"), 0.5, 0, color="#1e8449"),
-    Family("temperature", N_("Temperature"), ("TEMP", "BHT", "MTEM", "MTEMP", "TEMPC", "TMP", "HTEM", "TFORM"),
-           color="#c0392b"),
-]}
+FAMILIES: dict[str, Family] = {
+    f.key: f
+    for f in [
+        Family(
+            "gamma_ray",
+            N_("Gamma ray"),
+            ("GR", "SGR", "CGR", "GRC", "HGR", "ECGR", "GRD", "GAM", "GR_EDTC", "HSGR", "GRGC", "GRS", "GRN"),
+            0,
+            150,
+            color="#1e8449",
+        ),
+        Family("sp", N_("Spontaneous potential"), ("SP", "SPBR", "SPC", "SPR"), color="#1f3a93"),
+        Family(
+            "caliper",
+            N_("Caliper"),
+            ("CALI", "CAL", "HCAL", "CALS", "C1", "CAL1", "CALX", "CALY", "LCAL"),
+            6,
+            16,
+            color="#5d6d7e",
+            style="dash",
+        ),
+        Family("bit_size", N_("Bit size"), ("BS", "BIT"), 6, 16, color="#5d6d7e", style="dot"),
+        Family(
+            "deep_res",
+            N_("Deep resistivity"),
+            ("LLD", "ILD", "RT", "AT90", "RLA5", "HDRS", "RD", "RILD", "M2R9", "RDEP", "AHT90", "HLLD", "RLLD"),
+            0.2,
+            2000,
+            log=True,
+            color="#000000",
+        ),
+        Family(
+            "medium_res",
+            N_("Medium resistivity"),
+            ("LLS", "ILM", "AT30", "RLA3", "HMRS", "RM", "M2R3", "RMED", "AHT30", "HLLS", "RLLS"),
+            0.2,
+            2000,
+            log=True,
+            color="#c0392b",
+            style="dash",
+        ),
+        Family(
+            "shallow_res",
+            N_("Shallow resistivity"),
+            ("MSFL", "MSFLC", "SFLU", "SFL", "RXO", "AT10", "LL8", "RXOZ", "MLL", "RXO8", "AHT10", "RSHAL"),
+            0.2,
+            2000,
+            log=True,
+            color="#2471a3",
+            style="dot",
+        ),
+        Family(
+            "density",
+            N_("Density"),
+            ("RHOB", "RHOZ", "DEN", "ZDEN", "RHO8", "DENS", "HROM", "RHOM"),
+            1.95,
+            2.95,
+            color="#c0392b",
+        ),
+        Family(
+            "density_corr",
+            N_("Density correction"),
+            ("DRHO", "HDRA", "ZCOR", "DCOR"),
+            -0.25,
+            0.25,
+            color="#a6acaf",
+            style="dot",
+        ),
+        Family(
+            "neutron",
+            N_("Neutron"),
+            ("NPHI", "TNPH", "NPOR", "CNC", "NPHS", "CN", "NEU", "APLC", "NPLS", "CNCF", "HNPO", "NPHZ"),
+            0.45,
+            -0.15,
+            color="#2471a3",
+            style="dash",
+        ),
+        Family("pef", N_("Photoelectric factor"), ("PEF", "PE", "PEFZ", "PEF8", "HPEF"), 0, 10, color="#7d3c98"),
+        Family(
+            "sonic", N_("Sonic"), ("DT", "DTC", "DTCO", "DTLN", "AC", "DT4P", "DTL", "DTCM"), 140, 40, color="#7d3c98"
+        ),
+        Family(
+            "porosity_density", N_("Density porosity"), ("DPHI", "PHID", "DPHZ", "DPOR"), 0.45, -0.15, color="#c0392b"
+        ),
+        Family("effective_porosity", N_("Effective porosity"), ("PHIE", "PHI", "PHIT", "POR"), 0.5, 0, color="#1f618d"),
+        Family("vsh", N_("Shale volume"), ("VSH", "VCL", "VSHALE", "VCLAY", "VSHGR"), 0, 1, color="#7e5109"),
+        Family("sw", N_("Water saturation"), ("SW", "SWE", "SWT", "SWA", "SWU"), 1, 0, color="#17202a", style="dash"),
+        Family(
+            "permeability",
+            N_("Permeability"),
+            ("PERM", "K", "PERMCORE", "KCORE", "KINT", "KLOG"),
+            0.01,
+            10000,
+            log=True,
+            color="#117864",
+        ),
+        # Separate families: a template must never take water volume for hydrocarbon volume.
+        Family("matrix_volume", N_("Matrix volume"), ("VMAT", "VMATRIX"), 0, 1, color="#b7950b"),
+        Family("bvw", N_("Bulk volume water"), ("BVW", "BVWE", "BVWT"), 0.5, 0, color="#2471a3"),
+        Family("bvh", N_("Bulk volume hydrocarbon"), ("BVH", "BVHC"), 0.5, 0, color="#1e8449"),
+        Family(
+            "temperature",
+            N_("Temperature"),
+            ("TEMP", "BHT", "MTEM", "MTEMP", "TEMPC", "TMP", "HTEM", "TFORM"),
+            color="#c0392b",
+        ),
+    ]
+}
 FAMILIES = {k: dataclasses.replace(f, unit=_FAMILY_UNITS.get(k)) for k, f in FAMILIES.items()}
 
 BUILTIN_ALIAS_INDEX = {alias: fam.key for fam in FAMILIES.values() for alias in fam.aliases}
@@ -93,8 +172,11 @@ def set_user_aliases(aliases: dict[str, list[str]]) -> None:
     """Adds the user's (company's) mnemonics to the families. A user alias wins over a built-in one,
     so a mnemonic can also be moved to another family. Unknown families are ignored."""
     global _ALIAS_INDEX, _USER_ALIASES
-    clean = {fam: sorted({normalize_alias(a) for a in names if normalize_alias(a)})
-             for fam, names in aliases.items() if fam in FAMILIES}
+    clean = {
+        fam: sorted({normalize_alias(a) for a in names if normalize_alias(a)})
+        for fam, names in aliases.items()
+        if fam in FAMILIES
+    }
     _USER_ALIASES = {fam: names for fam, names in clean.items() if names}
     index = dict(BUILTIN_ALIAS_INDEX)
     for fam, names in _USER_ALIASES.items():
@@ -192,8 +274,11 @@ def data_unit(curve, expected: str | None = None) -> str | None:
     the unit is missing, unknown or wrongly declared.
     """
     key = units.normalize(curve.unit)
-    if expected is None or not curve.has_data or (key is not None and units.UNITS[key].dimension
-                                                   != units.UNITS[expected].dimension):
+    if (
+        expected is None
+        or not curve.has_data
+        or (key is not None and units.UNITS[key].dimension != units.UNITS[expected].dimension)
+    ):
         return key
     # Values that are physically impossible in the declared unit win over the label
     # (files labeled "DEC" with porosity 0–45 are common).
@@ -238,8 +323,8 @@ _GROUPS = [
 def build_triple_combo(well) -> LogLayout:
     """Automatic 'triple combo' style layout with whatever curves the well has.
 
-Titles and labels are created in the active interface language.
-"""
+    Titles and labels are created in the active interface language.
+    """
     tracks: list[TrackSpec] = []
     used: set[str] = set()
     for title, fams in _GROUPS:
@@ -263,8 +348,7 @@ Titles and labels are created in the active interface language.
 
     others = [m for m, c in well.curves.items() if m not in used and c.has_data]
     for i in range(0, min(len(others), 8), 4):
-        tracks.append(TrackSpec(title=_("Other curves"),
-                                curves=[make_curve_style(well, m) for m in others[i:i + 4]]))
+        tracks.append(TrackSpec(title=_("Other curves"), curves=[make_curve_style(well, m) for m in others[i : i + 4]]))
 
     depth = TrackSpec(kind="depth", title=pgettext("track title", "Depth"), width=72)
     tracks.insert(1 if tracks else 0, depth)
@@ -274,8 +358,15 @@ Titles and labels are created in the active interface language.
 # Components of the volumes track, left to right, with their usual colors.
 VOLUME_COMPONENTS = (("VSH", "#a1887f"), ("VMAT", "#f7dc6f"), ("BVH", "#27ae60"), ("BVW", "#5dade2"))
 # Names shown in the volumes track header.
-VOLUME_LABELS = {"VSH": N_("Shale"), "VCL": N_("Clay"), "VMAT": N_("Matrix"), "BVH": N_("Hydrocarbon"),
-                 "BVW": N_("Water"), "PHIE": N_("Porosity"), "PHIT": N_("Porosity")}
+VOLUME_LABELS = {
+    "VSH": N_("Shale"),
+    "VCL": N_("Clay"),
+    "VMAT": N_("Matrix"),
+    "BVH": N_("Hydrocarbon"),
+    "BVW": N_("Water"),
+    "PHIE": N_("Porosity"),
+    "PHIT": N_("Porosity"),
+}
 
 
 def build_volumes_track(well) -> TrackSpec | None:
@@ -289,9 +380,17 @@ def build_volumes_track(well) -> TrackSpec | None:
     components = [(m, c) for m, c in VOLUME_COMPONENTS if m in names]
     if "BVW" not in names and "PHIE" in well.curves:
         components.append(("PHIE", "#aed6f1"))
-    curves = [CurveStyle(m, family=family_of(m), color=c, left=0, right=1,
-                         unit=units.normalize(well.curves[m].unit) or well.curves[m].unit)
-              for m, c in components]
+    curves = [
+        CurveStyle(
+            m,
+            family=family_of(m),
+            color=c,
+            left=0,
+            right=1,
+            unit=units.normalize(well.curves[m].unit) or well.curves[m].unit,
+        )
+        for m, c in components
+    ]
     return TrackSpec(kind="volumes", title=_("Volumes"), width=150, grid="none", curves=curves)
 
 
@@ -300,24 +399,45 @@ def _add_standard_fills(track: TrackSpec) -> None:
     gr = by_fam.get("gamma_ray")
     if gr:
         cutoff = 75.0
-        track.fills.append(FillSpec(left_curve=gr.mnemonic, right_value=cutoff, color="#f4d03f",
-                                    pattern="dense3", label=_("Sand")))
-        track.fills.append(FillSpec(left_value=cutoff, right_curve=gr.mnemonic, color="#8d6e63",
-                                    pattern="dense2", label=_("Shale")))
+        track.fills.append(
+            FillSpec(left_curve=gr.mnemonic, right_value=cutoff, color="#f4d03f", pattern="dense3", label=_("Sand"))
+        )
+        track.fills.append(
+            FillSpec(left_value=cutoff, right_curve=gr.mnemonic, color="#8d6e63", pattern="dense2", label=_("Shale"))
+        )
     rhob, nphi = by_fam.get("density"), by_fam.get("neutron")
     if rhob and nphi:
-        track.fills.append(FillSpec(left_curve=rhob.mnemonic, right_curve=nphi.mnemonic, color="#f1c40f",
-                                    label=_("Crossover (possible gas)")))
-        track.fills.append(FillSpec(left_curve=nphi.mnemonic, right_curve=rhob.mnemonic, color="#95a5a6",
-                                    pattern="dense5", label=_("Separation (shale)")))
+        track.fills.append(
+            FillSpec(
+                left_curve=rhob.mnemonic,
+                right_curve=nphi.mnemonic,
+                color="#f1c40f",
+                label=_("Crossover (possible gas)"),
+            )
+        )
+        track.fills.append(
+            FillSpec(
+                left_curve=nphi.mnemonic,
+                right_curve=rhob.mnemonic,
+                color="#95a5a6",
+                pattern="dense5",
+                label=_("Separation (shale)"),
+            )
+        )
     vsh = by_fam.get("vsh")
     if vsh:
-        track.fills.append(FillSpec(left_value=vsh.left if vsh.left is not None else 0, right_curve=vsh.mnemonic,
-                                    color="#a0522d", pattern="dense3", label="Vsh"))
+        track.fills.append(
+            FillSpec(
+                left_value=vsh.left if vsh.left is not None else 0,
+                right_curve=vsh.mnemonic,
+                color="#a0522d",
+                pattern="dense3",
+                label="Vsh",
+            )
+        )
 
 
 def _auto_color(mnemonic: str) -> str:
     colors = ["#c0392b", "#2471a3", "#1e8449", "#7d3c98", "#b9770e", "#117a65", "#2e4053"]
     h = sum(ord(c) for c in mnemonic)
     return colors[h % len(colors)]
-

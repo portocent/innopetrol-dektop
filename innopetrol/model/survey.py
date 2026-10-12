@@ -161,8 +161,11 @@ def load_survey_csv(path: str | Path) -> Survey:
     if not _is_number(rows[0][0]):
         md_i, inc_i, azi_i = (_find(head, _MD_COLS), _find(head, _INC_COLS), _find(head, _AZI_COLS))
         if None in (md_i, inc_i, azi_i):
-            raise SurveyError(_("could not find MD, inclination and azimuth columns in the header: {header}").format(
-                header=", ".join(rows[0])))
+            raise SurveyError(
+                _("could not find MD, inclination and azimuth columns in the header: {header}").format(
+                    header=", ".join(rows[0])
+                )
+            )
         rows = rows[1:]
     else:
         md_i, inc_i, azi_i = 0, 1, 2

@@ -304,8 +304,14 @@ class LogCanvas(QWidget):
             return
         key = (self._version, self.ppu, self._dpr(), self.font().key())
         old = self._tiles.key
-        if self._previewing and old is not None and old != key and old[0] == key[0] and old[2:] == key[2:] \
-                and len(self._tiles):
+        if (
+            self._previewing
+            and old is not None
+            and old != key
+            and old[0] == key[0]
+            and old[2:] == key[2:]
+            and len(self._tiles)
+        ):
             self._paint_preview(p, tf, old_ppu=old[1])
             return
         self._tiles.validate(key)
@@ -392,7 +398,7 @@ class LogCanvas(QWidget):
             anchor = self.depth_at(e.position().y()) if e.position().y() > self._header_h else None
             if anchor is not None:
                 anchor += self.depth_shift
-            self.zoom(1.2 ** steps, anchor, interactive=True)
+            self.zoom(1.2**steps, anchor, interactive=True)
         elif e.modifiers() & Qt.ShiftModifier or delta.x():
             dx = delta.x() if delta.x() else delta.y()
             self.x_offset -= dx / 2

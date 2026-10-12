@@ -88,8 +88,11 @@ class CorrelationSetup(QDialog):
         lay.addWidget(buttons)
 
     def selected(self) -> list[WellDocument]:
-        return [self.list.item(i).data(Qt.UserRole) for i in range(self.list.count())
-                if self.list.item(i).checkState() == Qt.Checked]
+        return [
+            self.list.item(i).data(Qt.UserRole)
+            for i in range(self.list.count())
+            if self.list.item(i).checkState() == Qt.Checked
+        ]
 
 
 class TopConnector(QWidget):
@@ -133,8 +136,7 @@ def compact_doc(doc: WellDocument, n_tracks: int, parent, reference: str = "md")
 
 
 class CorrelationWindow(QDialog):
-    def __init__(self, docs: list[WellDocument], datum: str, parent=None, n_tracks: int = 3,
-                 reference: str = "md"):
+    def __init__(self, docs: list[WellDocument], datum: str, parent=None, n_tracks: int = 3, reference: str = "md"):
         super().__init__(parent)
         self.setWindowTitle(_("Correlation — {wells}").format(wells=" · ".join(d.title for d in docs)))
         self.setWindowIcon(app_icon())
@@ -158,8 +160,14 @@ class CorrelationWindow(QDialog):
         info = reference.upper()
         if datum != DEPTH_DATUM:
             info += " · " + _("flattened on “{top}”").format(top=datum)
-        bar.addWidget(QLabel("   " + _("Datum: {datum}.   Wheel: scroll · {modifier}+wheel: zoom").format(
-            datum=info, modifier="⌘" if sys.platform == "darwin" else "Ctrl")))
+        bar.addWidget(
+            QLabel(
+                "   "
+                + _("Datum: {datum}.   Wheel: scroll · {modifier}+wheel: zoom").format(
+                    datum=info, modifier="⌘" if sys.platform == "darwin" else "Ctrl"
+                )
+            )
+        )
         bar.addStretch()
         # Picking tops: choose (or type) a name, turn picking on and click on each well.
         bar.addWidget(QLabel(_("Top:")))
@@ -170,8 +178,9 @@ class CorrelationWindow(QDialog):
         bar.addWidget(self.top_name)
         self.pick = QPushButton(_("Pick tops"))
         self.pick.setCheckable(True)
-        self.pick.setToolTip(_("Click on a well to place the top there; clicking again moves it. "
-                               "Right-click: more options."))
+        self.pick.setToolTip(
+            _("Click on a well to place the top there; clicking again moves it. Right-click: more options.")
+        )
         self.pick.toggled.connect(self._pick_toggled)
         bar.addWidget(self.pick)
         undo = QAction(self)
@@ -319,8 +328,13 @@ class CorrelationWindow(QDialog):
     def eventFilter(self, obj, e):
         if not shiboken6.isValid(self.pick):  # the window is being destroyed
             return False
-        if (self.pick.isChecked() and e.type() == QEvent.MouseButtonPress and e.button() == Qt.LeftButton
-                and obj in self.canvases and e.position().y() > obj.header_h):
+        if (
+            self.pick.isChecked()
+            and e.type() == QEvent.MouseButtonPress
+            and e.button() == Qt.LeftButton
+            and obj in self.canvases
+            and e.position().y() > obj.header_h
+        ):
             name = self.top_name.currentText().strip()
             if not name:
                 self.top_name.setFocus()
@@ -341,8 +355,10 @@ class CorrelationWindow(QDialog):
             text = _("Move top {name}").format(name=name)
         else:
             # The same name keeps the same color in every well, so the correlation lines read well.
-            color = next((t.color for d in self.sources for t in d.well.tops if t.name == name),
-                         PALETTE[len(self._known_names()) % len(PALETTE)])
+            color = next(
+                (t.color for d in self.sources for t in d.well.tops if t.name == name),
+                PALETTE[len(self._known_names()) % len(PALETTE)],
+            )
             tops.append(Top(name, md, color))
             text = _("Add top {name}").format(name=name)
         source.set_tops(tops, text)
@@ -374,13 +390,15 @@ class CorrelationWindow(QDialog):
         name = self.top_name.currentText().strip()
         if name:
             menu.addAction(_("Place “{name}” here").format(name=name)).triggered.connect(
-                lambda: self.place_top(index, depth, name))
+                lambda: self.place_top(index, depth, name)
+            )
         menu.addAction(_("New top here…")).triggered.connect(lambda: self._new_top(index, depth))
         near = self._near_top(index, depth)
         if near:
             menu.addSeparator()
             menu.addAction(_("Remove top “{name}”").format(name=near)).triggered.connect(
-                lambda: self.remove_top(index, near))
+                lambda: self.remove_top(index, near)
+            )
         menu.exec(global_pos)
 
     def _new_top(self, index: int, depth: float):

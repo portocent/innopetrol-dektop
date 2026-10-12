@@ -65,12 +65,13 @@ def _show_dialog(message: str, details: str, log_path: Path, saved: bool) -> Non
 
     from innopetrol.i18n import _
 
-    text = _("An unexpected error occurred. The program keeps running, but it is a good idea to save "
-             "your work and restart it.")
+    text = _(
+        "An unexpected error occurred. The program keeps running, but it is a good idea to save "
+        "your work and restart it."
+    )
     if saved:
         text += "\n\n" + _("Your open wells were saved for recovery.")
-    box = QMessageBox(QMessageBox.Critical, _("Unexpected error"), text, QMessageBox.Ok,
-                      QApplication.activeWindow())
+    box = QMessageBox(QMessageBox.Critical, _("Unexpected error"), text, QMessageBox.Ok, QApplication.activeWindow())
     box.setInformativeText(_("Details were written to {path}").format(path=log_path) + "\n\n" + message)
     box.setDetailedText(details)
     box.exec()

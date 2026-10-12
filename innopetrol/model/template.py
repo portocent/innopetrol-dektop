@@ -35,8 +35,9 @@ def template_from_json(text: str) -> LogLayout:
     try:
         data = json.loads(text)
     except json.JSONDecodeError as e:
-        raise TemplateError(_("the file is not valid JSON ({message}, line {line})").format(
-            message=e.msg, line=e.lineno)) from e
+        raise TemplateError(
+            _("the file is not valid JSON ({message}, line {line})").format(message=e.msg, line=e.lineno)
+        ) from e
     if not isinstance(data, dict) or data.get("format") != FORMAT:
         raise TemplateError(_("the file is not an InnoPetrol template"))
     if data.get("version", 0) > VERSION:

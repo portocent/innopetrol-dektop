@@ -66,8 +66,9 @@ def test_recovered_project_keeps_its_path(qtbot, tmp_path, samples):
 def test_error_reporter_logs_autosaves_and_reports(tmp_path):
     log_path = setup_logging(tmp_path)
     shown, saves = [], []
-    reporter = ErrorReporter(log_path, before_report=lambda: saves.append(1) or True,
-                             show=lambda *args: shown.append(args))
+    reporter = ErrorReporter(
+        log_path, before_report=lambda: saves.append(1) or True, show=lambda *args: shown.append(args)
+    )
     try:
         raise ValueError("boom")
     except ValueError:

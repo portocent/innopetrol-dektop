@@ -74,8 +74,12 @@ class TrackEditor(QDialog):
         self.width_spin.setSuffix(" px")
         self.width_spin.setValue(self.track.width)
         self.grid_combo = QComboBox()
-        for key, label in (("auto", _("Automatic (from the first curve)")), ("linear", _("Linear")),
-                           ("log", _("Logarithmic")), ("none", _("No grid"))):
+        for key, label in (
+            ("auto", _("Automatic (from the first curve)")),
+            ("linear", _("Linear")),
+            ("log", _("Logarithmic")),
+            ("none", _("No grid")),
+        ):
             self.grid_combo.addItem(label, key)
         self.grid_combo.setCurrentIndex(max(self.grid_combo.findData(self.track.grid), 0))
         self.div_spin = QSpinBox()
@@ -91,20 +95,37 @@ class TrackEditor(QDialog):
 
         self.tabs = QTabWidget()
         root.addWidget(self.tabs, 1)
-        self.curve_table = self._make_table([_("Curve"), _("Left"), _("Right"), _("Log"), _("Backup"), _("Color"),
-                                             _("Width"), _("Style"), _("Visible")])
+        self.curve_table = self._make_table(
+            [_("Curve"), _("Left"), _("Right"), _("Log"), _("Backup"), _("Color"), _("Width"), _("Style"), _("Visible")]
+        )
         self.curve_table.horizontalHeaderItem(C_WRAP).setToolTip(
-            _("Values beyond the scale are drawn again, dashed, shifted by one scale width (e.g. GR 150–300)."))
-        self.fill_table = self._make_table([_("Left bound"), _("Value"), _("Right bound"), _("Value"), _("Color"),
-                                            _("Pattern"), _("Color by value"), _("Label"), _("Visible")])
+            _("Values beyond the scale are drawn again, dashed, shifted by one scale width (e.g. GR 150–300).")
+        )
+        self.fill_table = self._make_table(
+            [
+                _("Left bound"),
+                _("Value"),
+                _("Right bound"),
+                _("Value"),
+                _("Color"),
+                _("Pattern"),
+                _("Color by value"),
+                _("Label"),
+                _("Visible"),
+            ]
+        )
         self.fill_table.horizontalHeaderItem(F_COLORMAP).setToolTip(
-            _("The fill takes the color of its curve's value at each depth, along the curve's scale."))
+            _("The fill takes the color of its curve's value at each depth, along the curve's scale.")
+        )
         self.curve_table.horizontalHeader().setSectionResizeMode(C_CURVE, QHeaderView.Stretch)
         self.fill_table.horizontalHeader().setSectionResizeMode(F_LABEL, QHeaderView.Stretch)
-        self.tabs.addTab(self._with_buttons(self.curve_table, self._add_curve, self._remove_curve, self._move_curve),
-                         _("Curves"))
-        self.tabs.addTab(self._with_buttons(self.fill_table, self._add_fill, self._remove_fill, self._move_fill),
-                         _("Fills / shading"))
+        self.tabs.addTab(
+            self._with_buttons(self.curve_table, self._add_curve, self._remove_curve, self._move_curve), _("Curves")
+        )
+        self.tabs.addTab(
+            self._with_buttons(self.fill_table, self._add_fill, self._remove_fill, self._move_fill),
+            _("Fills / shading"),
+        )
         self.tabs.currentChanged.connect(self._tab_changed)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Apply | QDialogButtonBox.Cancel)
@@ -132,8 +153,12 @@ class TrackEditor(QDialog):
         lay = QHBoxLayout(w)
         lay.addWidget(table, 1)
         col = QVBoxLayout()
-        for text, slot in ((_("Add"), add), (_("Remove"), remove), (_("Up"), lambda: move(-1)),
-                           (_("Down"), lambda: move(1))):
+        for text, slot in (
+            (_("Add"), add),
+            (_("Remove"), remove),
+            (_("Up"), lambda: move(-1)),
+            (_("Down"), lambda: move(1)),
+        ):
             b = QPushButton(text)
             b.clicked.connect(slot)
             col.addWidget(b)
@@ -198,8 +223,17 @@ class TrackEditor(QDialog):
             width.setValue(d.width)
 
         combo.currentIndexChanged.connect(on_curve)
-        for col, w in ((C_CURVE, combo), (C_LEFT, left), (C_RIGHT, right), (C_LOG, _centered(log)),
-                       (C_WRAP, _centered(wrap)), (C_COLOR, color), (C_WIDTH, width), (C_STYLE, style), (C_VISIBLE, _centered(visible))):
+        for col, w in (
+            (C_CURVE, combo),
+            (C_LEFT, left),
+            (C_RIGHT, right),
+            (C_LOG, _centered(log)),
+            (C_WRAP, _centered(wrap)),
+            (C_COLOR, color),
+            (C_WIDTH, width),
+            (C_STYLE, style),
+            (C_VISIBLE, _centered(visible)),
+        ):
             t.setCellWidget(r, col, w)
         t.setCurrentCell(r, 0)
 
@@ -231,17 +265,21 @@ class TrackEditor(QDialog):
                         d.left, d.right = log_decades(c.min, c.max)
                     left = d.left if left is None else left
                     right = d.right if right is None else right
-            out.append(CurveStyle(
-                mnemonic=m,
-                family=make_curve_style(self.doc.well, m).family if m in self.doc.well.curves else None,
-                color=t.cellWidget(r, C_COLOR).color(),
-                width=t.cellWidget(r, C_WIDTH).value(),
-                style=t.cellWidget(r, C_STYLE).value(),
-                left=left, right=right, log=log,
-                visible=t.cellWidget(r, C_VISIBLE).findChild(QCheckBox).isChecked(),
-                unit=self.doc.display_unit_of(m),
-                wrap=t.cellWidget(r, C_WRAP).findChild(QCheckBox).isChecked(),
-            ))
+            out.append(
+                CurveStyle(
+                    mnemonic=m,
+                    family=make_curve_style(self.doc.well, m).family if m in self.doc.well.curves else None,
+                    color=t.cellWidget(r, C_COLOR).color(),
+                    width=t.cellWidget(r, C_WIDTH).value(),
+                    style=t.cellWidget(r, C_STYLE).value(),
+                    left=left,
+                    right=right,
+                    log=log,
+                    visible=t.cellWidget(r, C_VISIBLE).findChild(QCheckBox).isChecked(),
+                    unit=self.doc.display_unit_of(m),
+                    wrap=t.cellWidget(r, C_WRAP).findChild(QCheckBox).isChecked(),
+                )
+            )
         return out, errors
 
     def _add_curve(self):
@@ -328,9 +366,17 @@ class TrackEditor(QDialog):
 
         colormap.currentIndexChanged.connect(sync)
         sync()
-        for col, w in ((F_LEFT, lcombo), (F_LVAL, lval), (F_RIGHT, rcombo), (F_RVAL, rval), (F_COLOR, color),
-                       (F_PATTERN, pattern), (F_COLORMAP, colormap), (F_LABEL, label),
-                       (F_VISIBLE, _centered(visible))):
+        for col, w in (
+            (F_LEFT, lcombo),
+            (F_LVAL, lval),
+            (F_RIGHT, rcombo),
+            (F_RVAL, rval),
+            (F_COLOR, color),
+            (F_PATTERN, pattern),
+            (F_COLORMAP, colormap),
+            (F_LABEL, label),
+            (F_VISIBLE, _centered(visible)),
+        ):
             t.setCellWidget(r, col, w)
         t.setCurrentCell(r, 0)
 
@@ -339,10 +385,13 @@ class TrackEditor(QDialog):
         out, errors = [], []
         for r in range(t.rowCount()):
             row = _("Fills, row {row}").format(row=r + 1)
-            spec = FillSpec(color=t.cellWidget(r, F_COLOR).color(), pattern=t.cellWidget(r, F_PATTERN).value(),
-                            label=t.cellWidget(r, F_LABEL).text().strip(),
-                            visible=t.cellWidget(r, F_VISIBLE).findChild(QCheckBox).isChecked(),
-                            colormap=t.cellWidget(r, F_COLORMAP).currentData())
+            spec = FillSpec(
+                color=t.cellWidget(r, F_COLOR).color(),
+                pattern=t.cellWidget(r, F_PATTERN).value(),
+                label=t.cellWidget(r, F_LABEL).text().strip(),
+                visible=t.cellWidget(r, F_VISIBLE).findChild(QCheckBox).isChecked(),
+                colormap=t.cellWidget(r, F_COLORMAP).currentData(),
+            )
             ok = True
             for side, ccol, vcol in (("left", F_LEFT, F_LVAL), ("right", F_RIGHT, F_RVAL)):
                 data = t.cellWidget(r, ccol).currentData()
@@ -352,16 +401,26 @@ class TrackEditor(QDialog):
                     except ValueError:
                         v = None
                     if v is None:
-                        errors.append((_("{row}: enter a number for the left bound") if side == "left" else
-                                       _("{row}: enter a number for the right bound")).format(row=row))
+                        errors.append(
+                            (
+                                _("{row}: enter a number for the left bound")
+                                if side == "left"
+                                else _("{row}: enter a number for the right bound")
+                            ).format(row=row)
+                        )
                         ok = False
                     setattr(spec, f"{side}_value", v)
                 elif data != EDGE:
                     setattr(spec, f"{side}_curve", data)
-            if spec.left_curve is None and spec.right_curve is None and (spec.left_value is not None or spec.right_value is not None):
+            if (
+                spec.left_curve is None
+                and spec.right_curve is None
+                and (spec.left_value is not None or spec.right_value is not None)
+            ):
                 if not self._fill_options():
-                    errors.append(_("{row}: a fixed value needs at least one curve in the track to be placed").format(
-                        row=row))
+                    errors.append(
+                        _("{row}: a fixed value needs at least one curve in the track to be placed").format(row=row)
+                    )
                     ok = False
             if spec.colormap and not (spec.left_curve or spec.right_curve):
                 errors.append(_("{row}: coloring by value needs a curve as one of the bounds").format(row=row))

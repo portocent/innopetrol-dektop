@@ -18,8 +18,9 @@ W, H = 150, 100
 
 def synthetic(**curves) -> Well:
     depth = np.arange(0.0, 100.0, 0.5)
-    return Well("S", None, depth, "m",
-                curves={m: Curve(m, u, "", np.asarray(v, float)) for m, (u, v) in curves.items()})
+    return Well(
+        "S", None, depth, "m", curves={m: Curve(m, u, "", np.asarray(v, float)) for m, (u, v) in curves.items()}
+    )
 
 
 def render(track: TrackSpec, well) -> QImage:
@@ -46,6 +47,7 @@ def test_wrapped_curve_is_drawn_again_one_scale_width_to_the_left(qapp):
     style.wrap = True
     wrapped = render(TrackSpec(grid="none", curves=[style]), well)
     x = 100 / 75 * W - W  # 50 px: where 100 falls on the backup scale 75–150
+
     def reddish(c: QColor) -> bool:  # dense dashed curves are drawn semi-transparent
         return c.red() > 200 and c.green() < 180 and c.blue() < 180
 
@@ -61,8 +63,11 @@ def test_backup_scales():
 def test_fill_colored_by_value(qapp):
     values = np.where(np.arange(200) < 100, 0.0, 150.0)  # clean on top (0), shale below (150)
     well = synthetic(GR=("GAPI", values))
-    track = TrackSpec(grid="none", curves=[CurveStyle("GR", left=0, right=150, visible=False)],
-                      fills=[FillSpec(left_curve="GR", colormap="gamma_ray")])
+    track = TrackSpec(
+        grid="none",
+        curves=[CurveStyle("GR", left=0, right=150, visible=False)],
+        fills=[FillSpec(left_curve="GR", colormap="gamma_ray")],
+    )
     colors = palette("gamma_ray")
     img = render(track, well)  # from the curve to the right edge
     assert is_close(color_at(img, W / 2, 23), colors[0])  # GR 0: first color
@@ -74,19 +79,29 @@ def test_fill_colored_by_value(qapp):
 
 def test_volumes_track_stacks_fractions(qapp):
     n = 200
-    well = synthetic(VSH=("v/v", np.full(n, 0.3)), VMAT=("v/v", np.full(n, 0.5)),
-                     BVH=("v/v", np.full(n, 0.1)), BVW=("%", np.full(n, 10.0)))  # water in percent
+    well = synthetic(
+        VSH=("v/v", np.full(n, 0.3)),
+        VMAT=("v/v", np.full(n, 0.5)),
+        BVH=("v/v", np.full(n, 0.1)),
+        BVW=("%", np.full(n, 10.0)),
+    )  # water in percent
     track = build_volumes_track(well)
     assert [c.mnemonic for c in track.curves] == ["VSH", "VMAT", "BVH", "BVW"] and track.is_volumes
     img = render(track, well)
-    for frac, style in ((0.15, track.curves[0]), (0.55, track.curves[1]), (0.85, track.curves[2]),
-                        (0.95, track.curves[3])):
+    for frac, style in (
+        (0.15, track.curves[0]),
+        (0.55, track.curves[1]),
+        (0.85, track.curves[2]),
+        (0.95, track.curves[3]),
+    ):
         assert is_close(color_at(img, W * frac, 50), QColor(style.color), 60), style.mnemonic
 
 
 def test_petrophysics_produces_volumes(testdata_well):
-    curves = {c.mnemonic: c for c in petro.compute(testdata_well, petro.PetroParams(
-        gr_curve="SGR", rhob_curve="RHOB", rt_curve="LLD"))}
+    curves = {
+        c.mnemonic: c
+        for c in petro.compute(testdata_well, petro.PetroParams(gr_curve="SGR", rhob_curve="RHOB", rt_curve="LLD"))
+    }
     total = curves["VSH"].values + curves["VMAT"].values + curves["PHIE"].values
     ok = np.isfinite(total) & (curves["VMAT"].values > 0)
     assert np.allclose(total[ok], 1)
@@ -101,8 +116,15 @@ def test_petrophysics_produces_volumes(testdata_well):
 
 
 def test_layout_round_trip_keeps_new_fields():
-    layout = LogLayout([TrackSpec(kind="volumes", curves=[CurveStyle("GR", wrap=True)],
-                                  fills=[FillSpec(left_curve="GR", colormap="viridis")])])
+    layout = LogLayout(
+        [
+            TrackSpec(
+                kind="volumes",
+                curves=[CurveStyle("GR", wrap=True)],
+                fills=[FillSpec(left_curve="GR", colormap="viridis")],
+            )
+        ]
+    )
     assert LogLayout.from_dict(layout.to_dict()) == layout
 
 
@@ -184,7 +206,16 @@ def test_template_never_swaps_volume_curves(testdata_well):
     testdata_well.add_curve(Curve("VSH", "v/v", "", np.full(n, 0.2)))
     testdata_well.add_curve(Curve("VMAT", "v/v", "", np.full(n, 0.6)))
     testdata_well.add_curve(Curve("BVW", "v/v", "", np.full(n, 0.2)))  # no BVH in this well
-    template = LogLayout([TrackSpec(kind="volumes", curves=[CurveStyle(m, family=f) for m, f in (
-        ("VSH", "vsh"), ("VMAT", "matrix_volume"), ("BVH", "bvh"), ("BVW", "bvw"))])])
+    template = LogLayout(
+        [
+            TrackSpec(
+                kind="volumes",
+                curves=[
+                    CurveStyle(m, family=f)
+                    for m, f in (("VSH", "vsh"), ("VMAT", "matrix_volume"), ("BVH", "bvh"), ("BVW", "bvw"))
+                ],
+            )
+        ]
+    )
     result, missing = apply_template(template, testdata_well)
     assert [c.mnemonic for c in result.tracks[0].curves] == ["VSH", "VMAT", "BVW"] and missing == ["BVH"]

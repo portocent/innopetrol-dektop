@@ -125,8 +125,12 @@ class GrPickerDialog(QDialog):
         self.values = np.asarray(values, float)
         self.values = self.values[np.isfinite(self.values)]
         lay = QVBoxLayout(self)
-        hint = QLabel(_("Drag the green line to the clean sand and the brown line to the shale, or click "
-                        "near a line to move it there. P5/P95 places them at the 5th and 95th percentiles."))
+        hint = QLabel(
+            _(
+                "Drag the green line to the clean sand and the brown line to the shale, or click "
+                "near a line to move it there. P5/P95 places them at the 5th and 95th percentiles."
+            )
+        )
         hint.setWordWrap(True)
         lay.addWidget(hint)
         self.hist = GrPickHistogram()
@@ -225,7 +229,7 @@ class PickettPicker(QWidget):
                     p.drawPoints(_points(xs[sel], ys[sel]))
         phi = np.logspace(-2, 0, 60)
         for sw, color, width in ((1.0, "#1a5276", 2.6), (0.5, "#27ae60", 1.4), (0.25, "#c0392b", 1.4)):
-            rt = self.a * self.rw / (phi ** self.m * sw ** self.n)
+            rt = self.a * self.rw / (phi**self.m * sw**self.n)
             xs = r.left() + self.xa.map(rt, r.width())
             ys = r.bottom() - self.ya.map(phi, r.height())
             pen = QPen(QColor(color), width + (1 if sw == 1 and self._drag else 0))
@@ -241,8 +245,11 @@ class PickettPicker(QWidget):
                 p.drawText(q + QPointF(6, -4), f"Sw={sw:g}")
         p.restore()
         p.setPen(QColor("#1a5276"))
-        p.drawText(QRectF(r.left() + 8, r.top() + 4, r.width() - 16, fm.height() * 1.3), Qt.AlignRight,
-                   f"Rw = {self.rw:.4g}  ·  a = {self.a:g}  ·  m = {self.m:g}  ·  n = {self.n:g}")
+        p.drawText(
+            QRectF(r.left() + 8, r.top() + 4, r.width() - 16, fm.height() * 1.3),
+            Qt.AlignRight,
+            f"Rw = {self.rw:.4g}  ·  a = {self.a:g}  ·  m = {self.m:g}  ·  n = {self.n:g}",
+        )
         p.end()
 
     @property
@@ -255,14 +262,14 @@ class PickettPicker(QWidget):
             return None
         rt = self.xa.value_at(pos.x() - r.left(), r.width())
         phi = self.ya.value_at(r.bottom() - pos.y(), r.height())
-        return rt * phi ** self.m / self.a  # the water line through this point
+        return rt * phi**self.m / self.a  # the water line through this point
 
     def _near_water_line(self, pos: QPointF) -> bool:
         r = self.plot_area
         if not r.contains(pos):
             return False
         phi = self.ya.value_at(r.bottom() - pos.y(), r.height())
-        rt = self.a * self.rw / phi ** self.m
+        rt = self.a * self.rw / phi**self.m
         x = r.left() + float(self.xa.map(np.array([rt]), r.width())[0])
         return math.isfinite(x) and abs(x - pos.x()) <= GRAB_PX
 
@@ -305,16 +312,30 @@ class PickettPicker(QWidget):
 
 
 class PickettPickerDialog(QDialog):
-    def __init__(self, rt: np.ndarray, phi: np.ndarray, rw: float, a: float, m: float, n: float, interval: str,
-                 vsh: np.ndarray | None = None, parent=None):
+    def __init__(
+        self,
+        rt: np.ndarray,
+        phi: np.ndarray,
+        rw: float,
+        a: float,
+        m: float,
+        n: float,
+        interval: str,
+        vsh: np.ndarray | None = None,
+        parent=None,
+    ):
         super().__init__(parent)
         self.setWindowTitle(_("Pick Rw on the Pickett plot — {interval}").format(interval=interval))
         self.setWindowIcon(app_icon())
         self.resize(720, 600)
         lay = QVBoxLayout(self)
-        hint = QLabel(_("Drag the blue water line (Sw = 1) onto the lowest-resistivity points, which are "
-                        "usually water-bearing. The slope depends on m. “Fit to the wettest points” "
-                        "places it automatically."))
+        hint = QLabel(
+            _(
+                "Drag the blue water line (Sw = 1) onto the lowest-resistivity points, which are "
+                "usually water-bearing. The slope depends on m. “Fit to the wettest points” "
+                "places it automatically."
+            )
+        )
         hint.setWordWrap(True)
         lay.addWidget(hint)
         self.plot = PickettPicker(rt, phi, vsh)
@@ -338,7 +359,8 @@ class PickettPickerDialog(QDialog):
         text = _("{count} points with φ and Rt").format(count=self.plot.rt.size)
         if vsh is not None:
             text += " · " + _("light gray: shaly (Vsh > {cutoff}), not used by the automatic fit").format(
-                cutoff=f"{PickettPicker.SHALY:g}")
+                cutoff=f"{PickettPicker.SHALY:g}"
+            )
         self.points_label = QLabel(text)
         self.points_label.setStyleSheet("color: #566573")
         lay.addWidget(self.points_label)

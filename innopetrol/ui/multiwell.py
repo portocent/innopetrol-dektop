@@ -12,8 +12,18 @@ from innopetrol.model.mnemonics import family_of, find_curve
 from innopetrol.model.tops import zones_from_tops
 
 # Distinct colors for wells (categorical, colorblind-friendly first).
-WELL_COLORS = ["#0072b2", "#e69f00", "#009e73", "#cc79a7", "#d55e00", "#56b4e9", "#7f7f7f", "#8c564b",
-               "#bcbd22", "#17becf"]
+WELL_COLORS = [
+    "#0072b2",
+    "#e69f00",
+    "#009e73",
+    "#cc79a7",
+    "#d55e00",
+    "#56b4e9",
+    "#7f7f7f",
+    "#8c564b",
+    "#bcbd22",
+    "#17becf",
+]
 
 
 def equivalent_curve(doc, mnemonic: str) -> str | None:
@@ -68,8 +78,12 @@ def zone_mask(doc, zone: str | None) -> np.ndarray:
 def well_list(docs, active) -> QListWidget:
     """Checkable list of wells (only the active one checked)."""
     lst = QListWidget()
-    lst.setToolTip(_("Wells included. Curves are matched by name or by family (e.g. GR and SGR) and "
-                     "converted to the units of the active well."))
+    lst.setToolTip(
+        _(
+            "Wells included. Curves are matched by name or by family (e.g. GR and SGR) and "
+            "converted to the units of the active well."
+        )
+    )
     for i, d in enumerate(docs):
         item = QListWidgetItem(d.title)
         item.setData(Qt.UserRole, d)

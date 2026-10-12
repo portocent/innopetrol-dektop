@@ -11,8 +11,7 @@ from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen
 from innopetrol.model.scales import log_grid_positions, map_values
 from innopetrol.render.painter import BORDER, GRID_MAJOR, GRID_MINOR, fmt
 
-VIRIDIS = ["#440154", "#482878", "#3e4989", "#31688e", "#26828e", "#1f9e89", "#35b779", "#6ece58", "#b5de2b",
-           "#fde725"]
+VIRIDIS = ["#440154", "#482878", "#3e4989", "#31688e", "#26828e", "#1f9e89", "#35b779", "#6ece58", "#b5de2b", "#fde725"]
 
 
 def colormap(t: np.ndarray) -> list[QColor]:
@@ -23,8 +22,13 @@ def colormap(t: np.ndarray) -> list[QColor]:
         i = min(int(x), len(stops) - 2)
         f = x - i
         a, b = stops[i], stops[i + 1]
-        out.append(QColor(int(a.red() + (b.red() - a.red()) * f), int(a.green() + (b.green() - a.green()) * f),
-                          int(a.blue() + (b.blue() - a.blue()) * f)))
+        out.append(
+            QColor(
+                int(a.red() + (b.red() - a.red()) * f),
+                int(a.green() + (b.green() - a.green()) * f),
+                int(a.blue() + (b.blue() - a.blue()) * f),
+            )
+        )
     return out
 
 
@@ -64,8 +68,12 @@ class Axis:
 def plot_rect(widget_rect: QRectF, fm: QFontMetricsF) -> QRectF:
     left = fm.horizontalAdvance("00000.0") + fm.height() + 10
     bottom = fm.height() * 2.6
-    return QRectF(widget_rect.left() + left, widget_rect.top() + 10,
-                  widget_rect.width() - left - 16, widget_rect.height() - bottom - 10)
+    return QRectF(
+        widget_rect.left() + left,
+        widget_rect.top() + 10,
+        widget_rect.width() - left - 16,
+        widget_rect.height() - bottom - 10,
+    )
 
 
 def draw_axes(p: QPainter, r: QRectF, xa: Axis, ya: Axis) -> None:
@@ -86,8 +94,11 @@ def draw_axes(p: QPainter, r: QRectF, xa: Axis, ya: Axis) -> None:
                 p.drawLine(QPointF(r.left(), y), QPointF(r.right(), y))
                 if major:
                     p.setPen(BORDER)
-                    p.drawText(QRectF(r.left() - 64, y - fm.height() / 2, 60, fm.height()),
-                               Qt.AlignRight | Qt.AlignVCenter, fmt(v))
+                    p.drawText(
+                        QRectF(r.left() - 64, y - fm.height() / 2, 60, fm.height()),
+                        Qt.AlignRight | Qt.AlignVCenter,
+                        fmt(v),
+                    )
     p.setPen(QPen(BORDER, 1))
     p.setBrush(Qt.NoBrush)
     p.drawRect(r)

@@ -48,24 +48,27 @@ def save_project(path: str | Path, entries: list[WellEntry]) -> None:
     for e in entries:
         if e.well.path is None:
             continue
-        wells.append({
-            "path": _relative(e.well.path, path.parent),
-            "name": e.well.name,
-            "layout": e.layout.to_dict(),
-            "tops": [t.to_dict() for t in e.well.tops],
-            "computed": [
-                {"mnemonic": c.mnemonic, "unit": c.unit, "description": c.description, "formula": c.formula}
-                for c in e.well.curves.values() if c.formula
-            ],
-            "petro": e.petro.to_dict() if e.petro else None,
-            "source": e.well.source,  # frame inside a DLIS file
-            "survey": e.well.survey.to_dict() if e.well.survey is not None else None,
-            "elevation": e.well.elevation,
-            "location": e.well.location.to_dict() if e.well.location is not None else None,
-            "depth_reference": e.depth_reference,
-            "display_unit": e.display_unit,
-            "curve_units": e.curve_units,
-        })
+        wells.append(
+            {
+                "path": _relative(e.well.path, path.parent),
+                "name": e.well.name,
+                "layout": e.layout.to_dict(),
+                "tops": [t.to_dict() for t in e.well.tops],
+                "computed": [
+                    {"mnemonic": c.mnemonic, "unit": c.unit, "description": c.description, "formula": c.formula}
+                    for c in e.well.curves.values()
+                    if c.formula
+                ],
+                "petro": e.petro.to_dict() if e.petro else None,
+                "source": e.well.source,  # frame inside a DLIS file
+                "survey": e.well.survey.to_dict() if e.well.survey is not None else None,
+                "elevation": e.well.elevation,
+                "location": e.well.location.to_dict() if e.well.location is not None else None,
+                "depth_reference": e.depth_reference,
+                "display_unit": e.display_unit,
+                "curve_units": e.curve_units,
+            }
+        )
     data = {"format": FORMAT, "version": VERSION, "wells": wells}
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
@@ -105,15 +108,26 @@ def load_project(path: str | Path) -> LoadResult:
             try:
                 values = evaluate(c["formula"], well.formula_env())
             except Exception as e:
-                result.errors.append(_("{well}: could not recompute {curve}: {error}").format(
-                    well=well.name, curve=c["mnemonic"], error=e))
+                result.errors.append(
+                    _("{well}: could not recompute {curve}: {error}").format(
+                        well=well.name, curve=c["mnemonic"], error=e
+                    )
+                )
                 continue
-            well.add_curve(Curve(c["mnemonic"], c.get("unit", ""), c.get("description", ""), values,
-                                 formula=c["formula"]))
+            well.add_curve(
+                Curve(c["mnemonic"], c.get("unit", ""), c.get("description", ""), values, formula=c["formula"])
+            )
         petro = PetroParams.from_dict(w["petro"]) if w.get("petro") else None
-        result.entries.append(WellEntry(well, LogLayout.from_dict(w.get("layout", {})), petro,
-                                        w.get("depth_reference", "md"), w.get("display_unit"),
-                                        w.get("curve_units", {})))
+        result.entries.append(
+            WellEntry(
+                well,
+                LogLayout.from_dict(w.get("layout", {})),
+                petro,
+                w.get("depth_reference", "md"),
+                w.get("display_unit"),
+                w.get("curve_units", {}),
+            )
+        )
     return result
 
 

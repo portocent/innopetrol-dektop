@@ -5,10 +5,21 @@ from innopetrol.model.template import TemplateError, apply_template, template_fr
 from innopetrol.model.well import Well
 
 
-@pytest.mark.parametrize("mnem,fam", [("GR", "gamma_ray"), ("SGR", "gamma_ray"), ("TNPH", "neutron"),
-                                      ("NPHI", "neutron"), ("LLD", "deep_res"), ("ILD", "deep_res"),
-                                      ("RHOB", "density"), ("DTLN", "sonic"), ("K_3104", "permeability"),
-                                      ("XYZ", None)])
+@pytest.mark.parametrize(
+    "mnem,fam",
+    [
+        ("GR", "gamma_ray"),
+        ("SGR", "gamma_ray"),
+        ("TNPH", "neutron"),
+        ("NPHI", "neutron"),
+        ("LLD", "deep_res"),
+        ("ILD", "deep_res"),
+        ("RHOB", "density"),
+        ("DTLN", "sonic"),
+        ("K_3104", "permeability"),
+        ("XYZ", None),
+    ],
+)
 def test_family_of(mnem, fam):
     assert family_of(mnem) == fam
 

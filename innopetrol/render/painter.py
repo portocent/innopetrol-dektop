@@ -32,13 +32,23 @@ from innopetrol.model.scales import depth_ticks, log_grid_positions, map_values
 from innopetrol.render.colormaps import LEVELS, palette
 
 PEN_STYLES = {
-    "solid": Qt.SolidLine, "dash": Qt.DashLine, "dashdot": Qt.DashDotLine,
-    "dot": Qt.DotLine, "dashdotdot": Qt.DashDotDotLine,
+    "solid": Qt.SolidLine,
+    "dash": Qt.DashLine,
+    "dashdot": Qt.DashDotLine,
+    "dot": Qt.DotLine,
+    "dashdotdot": Qt.DashDotDotLine,
 }
 BRUSH_STYLES = {
-    "solid": Qt.SolidPattern, "dense1": Qt.Dense1Pattern, "dense2": Qt.Dense2Pattern,
-    "dense3": Qt.Dense3Pattern, "dense5": Qt.Dense5Pattern, "dense6": Qt.Dense6Pattern,
-    "hor": Qt.HorPattern, "ver": Qt.VerPattern, "bdiag": Qt.BDiagPattern, "diagcross": Qt.DiagCrossPattern,
+    "solid": Qt.SolidPattern,
+    "dense1": Qt.Dense1Pattern,
+    "dense2": Qt.Dense2Pattern,
+    "dense3": Qt.Dense3Pattern,
+    "dense5": Qt.Dense5Pattern,
+    "dense6": Qt.Dense6Pattern,
+    "hor": Qt.HorPattern,
+    "ver": Qt.VerPattern,
+    "bdiag": Qt.BDiagPattern,
+    "diagcross": Qt.DiagCrossPattern,
 }
 
 GRID_MINOR = QColor("#e3e6e8")
@@ -112,8 +122,9 @@ def visible_slice(depth: np.ndarray, tf: DepthTransform, height: float, margin: 
     return slice(i0, i1)
 
 
-def draw_track_body(p: QPainter, rect: QRectF, track: TrackSpec, well, tf: DepthTransform,
-                    opts: RenderOptions = RenderOptions()) -> None:
+def draw_track_body(
+    p: QPainter, rect: QRectF, track: TrackSpec, well, tf: DepthTransform, opts: RenderOptions = RenderOptions()
+) -> None:
     p.save()
     p.setClipRect(rect)
     p.translate(rect.topLeft())
@@ -171,8 +182,11 @@ def _draw_vertical_grid(p, track, w, h, opts):
 
 def _draw_depth_lines(p, tf, w, h, opts):
     ticks = depth_ticks(tf.depth(-2), tf.depth(h + 2), tf.ppu / opts.k)
-    for values, color, width in ((ticks.minor, GRID_MINOR, 0.6), (ticks.major, GRID_MAJOR, 0.8),
-                                 (ticks.labels, GRID_STRONG, 1.0)):
+    for values, color, width in (
+        (ticks.minor, GRID_MINOR, 0.6),
+        (ticks.major, GRID_MAJOR, 0.8),
+        (ticks.labels, GRID_STRONG, 1.0),
+    ):
         p.setPen(QPen(color, width * opts.k))
         _hlines(p, tf.y(values), 0, w)
 
@@ -289,8 +303,13 @@ def _stroke(p, style: CurveStyle, line_style: str, x, valid, y, opts):
             p.setPen(pen)
             _hlines(p, yc, lo - width / 2, hi + width / 2)
         else:
-            pen = QPen(color, width, PEN_STYLES.get(line_style, Qt.SolidLine), Qt.FlatCap,
-                       Qt.RoundJoin if width >= 2 else Qt.MiterJoin)
+            pen = QPen(
+                color,
+                width,
+                PEN_STYLES.get(line_style, Qt.SolidLine),
+                Qt.FlatCap,
+                Qt.RoundJoin if width >= 2 else Qt.MiterJoin,
+            )
             p.setRenderHint(QPainter.Antialiasing, True)
             p.setPen(pen)
             p.drawPolyline(polygon_from_arrays(xs, ys))
@@ -503,8 +522,9 @@ def backup_scale(style: CurveStyle) -> tuple[float, float]:
     return (right, right * right / left) if log else (right, right + (right - left))
 
 
-def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: RenderOptions = RenderOptions(),
-                      selected: bool = False) -> None:
+def draw_track_header(
+    p: QPainter, rect: QRectF, track: TrackSpec, well, opts: RenderOptions = RenderOptions(), selected: bool = False
+) -> None:
     p.save()
     p.setClipRect(rect)
     p.translate(rect.topLeft())
@@ -520,8 +540,11 @@ def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: R
     p.setFont(bold)
     p.setPen(BORDER)
     title = track.title or (pgettext("track title", "Depth") if track.is_depth else "")
-    p.drawText(QRectF(pad, 2 * opts.k, w - 2 * pad, line), Qt.AlignCenter,
-               QFontMetricsF(bold).elidedText(title, Qt.ElideRight, w - 2 * pad))
+    p.drawText(
+        QRectF(pad, 2 * opts.k, w - 2 * pad, line),
+        Qt.AlignCenter,
+        QFontMetricsF(bold).elidedText(title, Qt.ElideRight, w - 2 * pad),
+    )
     p.setFont(font)
     y = line + 4 * opts.k
 
@@ -545,8 +568,11 @@ def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: R
                 name = f"{_(label)} ({style.mnemonic})" if label else style.mnemonic
             p.setPen(BORDER if curve else QColor("#999999"))
             text_x = box.right() + 4 * opts.k
-            p.drawText(QRectF(text_x, y, w - text_x - pad, line), Qt.AlignLeft | Qt.AlignVCenter,
-                       fm.elidedText(name, Qt.ElideRight, w - text_x - pad))
+            p.drawText(
+                QRectF(text_x, y, w - text_x - pad, line),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                fm.elidedText(name, Qt.ElideRight, w - text_x - pad),
+            )
             y += line + 2 * opts.k
         p.setPen(BORDER)
         p.drawText(QRectF(pad, y, w, line), Qt.AlignLeft | Qt.AlignVCenter, "0")
@@ -563,8 +589,9 @@ def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: R
                 name = _("{curve} — not available").format(curve=name)
                 color = QColor("#999999")
             p.setPen(color)
-            p.drawText(QRectF(pad, y, w - 2 * pad, line), Qt.AlignCenter,
-                       fm.elidedText(name, Qt.ElideRight, w - 2 * pad))
+            p.drawText(
+                QRectF(pad, y, w - 2 * pad, line), Qt.AlignCenter, fm.elidedText(name, Qt.ElideRight, w - 2 * pad)
+            )
             left, right, _log = scale_of(style)
             lt, rt = fmt(left), fmt(right)
             p.drawText(QRectF(pad, y + line, w, line), Qt.AlignLeft | Qt.AlignVCenter, lt)
@@ -579,9 +606,15 @@ def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: R
             if style.wrap:
                 b_left, b_right = backup_scale(style)
                 p.setPen(color)
-                p.drawText(QRectF(pad, y - 2 * opts.k, w - 2 * pad, line), Qt.AlignCenter,
-                           fm.elidedText(_("backup {left} – {right}").format(left=fmt(b_left), right=fmt(b_right)),
-                                         Qt.ElideRight, w - 2 * pad))
+                p.drawText(
+                    QRectF(pad, y - 2 * opts.k, w - 2 * pad, line),
+                    Qt.AlignCenter,
+                    fm.elidedText(
+                        _("backup {left} – {right}").format(left=fmt(b_left), right=fmt(b_right)),
+                        Qt.ElideRight,
+                        w - 2 * pad,
+                    ),
+                )
                 y += line
         for fill in track.fills:
             if not (fill.visible and fill.label):

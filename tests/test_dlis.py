@@ -63,8 +63,21 @@ def test_dlis_to_las_conversion(dlis_file, tmp_path):
     assert np.allclose(back.curves["GR"].values, w.curves["GR"].values, equal_nan=True, atol=1e-4)
 
 
-@pytest.mark.parametrize("unit,expected", [("0.1 in", (1 / 120, "ft")), ("m", (1.0, "m")), ("ft", (1.0, "ft")),
-                                           ("cm", (0.01, "m")), ("0.5 mm", (0.0005, "m")), ("s", None)])
+@pytest.mark.parametrize(
+    "unit,expected",
+    [
+        ("0.1 in", (1 / 120, "ft")),
+        ("m", (1.0, "m")),
+        ("ft", (1.0, "ft")),
+        ("cm", (0.01, "m")),
+        ("0.5 mm", (0.0005, "m")),
+        ("s", None),
+    ],
+)
 def test_depth_units(unit, expected):
     result = dlis.depth_unit_factor(unit)
-    assert result == expected if expected is None else (result[0] == pytest.approx(expected[0]) and result[1] == expected[1])
+    assert (
+        result == expected
+        if expected is None
+        else (result[0] == pytest.approx(expected[0]) and result[1] == expected[1])
+    )

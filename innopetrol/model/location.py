@@ -17,8 +17,18 @@ FEET = 0.3048
 M_PER_DEG_LAT = 111_320.0  # meters per degree of latitude (spherical approximation, enough for a map)
 
 # Header mnemonic pairs, in order of preference.
-_PROJECTED = (("XCOORD", "YCOORD"), ("X", "Y"), ("XWELL", "YWELL"), ("EAST", "NORT"), ("EAST", "NORTH"),
-              ("EASTING", "NORTHING"), ("UTMX", "UTMY"), ("XLOC", "YLOC"), ("SURFX", "SURFY"), ("X_COORD", "Y_COORD"))
+_PROJECTED = (
+    ("XCOORD", "YCOORD"),
+    ("X", "Y"),
+    ("XWELL", "YWELL"),
+    ("EAST", "NORT"),
+    ("EAST", "NORTH"),
+    ("EASTING", "NORTHING"),
+    ("UTMX", "UTMY"),
+    ("XLOC", "YLOC"),
+    ("SURFX", "SURFY"),
+    ("X_COORD", "Y_COORD"),
+)
 _GEOGRAPHIC = (("LATI", "LONG"), ("LAT", "LON"), ("LATITUDE", "LONGITUDE"), ("SLAT", "SLON"), ("LAT", "LONG"))
 _FEET_UNITS = {"F", "FT", "FEET", "FOOT", "USFT", "FTUS"}
 
@@ -57,7 +67,7 @@ def parse_coordinate(text: str) -> float | None:
     sign = -1.0 if numbers[0] < 0 else 1.0
     value = abs(numbers[0])
     for i, part in enumerate(numbers[1:], start=1):
-        value += part / 60 ** i
+        value += part / 60**i
     if re.search(r"(^|[^A-Z])[SW]([^A-Z]|$)", s) or re.search(r"\d[SW]", s):
         sign = -1.0
     value *= sign

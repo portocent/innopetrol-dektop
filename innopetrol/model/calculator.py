@@ -22,15 +22,35 @@ class CalculatorError(Exception):
 
 
 _BINOPS = {
-    ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
-    ast.Div: operator.truediv, ast.Pow: np.power, ast.BitAnd: np.logical_and, ast.BitOr: np.logical_or,
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Pow: np.power,
+    ast.BitAnd: np.logical_and,
+    ast.BitOr: np.logical_or,
 }
 _UNARY = {ast.USub: operator.neg, ast.UAdd: operator.pos, ast.Invert: np.logical_not}
-_COMPARE = {ast.Lt: np.less, ast.LtE: np.less_equal, ast.Gt: np.greater, ast.GtE: np.greater_equal,
-            ast.Eq: np.equal, ast.NotEq: np.not_equal}
+_COMPARE = {
+    ast.Lt: np.less,
+    ast.LtE: np.less_equal,
+    ast.Gt: np.greater,
+    ast.GtE: np.greater_equal,
+    ast.Eq: np.equal,
+    ast.NotEq: np.not_equal,
+}
 FUNCTIONS = {
-    "log10": np.log10, "log": np.log, "ln": np.log, "exp": np.exp, "sqrt": np.sqrt, "abs": np.abs,
-    "clip": np.clip, "min": np.fmin, "max": np.fmax, "where": np.where, "isnan": np.isnan,
+    "log10": np.log10,
+    "log": np.log,
+    "ln": np.log,
+    "exp": np.exp,
+    "sqrt": np.sqrt,
+    "abs": np.abs,
+    "clip": np.clip,
+    "min": np.fmin,
+    "max": np.fmax,
+    "where": np.where,
+    "isnan": np.isnan,
     "round": np.round,
 }
 CONSTANTS = {"pi": np.pi, "e": np.e, "nan": np.nan, "NaN": np.nan, "NAN": np.nan}
@@ -104,7 +124,11 @@ def _eval(node, curves):
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and not node.keywords:
         name = node.func.id
         if name == "curve":
-            if len(node.args) != 1 or not isinstance(node.args[0], ast.Constant) or not isinstance(node.args[0].value, str):
+            if (
+                len(node.args) != 1
+                or not isinstance(node.args[0], ast.Constant)
+                or not isinstance(node.args[0].value, str)
+            ):
                 raise CalculatorError(_('usage: curve("NAME")'))
             key = node.args[0].value
             if key not in curves:
@@ -117,8 +141,7 @@ def _eval(node, curves):
             except TypeError as e:
                 raise CalculatorError(_("invalid arguments for {function}()").format(function=name)) from e
         raise CalculatorError(_("function not allowed: {function}").format(function=name))
-    raise CalculatorError(_("element not allowed in the expression: {element}").format(
-        element=type(node).__name__))
+    raise CalculatorError(_("element not allowed in the expression: {element}").format(element=type(node).__name__))
 
 
 def referenced_names(expression: str) -> set[str]:
@@ -140,5 +163,8 @@ def referenced_names(expression: str) -> set[str]:
 
 def curve_ref(mnemonic: str) -> str:
     """How to write a curve name inside a formula."""
-    return mnemonic if mnemonic.isidentifier() and mnemonic not in FUNCTIONS and mnemonic not in CONSTANTS \
+    return (
+        mnemonic
+        if mnemonic.isidentifier() and mnemonic not in FUNCTIONS and mnemonic not in CONSTANTS
         else f"[{mnemonic}]"
+    )

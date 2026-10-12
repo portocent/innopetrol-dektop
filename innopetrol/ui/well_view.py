@@ -107,8 +107,9 @@ class WellView(QWidget):
         elif kind == "volumes":
             track = build_volumes_track(self.doc.well)
             if track is None:
-                QMessageBox.information(self, _("Volumes track"),
-                                        _("The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first."))
+                QMessageBox.information(
+                    self, _("Volumes track"), _("The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first.")
+                )
                 return
             self.doc.adopt_layout(LogLayout([track]))
         else:
@@ -124,8 +125,9 @@ class WellView(QWidget):
             return
         track = self.doc.layout.tracks[index]
         if track.curves:
-            r = QMessageBox.question(self, _("Remove track"),
-                                     _("Remove the track “{title}” and its settings?").format(title=track.title))
+            r = QMessageBox.question(
+                self, _("Remove track"), _("Remove the track “{title}” and its settings?").format(title=track.title)
+            )
             if r != QMessageBox.Yes:
                 return
         self.canvas.selected = -1
@@ -196,7 +198,8 @@ class WellView(QWidget):
         menu.addAction(_("Add curve track")).triggered.connect(lambda: self.add_track("curves", index))
         menu.addAction(_("Add depth track")).triggered.connect(lambda: self.add_track("depth", index))
         menu.addAction(_("Add volumes track (lithology / fluids)")).triggered.connect(
-            lambda: self.add_track("volumes", index))
+            lambda: self.add_track("volumes", index)
+        )
         if not math.isnan(depth):
             menu.addSeparator()
             add_top = QAction(_("Add top at {depth}…").format(depth=f"{depth:.2f}"), menu)
@@ -209,8 +212,7 @@ class WellView(QWidget):
 
     def closeEvent(self, e):
         if self.confirm_close:
-            r = QMessageBox.question(self, _("Close well"),
-                                     _("Close the well “{name}”?").format(name=self.doc.title))
+            r = QMessageBox.question(self, _("Close well"), _("Close the well “{name}”?").format(name=self.doc.title))
             if r != QMessageBox.Yes:  # formerly: retval == 1024 (a magic number)
                 e.ignore()
                 return

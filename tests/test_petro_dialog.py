@@ -94,7 +94,7 @@ def test_pickett_fit_and_drag(qtbot):
 
     rng = np.random.default_rng(3)
     phi = rng.uniform(0.08, 0.3, 400)
-    rt = 0.08 / phi ** 2  # water-bearing: on the Sw = 1 line of Rw = 0.08
+    rt = 0.08 / phi**2  # water-bearing: on the Sw = 1 line of Rw = 0.08
     rt[200:] *= rng.uniform(5, 30, 200)  # hydrocarbon-bearing: higher resistivity
     plot = PickettPicker(rt, phi)
     qtbot.addWidget(plot)
@@ -109,7 +109,7 @@ def test_pickett_fit_and_drag(qtbot):
     qtbot.mousePress(plot, Qt.LeftButton, pos=pos.toPoint())
     rt_here = plot.xa.value_at(pos.toPoint().x() - r.left(), r.width())
     phi_here = plot.ya.value_at(r.bottom() - pos.toPoint().y(), r.height())
-    assert got and got[-1] == pytest.approx(rt_here * phi_here ** 2, rel=1e-3)
+    assert got and got[-1] == pytest.approx(rt_here * phi_here**2, rel=1e-3)
 
 
 def test_zone_summary_uses_zone_cutoffs(dialog, doc, qtbot):

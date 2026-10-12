@@ -21,16 +21,40 @@ def run(*args: str) -> None:
 
 
 def extract() -> None:
-    run("extract", "--project=InnoPetrol", "--no-location", "--sort-output", "--width=100",
-        "-k", "_", "-k", "N_", "-k", "ngettext:1,2", "-o", str(POT), "innopetrol")
+    run(
+        "extract",
+        "--project=InnoPetrol",
+        "--no-location",
+        "--sort-output",
+        "--width=100",
+        "-k",
+        "_",
+        "-k",
+        "N_",
+        "-k",
+        "ngettext:1,2",
+        "-o",
+        str(POT),
+        "innopetrol",
+    )
 
 
 def main() -> None:
     cmd = sys.argv[1] if len(sys.argv) > 1 else "update"
     if cmd == "update":
         extract()
-        run("update", "-i", str(POT), "-d", str(LOCALE), "-D", "innopetrol", "--no-fuzzy-matching",
-            "--width=100", "--ignore-obsolete")
+        run(
+            "update",
+            "-i",
+            str(POT),
+            "-d",
+            str(LOCALE),
+            "-D",
+            "innopetrol",
+            "--no-fuzzy-matching",
+            "--width=100",
+            "--ignore-obsolete",
+        )
     elif cmd == "compile":
         run("compile", "-d", str(LOCALE), "-D", "innopetrol", "--statistics")
     elif cmd == "init":

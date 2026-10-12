@@ -42,8 +42,7 @@ def test_unit_system(doc):
     doc.apply_unit_system("metric")
     assert doc.curve_units["RHOB"] == "kg/m3" and doc.curve_units["DTLN"] == "us/m" and doc.curve_units["CALI"] == "mm"
     assert doc.view.depth_unit == "m" and "SGR" not in doc.curve_units  # gAPI has no metric alternative
-    assert doc.view.value_at("RHOB", doc.view.to_display(8000)) == pytest.approx(
-        doc.well.value_at("RHOB", 8000) * 1000)
+    assert doc.view.value_at("RHOB", doc.view.to_display(8000)) == pytest.approx(doc.well.value_at("RHOB", 8000) * 1000)
     doc.apply_unit_system("file")
     assert doc.curve_units == {} and doc.view.depth_unit == "ft"
     assert rhob_style(doc).left == 1.95

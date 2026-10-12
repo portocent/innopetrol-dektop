@@ -34,9 +34,13 @@ class AliasesDialog(QDialog):
         self.setWindowIcon(app_icon())
         self.resize(900, 600)
         lay = QVBoxLayout(self)
-        hint = QLabel(_("Add the curve names your company or service providers use, separated by commas. "
-                        "They are recognized when opening wells and applying templates. A name written "
-                        "here wins over a built-in one, so it can also move a mnemonic to another family."))
+        hint = QLabel(
+            _(
+                "Add the curve names your company or service providers use, separated by commas. "
+                "They are recognized when opening wells and applying templates. A name written "
+                "here wins over a built-in one, so it can also move a mnemonic to another family."
+            )
+        )
         hint.setWordWrap(True)
         lay.addWidget(hint)
         self.table = QTableWidget(len(mnemonics.FAMILIES), 3)
@@ -86,10 +90,15 @@ class AliasesDialog(QDialog):
     def _check(self) -> bool:
         conflicts = mnemonics.alias_conflicts(self.aliases())
         if conflicts:
-            lines = [_("{alias}: {families}").format(
-                alias=a, families=", ".join(_(mnemonics.FAMILIES[f].name) for f in fams)) for a, fams in conflicts]
-            QMessageBox.warning(self, self.windowTitle(),
-                                _("These names are in more than one family:") + "\n\n" + "\n".join(lines))
+            lines = [
+                _("{alias}: {families}").format(
+                    alias=a, families=", ".join(_(mnemonics.FAMILIES[f].name) for f in fams)
+                )
+                for a, fams in conflicts
+            ]
+            QMessageBox.warning(
+                self, self.windowTitle(), _("These names are in more than one family:") + "\n\n" + "\n".join(lines)
+            )
             return False
         return True
 
@@ -109,8 +118,11 @@ class AliasesDialog(QDialog):
         unknown = sorted(set(aliases) - set(self.keys))
         self.set_aliases({k: v for k, v in aliases.items() if k in self.keys})
         if unknown:
-            QMessageBox.information(self, _("Import aliases"),
-                                    _("Unknown families were ignored: {families}").format(families=", ".join(unknown)))
+            QMessageBox.information(
+                self,
+                _("Import aliases"),
+                _("Unknown families were ignored: {families}").format(families=", ".join(unknown)),
+            )
 
     def _export(self):
         if not self._check():

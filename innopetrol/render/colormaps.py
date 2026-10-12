@@ -29,6 +29,11 @@ def palette(name: str, n: int = LEVELS) -> tuple[QColor, ...]:
         j = min(int(x), len(stops) - 2)
         f = x - j
         a, b = stops[j], stops[j + 1]
-        out.append(QColor(round(a.red() + (b.red() - a.red()) * f), round(a.green() + (b.green() - a.green()) * f),
-                          round(a.blue() + (b.blue() - a.blue()) * f)))
+        out.append(
+            QColor(
+                round(a.red() + (b.red() - a.red()) * f),
+                round(a.green() + (b.green() - a.green()) * f),
+                round(a.blue() + (b.blue() - a.blue()) * f),
+            )
+        )
     return tuple(out)

@@ -143,8 +143,9 @@ class BaseMapWidget(QWidget):
             p.setPen(QPen(GRID_MAJOR, 0.6))
             p.drawLine(QPointF(sx, 0), QPointF(sx, self.height()))
             p.setPen(QColor("#566573"))
-            p.drawText(QRectF(sx - 60, self.height() - fm.height() - 2, 120, fm.height()), Qt.AlignCenter,
-                       self._label(v))
+            p.drawText(
+                QRectF(sx - 60, self.height() - fm.height() - 2, 120, fm.height()), Qt.AlignCenter, self._label(v)
+            )
         for v in linear_ticks(y0, y1, max(int(self.height() / 90), 2)):
             sy = float(self.to_screen(0, v)[1])
             p.setPen(QPen(GRID_MAJOR, 0.6))
@@ -172,8 +173,11 @@ class BaseMapWidget(QWidget):
             return
         self.setCursor(Qt.PointingHandCursor if self.item_at(e.position()) else Qt.ArrowCursor)
         x, y = self.to_map(e.position())
-        self.cursorText.emit(_("Lat {lat} · Lon {lon}").format(lat=f"{y:.5f}°", lon=f"{x:.5f}°") if self.geographic
-                             else f"X {x:.1f} · Y {y:.1f}")
+        self.cursorText.emit(
+            _("Lat {lat} · Lon {lon}").format(lat=f"{y:.5f}°", lon=f"{x:.5f}°")
+            if self.geographic
+            else f"X {x:.1f} · Y {y:.1f}"
+        )
 
     def mouseReleaseEvent(self, e):
         if self._press is not None and not self._moved:
@@ -219,8 +223,12 @@ class BaseMapWindow(QDialog):
 
         lay = QVBoxLayout(self)
         bar = QHBoxLayout()
-        hint = QLabel(_("Click wells in order to draw a correlation section · double-click opens a well · "
-                        "drag to pan, wheel to zoom"))
+        hint = QLabel(
+            _(
+                "Click wells in order to draw a correlation section · double-click opens a well · "
+                "drag to pan, wheel to zoom"
+            )
+        )
         hint.setStyleSheet("color:#566573")
         bar.addWidget(hint, 1)
         fit = QPushButton(_("Fit"))
@@ -233,11 +241,17 @@ class BaseMapWindow(QDialog):
         lay.addWidget(self.map, 1)
         notes = []
         if missing:
-            notes.append(_("Without coordinates (enter them in Well ▸ Deviation survey, elevation and location…): "
-                           "{wells}").format(wells=", ".join(d.title for d in missing)))
+            notes.append(
+                _(
+                    "Without coordinates (enter them in Well ▸ Deviation survey, elevation and location…): {wells}"
+                ).format(wells=", ".join(d.title for d in missing))
+            )
         if other_system:
-            notes.append(_("Not shown, coordinates of another type (projected vs. latitude/longitude): {wells}").format(
-                wells=", ".join(d.title for d in other_system)))
+            notes.append(
+                _("Not shown, coordinates of another type (projected vs. latitude/longitude): {wells}").format(
+                    wells=", ".join(d.title for d in other_system)
+                )
+            )
         self.coords = QLabel(" ")
         self.coords.setStyleSheet("color:#566573")
         lay.addWidget(self.coords)

@@ -92,7 +92,7 @@ def log_grid_positions(left: float, right: float) -> list[tuple[float, bool]]:
         return []
     out = []
     for k in range(math.floor(math.log10(lo)), math.ceil(math.log10(hi)) + 1):
-        base = 10.0 ** k
+        base = 10.0**k
         for m in range(1, 10):
             v = m * base
             if lo * (1 - 1e-9) <= v <= hi * (1 + 1e-9):

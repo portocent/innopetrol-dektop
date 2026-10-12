@@ -27,14 +27,23 @@ class Unit:
 
 
 _UNITS = [
-    Unit("m", "m", "length", 1.0), Unit("ft", "ft", "length", 0.3048), Unit("in", "in", "length", 0.0254),
-    Unit("mm", "mm", "length", 0.001), Unit("cm", "cm", "length", 0.01),
-    Unit("g/cm3", "g/cm³", "density", 1000.0), Unit("kg/m3", "kg/m³", "density", 1.0),
-    Unit("us/ft", "µs/ft", "slowness", 1 / 0.3048), Unit("us/m", "µs/m", "slowness", 1.0),
-    Unit("v/v", "v/v", "fraction", 1.0), Unit("%", "%", "fraction", 0.01),
-    Unit("degC", "°C", "temperature", 1.0), Unit("degF", "°F", "temperature", 5 / 9, -32 * 5 / 9),
-    Unit("psi", "psi", "pressure", 6894.757293), Unit("kPa", "kPa", "pressure", 1000.0),
-    Unit("MPa", "MPa", "pressure", 1e6), Unit("bar", "bar", "pressure", 1e5),
+    Unit("m", "m", "length", 1.0),
+    Unit("ft", "ft", "length", 0.3048),
+    Unit("in", "in", "length", 0.0254),
+    Unit("mm", "mm", "length", 0.001),
+    Unit("cm", "cm", "length", 0.01),
+    Unit("g/cm3", "g/cm³", "density", 1000.0),
+    Unit("kg/m3", "kg/m³", "density", 1.0),
+    Unit("us/ft", "µs/ft", "slowness", 1 / 0.3048),
+    Unit("us/m", "µs/m", "slowness", 1.0),
+    Unit("v/v", "v/v", "fraction", 1.0),
+    Unit("%", "%", "fraction", 0.01),
+    Unit("degC", "°C", "temperature", 1.0),
+    Unit("degF", "°F", "temperature", 5 / 9, -32 * 5 / 9),
+    Unit("psi", "psi", "pressure", 6894.757293),
+    Unit("kPa", "kPa", "pressure", 1000.0),
+    Unit("MPa", "MPa", "pressure", 1e6),
+    Unit("bar", "bar", "pressure", 1e5),
 ]
 UNITS = {u.key: u for u in _UNITS}
 
@@ -43,8 +52,9 @@ UNITS = {u.key: u for u in _UNITS}
 _ALIASES = {
     "m": ("M", "METER", "METERS", "METRE", "METRES"),
     "ft": ("FT", "FEET", "FOOT"),
-    "in": ("IN", "INCH", "INCHES", "\""),
-    "mm": ("MM",), "cm": ("CM",),
+    "in": ("IN", "INCH", "INCHES", '"'),
+    "mm": ("MM",),
+    "cm": ("CM",),
     "g/cm3": ("G/C3", "G/CC", "GM/CC", "G/CM3", "GR/CC", "GRAM/CC", "GC3", "GM/C3", "G/CM³", "GR/CM3"),
     "kg/m3": ("K/M3", "KG/M3", "KGM3", "KG/M³"),
     "us/ft": ("US/F", "US/FT", "USEC/FT", "USEC/F", "US/FOOT", "µS/FT", "µS/F", "USF"),
@@ -54,19 +64,37 @@ _ALIASES = {
     "degC": ("DEGC", "DEG C", "°C", "DEGCEL", "CELSIUS"),
     "degF": ("DEGF", "DEG F", "°F", "DEGFAH", "FAHRENHEIT"),
     "psi": ("PSI", "PSIA", "PSIG", "LBF/IN2"),
-    "kPa": ("KPA",), "MPa": ("MPA",), "bar": ("BAR", "BARS"),
+    "kPa": ("KPA",),
+    "MPa": ("MPA",),
+    "bar": ("BAR", "BARS"),
 }
 _ALIAS_INDEX = {alias.replace(" ", ""): key for key, aliases in _ALIASES.items() for alias in aliases}
 
 SYSTEMS = {
     # Display names (translated with _() when shown) and the preferred unit per dimension.
     "file": (N_("As in the file"), {}),
-    "oilfield": (N_("Oilfield (ft, g/cm³, µs/ft, °F, psi, in)"),
-                 {"length": "in", "density": "g/cm3", "slowness": "us/ft", "temperature": "degF", "pressure": "psi",
-                  "fraction": "v/v"}),
-    "metric": (N_("Metric (m, kg/m³, µs/m, °C, kPa, mm)"),
-               {"length": "mm", "density": "kg/m3", "slowness": "us/m", "temperature": "degC", "pressure": "kPa",
-                "fraction": "v/v"}),
+    "oilfield": (
+        N_("Oilfield (ft, g/cm³, µs/ft, °F, psi, in)"),
+        {
+            "length": "in",
+            "density": "g/cm3",
+            "slowness": "us/ft",
+            "temperature": "degF",
+            "pressure": "psi",
+            "fraction": "v/v",
+        },
+    ),
+    "metric": (
+        N_("Metric (m, kg/m³, µs/m, °C, kPa, mm)"),
+        {
+            "length": "mm",
+            "density": "kg/m3",
+            "slowness": "us/m",
+            "temperature": "degC",
+            "pressure": "kPa",
+            "fraction": "v/v",
+        },
+    ),
 }
 SYSTEM_DEPTH_UNIT = {"file": None, "oilfield": "ft", "metric": "m"}
 

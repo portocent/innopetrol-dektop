@@ -94,8 +94,7 @@ class Well:
         logging.getLogger("lasio").setLevel(logging.ERROR)
         # "strict": only the NULL declared in the header. lasio's broader policies also treat 9999.25
         # as null, which would delete real depths in deep wells; other markers are handled below.
-        las = lasio.read(str(path), encoding=detect_encoding(path), ignore_header_errors=True,
-                         null_policy="strict")
+        las = lasio.read(str(path), encoding=detect_encoding(path), ignore_header_errors=True, null_policy="strict")
         if not las.curves:
             raise ValueError(_("the file contains no curves"))
         depth = np.asarray(las.index, dtype=float)
@@ -107,15 +106,12 @@ class Well:
             unit_raw = (las.well["STRT"].unit or "").strip().upper()
         depth_unit = "ft" if unit_raw in FEET_UNITS else "m"
 
-        header = [
-            HeaderItem(i.mnemonic, i.unit or "", str(i.value), i.descr or "") for i in las.well
-        ]
+        header = [HeaderItem(i.mnemonic, i.unit or "", str(i.value), i.descr or "") for i in las.well]
         name = _well_name(las)
         curves = {}
         for c in las.curves[1:]:
             mnem = _unique(c.mnemonic.strip() or "CURVE", curves)
-            curves[mnem] = Curve(mnem, (c.unit or "").strip(), (c.descr or "").strip(),
-                                 np.asarray(c.data, dtype=float))
+            curves[mnem] = Curve(mnem, (c.unit or "").strip(), (c.descr or "").strip(), np.asarray(c.data, dtype=float))
         depth, notes = _clean_samples(depth, curves)
         if depth.size < 2:
             raise ValueError(_("the file contains no data"))
@@ -276,15 +272,22 @@ def _clean_samples(depth: np.ndarray, curves: dict[str, Curve]) -> tuple[np.ndar
             markers += int(bad.sum())
             c.values = np.where(bad, np.nan, c.values)
     if markers:
-        notes.append(ngettext("{count} value equal to a common null marker (-999, -9999…) was treated as missing",
-                              "{count} values equal to common null markers (-999, -9999…) were treated as missing",
-                              markers).format(count=markers))
+        notes.append(
+            ngettext(
+                "{count} value equal to a common null marker (-999, -9999…) was treated as missing",
+                "{count} values equal to common null markers (-999, -9999…) were treated as missing",
+                markers,
+            ).format(count=markers)
+        )
 
     keep = np.isfinite(depth) & ~np.isin(depth, NULL_MARKERS)
     if not keep.all():
         removed = int((~keep).sum())
-        notes.append(ngettext("{count} row with a null depth was removed", "{count} rows with a null depth were removed",
-                              removed).format(count=removed))
+        notes.append(
+            ngettext(
+                "{count} row with a null depth was removed", "{count} rows with a null depth were removed", removed
+            ).format(count=removed)
+        )
     order = np.flatnonzero(keep)
     if depth[order].size > 1 and np.any(np.diff(depth[order]) < 0):
         increasing = depth[order[0]] < depth[order[-1]]
@@ -295,9 +298,13 @@ def _clean_samples(depth: np.ndarray, curves: dict[str, Curve]) -> tuple[np.ndar
     unique = np.concatenate(([True], np.diff(sorted_depth) > 0)) if sorted_depth.size else sorted_depth.astype(bool)
     if not unique.all():
         repeated = int((~unique).sum())
-        notes.append(ngettext("{count} sample with a repeated depth was removed (the first one is kept)",
-                              "{count} samples with a repeated depth were removed (the first one is kept)",
-                              repeated).format(count=repeated))
+        notes.append(
+            ngettext(
+                "{count} sample with a repeated depth was removed (the first one is kept)",
+                "{count} samples with a repeated depth were removed (the first one is kept)",
+                repeated,
+            ).format(count=repeated)
+        )
     order = order[unique]
     for c in curves.values():
         c.values = c.values[order].copy()

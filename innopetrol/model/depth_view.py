@@ -18,8 +18,7 @@ REFERENCES = ("md", "tvd", "tvdss")
 
 
 class DepthView:
-    def __init__(self, well, reference: str = "md", unit: str | None = None,
-                 curve_units: dict[str, str] | None = None):
+    def __init__(self, well, reference: str = "md", unit: str | None = None, curve_units: dict[str, str] | None = None):
         self.well = well
         self.curve_units = dict(curve_units or {})  # mnemonic -> display unit (canonical key)
         self._curves = None
@@ -84,8 +83,11 @@ class DepthView:
 
     @property
     def description(self) -> str:
-        names = {"md": _("measured depth (MD)"), "tvd": _("true vertical depth (TVD)"),
-                 "tvdss": _("true vertical depth subsea (TVDSS)")}
+        names = {
+            "md": _("measured depth (MD)"),
+            "tvd": _("true vertical depth (TVD)"),
+            "tvdss": _("true vertical depth subsea (TVDSS)"),
+        }
         return names[self.reference]
 
     # ----------------------------------------------------------------- conversions

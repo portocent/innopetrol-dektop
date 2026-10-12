@@ -99,18 +99,31 @@ class WellTree(QTreeWidget):
 
         info = QTreeWidgetItem(item, [_("Well information")])
         if w.elevation is not None:
-            QTreeWidgetItem(info, [_("Reference elevation: {value} {unit}").format(
-                value=f"{w.elevation:g}", unit=w.depth_unit)])
+            QTreeWidgetItem(
+                info, [_("Reference elevation: {value} {unit}").format(value=f"{w.elevation:g}", unit=w.depth_unit)]
+            )
         if w.survey is not None:
-            QTreeWidgetItem(info, [_("Deviation survey: {count} stations, max. inclination {inc}°").format(
-                count=w.survey.md.size, inc=f"{w.survey.max_inclination:.1f}")])
+            QTreeWidgetItem(
+                info,
+                [
+                    _("Deviation survey: {count} stations, max. inclination {inc}°").format(
+                        count=w.survey.md.size, inc=f"{w.survey.max_inclination:.1f}"
+                    )
+                ],
+            )
         if w.notes:
             fixes = QTreeWidgetItem(info, [_("Corrections on load ({count})").format(count=len(w.notes))])
             fixes.setForeground(0, QBrush(QColor("#b9770e")))
             for note in w.notes:
                 QTreeWidgetItem(fixes, [note])
-        QTreeWidgetItem(info, [_("Interval: {start} – {stop} {unit} (step {step})").format(
-            start=f"{w.start:g}", stop=f"{w.stop:g}", unit=w.depth_unit, step=f"{w.step:g}")])
+        QTreeWidgetItem(
+            info,
+            [
+                _("Interval: {start} – {stop} {unit} (step {step})").format(
+                    start=f"{w.start:g}", stop=f"{w.stop:g}", unit=w.depth_unit, step=f"{w.step:g}"
+                )
+            ],
+        )
         for h in w.header:
             if h.mnemonic.upper() in ("STRT", "STOP", "STEP"):
                 continue
@@ -136,8 +149,11 @@ class WellTree(QTreeWidget):
                 ci.setForeground(0, QBrush(QColor("#1f618d")))
             tip = [c.description] if c.description else []
             if c.has_data:
-                tip.append(_("Min {min} · Max {max} · Mean {mean}").format(
-                    min=f"{c.min:.4g}", max=f"{c.max:.4g}", mean=f"{np.nanmean(c.values):.4g}"))
+                tip.append(
+                    _("Min {min} · Max {max} · Mean {mean}").format(
+                        min=f"{c.min:.4g}", max=f"{c.max:.4g}", mean=f"{np.nanmean(c.values):.4g}"
+                    )
+                )
             if c.formula:
                 tip.append(f"= {c.formula}")
             ci.setToolTip(0, "\n".join(tip))
@@ -183,11 +199,13 @@ class WellTree(QTreeWidget):
         if item.data(0, ROLE_KIND) == "curve":
             name = item.data(0, ROLE_NAME)
             menu.addAction(_("Statistics and histogram…")).triggered.connect(
-                lambda: self.curveStatsRequested.emit(doc, name))
+                lambda: self.curveStatsRequested.emit(doc, name)
+            )
             options = units.convertible(doc.well.curves[name].unit)
             if not options and name in doc.curve_units:
-                options = [k for k, u in units.UNITS.items()
-                           if u.dimension == units.UNITS[doc.curve_units[name]].dimension]
+                options = [
+                    k for k, u in units.UNITS.items() if u.dimension == units.UNITS[doc.curve_units[name]].dimension
+                ]
             if options:
                 sub = menu.addMenu(_("Display unit"))
                 current = doc.curve_units.get(name)
@@ -203,7 +221,8 @@ class WellTree(QTreeWidget):
                     a.triggered.connect(lambda _checked=False, key=key: self.curveUnitRequested.emit(doc, name, key))
             if doc.well.curves[name].formula:
                 menu.addAction(_("Delete computed curve")).triggered.connect(
-                    lambda: self.curveDeleteRequested.emit(doc, name))
+                    lambda: self.curveDeleteRequested.emit(doc, name)
+                )
         menu.addAction(_("Show well window")).triggered.connect(lambda: self.docActivated.emit(doc))
         menu.addAction(_("Edit tops…")).triggered.connect(lambda: self.topsRequested.emit(doc))
         menu.exec(self.viewport().mapToGlobal(pos))

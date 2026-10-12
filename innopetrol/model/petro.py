@@ -50,7 +50,7 @@ def phi_density(rhob, rho_ma=2.65, rho_fl=1.0):
 def sw_archie(rt, phi, rw, a=1.0, m=2.0, n=2.0):
     rt, phi = np.asarray(rt, float), np.asarray(phi, float)
     with np.errstate(all="ignore"):
-        sw = ((a * rw) / (phi ** m * rt)) ** (1 / n)
+        sw = ((a * rw) / (phi**m * rt)) ** (1 / n)
     sw = np.where((phi > 0) & (rt > 0), sw, np.nan)
     return np.clip(sw, 0, 1)
 
@@ -59,7 +59,7 @@ def sw_simandoux(rt, phi, vsh, rw, rsh, a=1.0, m=2.0):
     rt, phi, vsh = (np.asarray(v, float) for v in (rt, phi, vsh))
     with np.errstate(all="ignore"):
         c = vsh / rsh
-        sw = a * rw / (2 * phi ** m) * (np.sqrt(c ** 2 + 4 * phi ** m / (a * rw * rt)) - c)
+        sw = a * rw / (2 * phi**m) * (np.sqrt(c**2 + 4 * phi**m / (a * rw * rt)) - c)
     sw = np.where((phi > 0) & (rt > 0), sw, np.nan)
     return np.clip(sw, 0, 1)
 
@@ -67,7 +67,7 @@ def sw_simandoux(rt, phi, vsh, rw, rsh, a=1.0, m=2.0):
 def sw_indonesia(rt, phi, vsh, rw, rsh, a=1.0, m=2.0, n=2.0):
     rt, phi, vsh = (np.asarray(v, float) for v in (rt, phi, vsh))
     with np.errstate(all="ignore"):
-        sw = ((1 / np.sqrt(rt)) / (vsh ** (1 - vsh / 2) / np.sqrt(rsh) + np.sqrt(phi ** m / (a * rw)))) ** (2 / n)
+        sw = ((1 / np.sqrt(rt)) / (vsh ** (1 - vsh / 2) / np.sqrt(rsh) + np.sqrt(phi**m / (a * rw)))) ** (2 / n)
     sw = np.where((phi > 0) & (rt > 0), sw, np.nan)
     return np.clip(sw, 0, 1)
 
@@ -84,18 +84,41 @@ def rw_at_temperature(rw, t_rw, t, temp_unit="degC"):
 # ---------------------------------------------------------------- parameters and formulas
 
 # Display names, translated with _() when shown.
-VSH_METHODS = {"linear": N_("Linear (IGR)"), "larionov_tertiary": N_("Larionov (tertiary rocks)"),
-               "larionov_older": N_("Larionov (older rocks)")}
-PHI_METHODS = {"density": N_("Density"), "nd_average": N_("Neutron-density (average)"),
-               "nd_rms": N_("Neutron-density (RMS, gas zones)")}
-SW_MODELS = {"archie": N_("Archie (clean sands)"), "simandoux": N_("Simandoux (shaly sands, n = 2)"),
-             "indonesia": N_("Indonesia (shaly sands, fresh water)")}
-TEMP_MODES = {"none": N_("Rw is the same at every depth"), "gradient": N_("Geothermal gradient"),
-              "curve": N_("Temperature curve")}
+VSH_METHODS = {
+    "linear": N_("Linear (IGR)"),
+    "larionov_tertiary": N_("Larionov (tertiary rocks)"),
+    "larionov_older": N_("Larionov (older rocks)"),
+}
+PHI_METHODS = {
+    "density": N_("Density"),
+    "nd_average": N_("Neutron-density (average)"),
+    "nd_rms": N_("Neutron-density (RMS, gas zones)"),
+}
+SW_MODELS = {
+    "archie": N_("Archie (clean sands)"),
+    "simandoux": N_("Simandoux (shaly sands, n = 2)"),
+    "indonesia": N_("Indonesia (shaly sands, fresh water)"),
+}
+TEMP_MODES = {
+    "none": N_("Rw is the same at every depth"),
+    "gradient": N_("Geothermal gradient"),
+    "curve": N_("Temperature curve"),
+}
 # Parameters that can be changed per zone, with their short labels.
-ZONE_PARAMS = {"gr_clean": N_("Clean GR"), "gr_shale": N_("Shale GR"), "rho_ma": N_("ρ matrix"),
-               "rho_fl": N_("ρ fluid"), "rw": "Rw", "a": "a", "m": "m", "n": "n", "rsh": "Rsh",
-               "vsh_cut": "Vsh ≤", "phi_cut": "φe ≥", "sw_cut": "Sw ≤"}
+ZONE_PARAMS = {
+    "gr_clean": N_("Clean GR"),
+    "gr_shale": N_("Shale GR"),
+    "rho_ma": N_("ρ matrix"),
+    "rho_fl": N_("ρ fluid"),
+    "rw": "Rw",
+    "a": "a",
+    "m": "m",
+    "n": "n",
+    "rsh": "Rsh",
+    "vsh_cut": "Vsh ≤",
+    "phi_cut": "φe ≥",
+    "sw_cut": "Sw ≤",
+}
 
 
 @dataclass
@@ -135,8 +158,9 @@ class PetroParams:
     @classmethod
     def from_dict(cls, d: dict) -> PetroParams:
         p = cls(**{k: v for k, v in d.items() if k in cls.__dataclass_fields__})
-        p.zones = {str(z): {k: float(v) for k, v in vals.items() if k in ZONE_PARAMS}
-                   for z, vals in (p.zones or {}).items()}
+        p.zones = {
+            str(z): {k: float(v) for k, v in vals.items() if k in ZONE_PARAMS} for z, vals in (p.zones or {}).items()
+        }
         return p
 
     def value(self, key: str, zone: str | None = None) -> float:
@@ -184,8 +208,11 @@ def param_expr(well, p: PetroParams, key: str) -> str:
         if v is None or v == default:
             continue
         # The last zone reaches the bottom of the log, including the last sample.
-        cond = f"(DEPTH >= {_num(z.top)})" if i == len(zones) - 1 else \
-            f"(DEPTH >= {_num(z.top)}) & (DEPTH < {_num(z.base)})"
+        cond = (
+            f"(DEPTH >= {_num(z.top)})"
+            if i == len(zones) - 1
+            else f"(DEPTH >= {_num(z.top)}) & (DEPTH < {_num(z.base)})"
+        )
         expr = f"where({cond}, {_num(v)}, {expr})"
     return expr
 
@@ -223,7 +250,9 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
             phit = phid
             method_key = "density"
         method = _(PHI_METHODS[method_key])
-        out.append(FormulaSpec("PHIT", "v/v", _("Total porosity - {method}").format(method=method), f"clip({phit}, 0, 0.6)"))
+        out.append(
+            FormulaSpec("PHIT", "v/v", _("Total porosity - {method}").format(method=method), f"clip({phit}, 0, 0.6)")
+        )
         phie = "clip(PHIT * (1 - VSH), 0, 0.6)" if has_vsh else "PHIT"
         out.append(FormulaSpec("PHIE", "v/v", _("Effective porosity"), phie))
         has_phi = True
@@ -233,25 +262,40 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
         rw = P("rw")
         temperature = None
         if p.temp_mode == "gradient":
-            out.append(FormulaSpec("TFORM", p.temp_unit.upper(),
-                                   _("Formation temperature from the geothermal gradient (TVD)"),
-                                   f"{_num(p.surface_temp)} + {_num(p.gradient)} * TVD / 100"))
+            out.append(
+                FormulaSpec(
+                    "TFORM",
+                    p.temp_unit.upper(),
+                    _("Formation temperature from the geothermal gradient (TVD)"),
+                    f"{_num(p.surface_temp)} + {_num(p.gradient)} * TVD / 100",
+                )
+            )
             temperature = "TFORM"
         elif p.temp_mode == "curve" and p.temp_curve in well.curves:
             temperature = input_ref(well, p.temp_curve, p.temp_unit)
         if temperature:
             k = _num(ARPS_K[p.temp_unit])
-            out.append(FormulaSpec("RWT", "OHMM", _("Rw at formation temperature (Arps)"),
-                                   f"{rw} * ({_num(p.rw_temp)} + {k}) / ({temperature} + {k})"))
+            out.append(
+                FormulaSpec(
+                    "RWT",
+                    "OHMM",
+                    _("Rw at formation temperature (Arps)"),
+                    f"{rw} * ({_num(p.rw_temp)} + {k}) / ({temperature} + {k})",
+                )
+            )
             rw = "RWT"
         a, m, n, rsh = P("a"), P("m"), P("n"), P("rsh")
         model = p.sw_model if has_vsh and p.sw_model in SW_MODELS else "archie"
         if model == "simandoux":
-            core = (f"({a} * {rw} / (2 * PHIE ** {m})) * "
-                    f"(sqrt((VSH / {rsh}) ** 2 + 4 * PHIE ** {m} / ({a} * {rw} * {rt})) - VSH / {rsh})")
+            core = (
+                f"({a} * {rw} / (2 * PHIE ** {m})) * "
+                f"(sqrt((VSH / {rsh}) ** 2 + 4 * PHIE ** {m} / ({a} * {rw} * {rt})) - VSH / {rsh})"
+            )
         elif model == "indonesia":
-            core = (f"((1 / sqrt({rt})) / (VSH ** (1 - VSH / 2) / sqrt({rsh}) + sqrt(PHIE ** {m} / ({a} * {rw}))))"
-                    f" ** (2 / {n})")
+            core = (
+                f"((1 / sqrt({rt})) / (VSH ** (1 - VSH / 2) / sqrt({rsh}) + sqrt(PHIE ** {m} / ({a} * {rw}))))"
+                f" ** (2 / {n})"
+            )
         else:
             core = f"(({a} * {rw}) / (PHIE ** {m} * {rt})) ** (1 / {n})"
         sw = f"where((PHIE > 0) & ({rt} > 0), clip({core}, 0, 1), nan)"
@@ -269,11 +313,18 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
         cond = f"(PHIE >= {P('phi_cut')})"
         if has_vsh:
             cond = f"(VSH <= {P('vsh_cut')}) & {cond}"
-        out.append(FormulaSpec("RES_FLAG", "", _("Net reservoir flag"),
-                               f"where(isnan(PHIE), nan, where({cond}, 1, 0))"))
+        out.append(
+            FormulaSpec("RES_FLAG", "", _("Net reservoir flag"), f"where(isnan(PHIE), nan, where({cond}, 1, 0))")
+        )
         if any(f.mnemonic == "SW" for f in out):
-            out.append(FormulaSpec("PAY_FLAG", "", _("Net pay flag"),
-                                   f"where(isnan(SW), nan, where((RES_FLAG > 0) & (SW <= {P('sw_cut')}), 1, 0))"))
+            out.append(
+                FormulaSpec(
+                    "PAY_FLAG",
+                    "",
+                    _("Net pay flag"),
+                    f"where(isnan(SW), nan, where((RES_FLAG > 0) & (SW <= {P('sw_cut')}), 1, 0))",
+                )
+            )
     return out
 
 
@@ -309,9 +360,17 @@ def sample_thickness(depth: np.ndarray) -> np.ndarray:
     return np.abs(np.gradient(depth))
 
 
-def zone_summary(well, zones: list[Zone], vsh: str | None, phi: str | None, sw: str | None,
-                 vsh_cut: float, phi_cut: float, sw_cut: float,
-                 zone_cutoffs: dict[str, dict[str, float]] | None = None) -> list[ZoneSummary]:
+def zone_summary(
+    well,
+    zones: list[Zone],
+    vsh: str | None,
+    phi: str | None,
+    sw: str | None,
+    vsh_cut: float,
+    phi_cut: float,
+    sw_cut: float,
+    zone_cutoffs: dict[str, dict[str, float]] | None = None,
+) -> list[ZoneSummary]:
     """Gross, net reservoir and net pay thickness, N/G and averages per zone.
 
     Averages: φ weighted by thickness over net reservoir; Sw weighted by φ·h over net pay.
@@ -334,13 +393,20 @@ def zone_summary(well, zones: list[Zone], vsh: str | None, phi: str | None, sw: 
         gross = float(h[m].sum())
         net_r = float(h[m & res].sum())
         net_p = float(h[m & pay].sum())
-        out.append(ZoneSummary(
-            zone=z.name, top=z.top, base=z.base, gross=gross, net_reservoir=net_r, net_pay=net_p,
-            ntg=net_r / gross if gross else float("nan"),
-            phi_avg=_wavg(f, h, m & res),
-            sw_avg=_wavg(s, h * np.nan_to_num(f), m & pay),
-            vsh_avg=_wavg(v, h, m & res),
-        ))
+        out.append(
+            ZoneSummary(
+                zone=z.name,
+                top=z.top,
+                base=z.base,
+                gross=gross,
+                net_reservoir=net_r,
+                net_pay=net_p,
+                ntg=net_r / gross if gross else float("nan"),
+                phi_avg=_wavg(f, h, m & res),
+                sw_avg=_wavg(s, h * np.nan_to_num(f), m & pay),
+                vsh_avg=_wavg(v, h, m & res),
+            )
+        )
     return out
 
 

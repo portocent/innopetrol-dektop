@@ -4,18 +4,44 @@ import pytest
 from innopetrol.model import units
 
 
-@pytest.mark.parametrize("raw,key", [("G/C3", "g/cm3"), ("g/cc", "g/cm3"), ("K/M3", "kg/m3"), ("US/F", "us/ft"),
-                                     ("usec/ft", "us/ft"), ("DEC", "v/v"), ("V/V", "v/v"), ("PU", "%"),
-                                     ("DEGF", "degF"), ("deg C", "degC"), ("PSIA", "psi"), ("IN", "in"),
-                                     ("F", None), ("C", None), ("GAPI", None), ("", None), (None, None)])
+@pytest.mark.parametrize(
+    "raw,key",
+    [
+        ("G/C3", "g/cm3"),
+        ("g/cc", "g/cm3"),
+        ("K/M3", "kg/m3"),
+        ("US/F", "us/ft"),
+        ("usec/ft", "us/ft"),
+        ("DEC", "v/v"),
+        ("V/V", "v/v"),
+        ("PU", "%"),
+        ("DEGF", "degF"),
+        ("deg C", "degC"),
+        ("PSIA", "psi"),
+        ("IN", "in"),
+        ("F", None),
+        ("C", None),
+        ("GAPI", None),
+        ("", None),
+        (None, None),
+    ],
+)
 def test_normalize(raw, key):
     assert units.normalize(raw) == key
 
 
-@pytest.mark.parametrize("value,a,b,expected", [
-    (2.65, "G/C3", "kg/m3", 2650), (100, "US/F", "us/m", 328.084), (25, "PU", "v/v", 0.25),
-    (212, "DEGF", "degC", 100), (-40, "degC", "degF", -40), (1, "bar", "psi", 14.5038), (8.5, "IN", "mm", 215.9),
-])
+@pytest.mark.parametrize(
+    "value,a,b,expected",
+    [
+        (2.65, "G/C3", "kg/m3", 2650),
+        (100, "US/F", "us/m", 328.084),
+        (25, "PU", "v/v", 0.25),
+        (212, "DEGF", "degC", 100),
+        (-40, "degC", "degF", -40),
+        (1, "bar", "psi", 14.5038),
+        (8.5, "IN", "mm", 215.9),
+    ],
+)
 def test_convert(value, a, b, expected):
     assert units.convert(value, a, b) == pytest.approx(expected, rel=1e-5)
 

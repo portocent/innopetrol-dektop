@@ -33,15 +33,26 @@ def _title_lines(well, scale_ratio: float, top: float, bottom: float) -> list[st
     scale = _("Vertical scale 1:{scale}").format(scale=f"{scale_ratio:g}")
     reference = getattr(well, "reference", "md").upper()  # MD, TVD or TVDSS when drawing a DepthView
     interval = _("Interval {reference} {top} – {bottom} {unit}").format(
-        reference=reference, top=f"{top:g}", bottom=f"{bottom:g}", unit=unit)
+        reference=reference, top=f"{top:g}", bottom=f"{bottom:g}", unit=unit
+    )
     return ["   ·   ".join(info), f"{scale}   ·   {interval}   ·   InnoPetrol {__version__}"]
 
 
 # Header items shown in the log heading, in this order (mnemonic, label translated when shown).
-HEADING_ITEMS = (("COMP", N_("Company")), ("FLD", N_("Field")), ("LOC", N_("Location")), ("CTRY", N_("Country")),
-                 ("STAT", N_("State / province")), ("PROV", N_("State / province")), ("CNTY", N_("County")),
-                 ("UWI", "UWI"), ("API", "API"), ("LIC", N_("Licence")), ("SRVC", N_("Service company")),
-                 ("DATE", N_("Log date")))
+HEADING_ITEMS = (
+    ("COMP", N_("Company")),
+    ("FLD", N_("Field")),
+    ("LOC", N_("Location")),
+    ("CTRY", N_("Country")),
+    ("STAT", N_("State / province")),
+    ("PROV", N_("State / province")),
+    ("CNTY", N_("County")),
+    ("UWI", "UWI"),
+    ("API", "API"),
+    ("LIC", N_("Licence")),
+    ("SRVC", N_("Service company")),
+    ("DATE", N_("Log date")),
+)
 
 
 def heading_rows(well, scale_ratio: float, top: float, bottom: float) -> list[tuple[str, str]]:
@@ -59,12 +70,23 @@ def heading_rows(well, scale_ratio: float, top: float, bottom: float) -> list[tu
     rows.append((_("Interval"), f"{top:g} – {bottom:g} {well.depth_unit}"))
     rows.append((_("Vertical scale"), f"1:{scale_ratio:g}"))
     if stored.elevation is not None:
-        rows.append((_("Elevation of the depth reference"), _("{value} {unit} above sea level").format(
-            value=f"{stored.elevation:g}", unit=stored.depth_unit)))
+        rows.append(
+            (
+                _("Elevation of the depth reference"),
+                _("{value} {unit} above sea level").format(value=f"{stored.elevation:g}", unit=stored.depth_unit),
+            )
+        )
     survey = stored.survey
-    rows.append((_("Deviation survey"), _("none (vertical well assumed)") if survey is None else
-                 _("{count} stations, max. inclination {inc}°").format(count=survey.md.size,
-                                                                     inc=f"{survey.max_inclination:.1f}")))
+    rows.append(
+        (
+            _("Deviation survey"),
+            _("none (vertical well assumed)")
+            if survey is None
+            else _("{count} stations, max. inclination {inc}°").format(
+                count=survey.md.size, inc=f"{survey.max_inclination:.1f}"
+            ),
+        )
+    )
     if stored.path is not None:
         rows.append((_("File"), Path(stored.path).name + (f" [{stored.source}]" if stored.source else "")))
     rows.append((_("Printed"), f"{datetime.date.today().isoformat()} · InnoPetrol {__version__}"))
@@ -105,14 +127,16 @@ def draw_heading(p: QPainter, rect: QRectF, well, rows: list[tuple[str, str]]) -
         p.drawLine(cell.bottomLeft(), cell.bottomRight())
         p.setPen(QColor("#566573"))
         p.setFont(bold)
-        p.drawText(QRectF(cell.left() + line * 0.6, cell.top(), label_w, row_h), Qt.AlignLeft | Qt.AlignVCenter,
-                   label)
+        p.drawText(QRectF(cell.left() + line * 0.6, cell.top(), label_w, row_h), Qt.AlignLeft | Qt.AlignVCenter, label)
         p.setPen(BORDER)
         p.setFont(base)
         vx = cell.left() + line * 0.6 + label_w
         room = cell.right() - vx - line * 0.4
-        p.drawText(QRectF(vx, cell.top(), room, row_h), Qt.AlignLeft | Qt.AlignVCenter,
-                   fm.elidedText(value, Qt.ElideRight, room))
+        p.drawText(
+            QRectF(vx, cell.top(), room, row_h),
+            Qt.AlignLeft | Qt.AlignVCenter,
+            fm.elidedText(value, Qt.ElideRight, room),
+        )
     p.setPen(QPen(QColor("#d5d8dc"), line / 14))
     p.drawLine(QPointF(box.left() + half, band.bottom()), QPointF(box.left() + half, box.bottom()))
     p.setPen(QPen(BORDER, line / 10))
@@ -134,8 +158,11 @@ def _draw_title(p: QPainter, rect: QRectF, lines: list[str]) -> None:
     p.restore()
     fm = QFontMetricsF(p.font())
     p.setPen(QColor("#566573"))
-    p.drawText(QRectF(rect.left(), rect.top() + fm_b.height(), rect.width(), fm.height()),
-               Qt.AlignLeft | Qt.AlignVCenter, lines[1])
+    p.drawText(
+        QRectF(rect.left(), rect.top() + fm_b.height(), rect.width(), fm.height()),
+        Qt.AlignLeft | Qt.AlignVCenter,
+        lines[1],
+    )
 
 
 def _title_height(p: QPainter) -> float:
@@ -143,8 +170,16 @@ def _title_height(p: QPainter) -> float:
     return fm.height() * 2.25 + 8
 
 
-def export_png(path: str | Path, well, layout: LogLayout, scale_ratio: float, top: float, bottom: float,
-               dpi: int = 200, heading: bool = True) -> Path:
+def export_png(
+    path: str | Path,
+    well,
+    layout: LogLayout,
+    scale_ratio: float,
+    top: float,
+    bottom: float,
+    dpi: int = 200,
+    heading: bool = True,
+) -> Path:
     """PNG of the interval at scale. With `heading`, the log heading (well data) replaces the title lines."""
     k = dpi / 96
     ppu = px_per_unit(scale_ratio, dpi, well.depth_unit)
@@ -160,8 +195,11 @@ def export_png(path: str | Path, well, layout: LogLayout, scale_ratio: float, to
         header_h = headers_height(p, layout, k)
     height = int(title_h + header_h + body_h + 2 * margin)
     if height > MAX_IMAGE_PX:
-        raise ExportError(_("the image would be {height} px tall; use PDF, a shorter interval or a smaller "
-                            "scale").format(height=height))
+        raise ExportError(
+            _("the image would be {height} px tall; use PDF, a shorter interval or a smaller scale").format(
+                height=height
+            )
+        )
 
     img = QImage(width, height, QImage.Format_ARGB32)
     _set_dpi(img, dpi)
@@ -179,8 +217,17 @@ def export_png(path: str | Path, well, layout: LogLayout, scale_ratio: float, to
     return Path(path)
 
 
-def export_pdf(path: str | Path, well, layout: LogLayout, scale_ratio: float, top: float, bottom: float,
-               dpi: int = 300, page: str = "A4", heading: bool = True) -> int:
+def export_pdf(
+    path: str | Path,
+    well,
+    layout: LogLayout,
+    scale_ratio: float,
+    top: float,
+    bottom: float,
+    dpi: int = 300,
+    page: str = "A4",
+    heading: bool = True,
+) -> int:
     """Paginated PDF. The page width fits the tracks; the track headers are repeated on every page.
 
     With `heading`, the first page starts with the log heading (well data); the others with a title line.
@@ -196,8 +243,14 @@ def export_pdf(path: str | Path, well, layout: LogLayout, scale_ratio: float, to
 
     writer = QPdfWriter(str(path))
     writer.setResolution(dpi)
-    writer.setPageLayout(QPageLayout(page_size, QPageLayout.Portrait, QMarginsF(margin_mm, margin_mm, margin_mm, margin_mm),
-                                     QPageLayout.Millimeter))
+    writer.setPageLayout(
+        QPageLayout(
+            page_size,
+            QPageLayout.Portrait,
+            QMarginsF(margin_mm, margin_mm, margin_mm, margin_mm),
+            QPageLayout.Millimeter,
+        )
+    )
     writer.setTitle(_("{well} - log 1:{scale}").format(well=well.name, scale=f"{scale_ratio:g}"))
     writer.setCreator(f"InnoPetrol {__version__}")
 
@@ -259,6 +312,3 @@ class _painter:
     def __exit__(self, *exc):
         self.p.end()
         return False
-
-
-

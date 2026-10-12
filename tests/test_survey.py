@@ -53,7 +53,9 @@ def test_invalid_inclination():
 
 def test_load_csv_spanish_header_and_comma_decimals(tmp_path):
     p = tmp_path / "s.csv"
-    p.write_text("Profundidad;Inclinación;Azimut\n(m);(deg);(deg)\n0;0;0\n500,5;10,25;45\n1000;20;90\n", encoding="utf-8")
+    p.write_text(
+        "Profundidad;Inclinación;Azimut\n(m);(deg);(deg)\n0;0;0\n500,5;10,25;45\n1000;20;90\n", encoding="utf-8"
+    )
     s = load_survey_csv(p)
     assert s.md.tolist() == [0, 500.5, 1000] and s.inc[1] == 10.25
 

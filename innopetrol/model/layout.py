@@ -13,8 +13,13 @@ from innopetrol.i18n import N_
 
 LINE_STYLES = ["solid", "dash", "dashdot", "dot", "dashdotdot"]
 # Display names, translated with _() when shown.
-LINE_STYLE_NAMES = {"solid": N_("Solid"), "dash": N_("Dashed"), "dashdot": N_("Dash-dot"),
-                    "dot": N_("Dotted"), "dashdotdot": N_("Dash-dot-dot")}
+LINE_STYLE_NAMES = {
+    "solid": N_("Solid"),
+    "dash": N_("Dashed"),
+    "dashdot": N_("Dash-dot"),
+    "dot": N_("Dotted"),
+    "dashdotdot": N_("Dash-dot-dot"),
+}
 # Same order as the d1…d10 icons from the original project.
 FILL_PATTERNS = ["solid", "dense1", "dense2", "dense3", "dense5", "dense6", "hor", "ver", "bdiag", "diagcross"]
 

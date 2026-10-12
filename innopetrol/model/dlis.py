@@ -20,10 +20,22 @@ from innopetrol.model.well import Curve, HeaderItem, Well, _clean_samples, _uniq
 DLIS_SUFFIXES = (".dlis", ".dls")
 # Depth units seen in DLIS index channels -> (factor, unit used by the program).
 _UNIT_RE = re.compile(r"^\s*([0-9.]+)?\s*([a-zA-Z]+)\s*$")
-_BASE_UNITS = {"m": (1.0, "m"), "meter": (1.0, "m"), "meters": (1.0, "m"), "metre": (1.0, "m"),
-               "cm": (0.01, "m"), "mm": (0.001, "m"), "dm": (0.1, "m"), "km": (1000.0, "m"),
-               "ft": (1.0, "ft"), "f": (1.0, "ft"), "feet": (1.0, "ft"), "foot": (1.0, "ft"),
-               "in": (1 / 12, "ft"), "inch": (1 / 12, "ft")}
+_BASE_UNITS = {
+    "m": (1.0, "m"),
+    "meter": (1.0, "m"),
+    "meters": (1.0, "m"),
+    "metre": (1.0, "m"),
+    "cm": (0.01, "m"),
+    "mm": (0.001, "m"),
+    "dm": (0.1, "m"),
+    "km": (1000.0, "m"),
+    "ft": (1.0, "ft"),
+    "f": (1.0, "ft"),
+    "feet": (1.0, "ft"),
+    "foot": (1.0, "ft"),
+    "in": (1 / 12, "ft"),
+    "inch": (1 / 12, "ft"),
+}
 _DEPTH_INDEX_TYPES = {"BOREHOLE-DEPTH", "VERTICAL-DEPTH", "DEPTH"}
 
 
@@ -72,17 +84,23 @@ def load_dlis(path: str | Path) -> list[Well]:
     if not wells:
         raise ValueError(_("the file has no depth-indexed data"))
     if skipped_frames:
-        wells[0].notes.append(_("frames not indexed by depth were skipped: {frames}").format(
-            frames=", ".join(skipped_frames)))
+        wells[0].notes.append(
+            _("frames not indexed by depth were skipped: {frames}").format(frames=", ".join(skipped_frames))
+        )
     return wells
 
 
 def _header(origin, lf) -> list[HeaderItem]:
     items = []
     if origin is not None:
-        for mnem, value, descr in (("WELL", origin.well_name, "Well"), ("FLD", origin.field_name, "Field"),
-                                   ("COMP", origin.company, "Company"), ("UWI", origin.well_id, "Well id"),
-                                   ("RUN", origin.run_nr, "Run number"), ("SRVC", origin.producer_name, "Service")):
+        for mnem, value, descr in (
+            ("WELL", origin.well_name, "Well"),
+            ("FLD", origin.field_name, "Field"),
+            ("COMP", origin.company, "Company"),
+            ("UWI", origin.well_id, "Well id"),
+            ("RUN", origin.run_nr, "Run number"),
+            ("SRVC", origin.producer_name, "Service"),
+        ):
             if value is not None and str(value).strip() not in ("", "[]", "None"):
                 items.append(HeaderItem(mnem, "", str(value), descr))
     for p in lf.parameters:
@@ -95,8 +113,9 @@ def _header(origin, lf) -> list[HeaderItem]:
             attr = (p.attributes or {}).get("VALUES")
             units = (getattr(attr, "units", "") or "") if attr is not None else ""
             long_name = p.long_name if isinstance(p.long_name, str) else str(p.long_name or "")
-            items.append(HeaderItem(p.name, units, str(value.decode() if isinstance(value, bytes) else value),
-                                    long_name))
+            items.append(
+                HeaderItem(p.name, units, str(value.decode() if isinstance(value, bytes) else value), long_name)
+            )
     return items
 
 
@@ -120,18 +139,35 @@ def _frame_to_well(frame, base_name: str, header, path: Path, single: bool) -> W
             arrays.append(f"{ch.name} ({int(np.prod(values.shape[1:]))})")
             continue
         mnem = _unique(ch.name, curves)
-        curves[mnem] = Curve(mnem, (ch.units or "").strip(), (ch.long_name or "").strip() if isinstance(ch.long_name, str)
-                             else str(ch.long_name or ""), values.astype(float))
+        curves[mnem] = Curve(
+            mnem,
+            (ch.units or "").strip(),
+            (ch.long_name or "").strip() if isinstance(ch.long_name, str) else str(ch.long_name or ""),
+            values.astype(float),
+        )
     if not curves:
         return None
     depth, notes = _clean_samples(depth, curves)
     if depth.size < 2:
         return None
     if arrays:
-        notes.append(ngettext("array channel not supported yet, skipped: {channels}",
-                              "array channels not supported yet, skipped: {channels}",
-                              len(arrays)).format(channels=", ".join(arrays)))
+        notes.append(
+            ngettext(
+                "array channel not supported yet, skipped: {channels}",
+                "array channels not supported yet, skipped: {channels}",
+                len(arrays),
+            ).format(channels=", ".join(arrays))
+        )
     name = base_name if single else f"{base_name} ({frame.name})"
-    return Well(name=name, path=path, depth=depth, depth_unit=depth_unit, depth_mnemonic=index_name,
-                header=list(header), curves=curves, notes=notes, source=frame.name,
-                elevation=elevation_from_header(header, depth_unit))
+    return Well(
+        name=name,
+        path=path,
+        depth=depth,
+        depth_unit=depth_unit,
+        depth_mnemonic=index_name,
+        header=list(header),
+        curves=curves,
+        notes=notes,
+        source=frame.name,
+        elevation=elevation_from_header(header, depth_unit),
+    )

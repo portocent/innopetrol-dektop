@@ -36,8 +36,10 @@ class Recovery:
         tmp = self.folder / (AUTOSAVE_NAME + ".tmp")
         save_project(tmp, entries)
         os.replace(tmp, self.path)
-        info = {"saved": datetime.datetime.now().isoformat(timespec="seconds"),
-                "project": str(project_path) if project_path else None}
+        info = {
+            "saved": datetime.datetime.now().isoformat(timespec="seconds"),
+            "project": str(project_path) if project_path else None,
+        }
         self._info_path.write_text(json.dumps(info), encoding="utf-8")
 
     def pending(self) -> bool:
@@ -50,7 +52,8 @@ class Recovery:
         except (OSError, ValueError):
             data = {}
         saved = data.get("saved") or datetime.datetime.fromtimestamp(self.path.stat().st_mtime).isoformat(
-            timespec="seconds")
+            timespec="seconds"
+        )
         project = data.get("project")
         return saved.replace("T", " "), Path(project) if project else None
 

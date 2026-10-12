@@ -31,8 +31,11 @@ def test_shaly_sand_formulas_match_the_reference(testdata_well, model):
     w = testdata_well
     c = computed(w, sw_model=model, rsh=4.0, rw=0.04)
     rt, phie, vsh = w.curves["LLD"].values, c["PHIE"].values, c["VSH"].values
-    ref = (petro.sw_simandoux(rt, phie, vsh, 0.04, 4.0) if model == "simandoux"
-           else petro.sw_indonesia(rt, phie, vsh, 0.04, 4.0))
+    ref = (
+        petro.sw_simandoux(rt, phie, vsh, 0.04, 4.0)
+        if model == "simandoux"
+        else petro.sw_indonesia(rt, phie, vsh, 0.04, 4.0)
+    )
     ok = np.isfinite(ref)
     assert ok.sum() > 1000
     assert np.allclose(c["SW"].values[ok], ref[ok])
@@ -78,8 +81,7 @@ def test_arps_known_value():
 def test_rw_from_geothermal_gradient_uses_tvd(testdata_well):
     w = testdata_well  # depths in feet
     w.survey = Survey(np.array([0.0, 7000, 9000]), np.array([0.0, 30, 30]), np.array([0.0, 90, 90]))
-    c = computed(w, temp_mode="gradient", temp_unit="degF", surface_temp=60, gradient=1.5, rw=0.05,
-                 rw_temp=75)
+    c = computed(w, temp_mode="gradient", temp_unit="degF", surface_temp=60, gradient=1.5, rw=0.05, rw_temp=75)
     temp = 60 + 1.5 * w.tvd() / 100
     assert np.allclose(c["TFORM"].values, temp)
     assert c["TFORM"].values[-1] < 60 + 1.5 * w.depth[-1] / 100  # deviated: TVD < MD

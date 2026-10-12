@@ -38,11 +38,16 @@ class _State:
     location: object = None
 
     def same_as(self, other: _State) -> bool:
-        return (self.layout == other.layout and self.tops == other.tops and self.petro == other.petro
-                and self.survey is other.survey and self.elevation == other.elevation
-                and self.location == other.location
-                and list(self.curves) == list(other.curves)
-                and all(c is other.curves[m] for m, c in self.curves.items()))
+        return (
+            self.layout == other.layout
+            and self.tops == other.tops
+            and self.petro == other.petro
+            and self.survey is other.survey
+            and self.elevation == other.elevation
+            and self.location == other.location
+            and list(self.curves) == list(other.curves)
+            and all(c is other.curves[m] for m, c in self.curves.items())
+        )
 
 
 class _SnapshotCommand(QUndoCommand):
@@ -86,9 +91,15 @@ class WellDocument(QObject):
 
     # ----------------------------------------------------------------- undo / redo
     def _state(self) -> _State:
-        return _State(self.layout.to_dict(), [t.to_dict() for t in self.well.tops], dict(self.well.curves),
-                      self.petro.to_dict() if self.petro else None, self.well.survey, self.well.elevation,
-                      self.well.location)
+        return _State(
+            self.layout.to_dict(),
+            [t.to_dict() for t in self.well.tops],
+            dict(self.well.curves),
+            self.petro.to_dict() if self.petro else None,
+            self.well.survey,
+            self.well.elevation,
+            self.well.location,
+        )
 
     def _record(self) -> None:
         """Pushes an undo step if the content changed since the last recorded state."""
@@ -187,6 +198,7 @@ class WellDocument(QObject):
                 return float(f"{float(units.convert(v, old, new)):.6g}")
             except ValueError:
                 return v
+
         return conv
 
     @staticmethod

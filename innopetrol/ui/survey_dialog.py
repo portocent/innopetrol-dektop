@@ -60,8 +60,12 @@ class SurveyDialog(QDialog):
         row.addWidget(clear)
         row.addStretch()
         lay.addLayout(row)
-        hint = QLabel(_("Columns: MD, inclination and azimuth in degrees, with MD in the same unit as the log "
-                        "({unit}). Headers in English or Spanish are recognized.").format(unit=w.depth_unit))
+        hint = QLabel(
+            _(
+                "Columns: MD, inclination and azimuth in degrees, with MD in the same unit as the log "
+                "({unit}). Headers in English or Spanish are recognized."
+            ).format(unit=w.depth_unit)
+        )
         hint.setWordWrap(True)
         hint.setStyleSheet("color:#566573")
         lay.addWidget(hint)
@@ -101,13 +105,22 @@ class SurveyDialog(QDialog):
             self.info.setText(_("No survey: the well is treated as vertical (TVD = MD)."))
             return
         td_tvd = float(s.tvd_at([w.stop])[0])
-        self.info.setText(_("{count} stations · maximum inclination {inc}° · TVD at total depth {tvd} {unit} "
-                            "(MD {md} {unit})").format(count=s.md.size, inc=f"{s.max_inclination:.1f}",
-                                                       tvd=f"{td_tvd:.1f}", md=f"{w.stop:.1f}", unit=w.depth_unit))
+        self.info.setText(
+            _(
+                "{count} stations · maximum inclination {inc}° · TVD at total depth {tvd} {unit} (MD {md} {unit})"
+            ).format(
+                count=s.md.size,
+                inc=f"{s.max_inclination:.1f}",
+                tvd=f"{td_tvd:.1f}",
+                md=f"{w.stop:.1f}",
+                unit=w.depth_unit,
+            )
+        )
 
     def _import(self):
-        path, _filter = QFileDialog.getOpenFileName(self, _("Import survey"), "",
-                                                    _("Surveys (*.csv *.txt *.dev *.svy);;All files (*)"))
+        path, _filter = QFileDialog.getOpenFileName(
+            self, _("Import survey"), "", _("Surveys (*.csv *.txt *.dev *.svy);;All files (*)")
+        )
         if not path:
             return
         try:

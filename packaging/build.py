@@ -27,26 +27,41 @@ NAME = "InnoPetrol"
 def main() -> None:
     args = [
         str(ROOT / "packaging" / "innopetrol_app.py"),
-        "--name", NAME,
+        "--name",
+        NAME,
         "--windowed",  # no console
         "--noconfirm",
         "--clean",
-        "--icon", str(ROOT / "innopetrol" / "statics" / "images" / "logo-08.png"),
-        "--add-data", f"{ROOT / 'innopetrol' / 'statics'}:innopetrol/statics",
-        "--add-data", f"{ROOT / 'innopetrol' / 'locale'}:innopetrol/locale",  # interface translations
+        "--icon",
+        str(ROOT / "innopetrol" / "statics" / "images" / "logo-08.png"),
+        "--add-data",
+        f"{ROOT / 'innopetrol' / 'statics'}:innopetrol/statics",
+        "--add-data",
+        f"{ROOT / 'innopetrol' / 'locale'}:innopetrol/locale",  # interface translations
         # The LGPL requires shipping the licence texts with every copy.
-        "--add-data", f"{ROOT / 'COPYING'}:.",
-        "--add-data", f"{ROOT / 'COPYING.LESSER'}:.",
-        "--distpath", str(ROOT / "dist"),
-        "--workpath", str(ROOT / "build"),
-        "--specpath", str(ROOT / "build"),
+        "--add-data",
+        f"{ROOT / 'COPYING'}:.",
+        "--add-data",
+        f"{ROOT / 'COPYING.LESSER'}:.",
+        "--distpath",
+        str(ROOT / "dist"),
+        "--workpath",
+        str(ROOT / "build"),
+        "--specpath",
+        str(ROOT / "build"),
         # modules PyInstaller pulls in through optional dependencies that the app does not use
-        "--exclude-module", "tkinter",
-        "--exclude-module", "pandas",
-        "--exclude-module", "matplotlib",
-        "--exclude-module", "PySide6.QtNetwork",
-        "--exclude-module", "PySide6.QtQml",
-        "--exclude-module", "PySide6.QtQuick",
+        "--exclude-module",
+        "tkinter",
+        "--exclude-module",
+        "pandas",
+        "--exclude-module",
+        "matplotlib",
+        "--exclude-module",
+        "PySide6.QtNetwork",
+        "--exclude-module",
+        "PySide6.QtQml",
+        "--exclude-module",
+        "PySide6.QtQuick",
     ]
     if sys.platform == "darwin":
         args += ["--osx-bundle-identifier", "com.innopetrol.visor"]
@@ -89,16 +104,25 @@ def make_dmg(app: Path, archive: Path) -> str:
     shutil.copytree(app, staging / app.name, symlinks=True)
     os.symlink("/Applications", staging / "Applications")
     dmg = f"{archive}.dmg"
-    subprocess.run(["hdiutil", "create", "-volname", NAME, "-srcfolder", str(staging), "-ov", "-format", "UDZO",
-                    dmg], check=True)
+    subprocess.run(
+        ["hdiutil", "create", "-volname", NAME, "-srcfolder", str(staging), "-ov", "-format", "UDZO", dmg], check=True
+    )
     return dmg
 
 
 def make_windows_installer() -> str | None:
     """Installer built with Inno Setup (skipped with a message if it is not installed)."""
-    iscc = shutil.which("iscc") or next((str(p) for p in (
-        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Inno Setup 6" / "ISCC.exe",
-        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Inno Setup 6" / "ISCC.exe") if p.exists()), None)
+    iscc = shutil.which("iscc") or next(
+        (
+            str(p)
+            for p in (
+                Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Inno Setup 6" / "ISCC.exe",
+                Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Inno Setup 6" / "ISCC.exe",
+            )
+            if p.exists()
+        ),
+        None,
+    )
     if iscc is None:
         print("Inno Setup not found: the installer was not built (the .zip is still available).")
         return None

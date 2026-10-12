@@ -18,15 +18,22 @@ def test_export_png(app, testdata_well, tmp_path):
     img = QImage(str(out))
     assert img.width() > 500 and img.height() > 300
     # There must be colored pixels (curves/fills), not just white and gray.
-    colored = sum(1 for x in range(0, img.width(), 7) for y in range(0, img.height(), 7)
-                  if img.pixelColor(x, y).saturation() > 80)
+    colored = sum(
+        1 for x in range(0, img.width(), 7) for y in range(0, img.height(), 7) if img.pixelColor(x, y).saturation() > 80
+    )
     assert colored > 50
 
 
 def test_export_png_too_big(app, testdata_well, tmp_path):
     with pytest.raises(ExportError):
-        export_png(tmp_path / "x.png", testdata_well, build_triple_combo(testdata_well), 10,
-                   testdata_well.start, testdata_well.stop)
+        export_png(
+            tmp_path / "x.png",
+            testdata_well,
+            build_triple_combo(testdata_well),
+            10,
+            testdata_well.start,
+            testdata_well.stop,
+        )
 
 
 def test_export_pdf_paginates(app, testdata_well, tmp_path):

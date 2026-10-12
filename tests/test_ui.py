@@ -229,7 +229,7 @@ def test_slow_machine_uses_previews(win, qtbot, monkeypatch):
     qtbot.waitUntil(lambda: not c._previewing, timeout=2000)
     c.repaint()
     assert renders  # full quality once the gesture ends
-    assert c.current_scale() == pytest.approx(500 / 1.1 ** 5)
+    assert c.current_scale() == pytest.approx(500 / 1.1**5)
 
     # Border drag: guide line while dragging, width applied on release
     from PySide6.QtCore import QEvent, QPointF, Qt
@@ -265,8 +265,19 @@ def test_zoom_buttons_and_pinch(win, qtbot):
     # From "Fit" (non-standard scale) zooming in jumps to the nearest standard scale
     fit_scale = c.current_scale()
     win.a_zoom_in.trigger()
-    assert c.current_scale() < fit_scale and round(c.current_scale()) in (10, 20, 25, 50, 100, 200, 240, 500,
-                                                                            1000, 2000, 5000)
+    assert c.current_scale() < fit_scale and round(c.current_scale()) in (
+        10,
+        20,
+        25,
+        50,
+        100,
+        200,
+        240,
+        500,
+        1000,
+        2000,
+        5000,
+    )
     # Pinch: zooms in 10 % and the depth under the fingers does not move
     c.set_scale(500)
     y = c.header_h + 200

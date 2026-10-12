@@ -184,7 +184,9 @@ class MainWindow(QMainWindow):
         for code in ("file", "m", "ft"):
             a = QAction(self, checkable=True)
             a.setProperty("needs_doc", True)
-            a.triggered.connect(lambda _checked=False, code=code: self.set_display_unit(None if code == "file" else code))
+            a.triggered.connect(
+                lambda _checked=False, code=code: self.set_display_unit(None if code == "file" else code)
+            )
             self.unit_group.addAction(a)
             self.unit_actions[code] = a
         self.a_petro = A(self.petrophysics, "Ctrl+P")
@@ -239,14 +241,36 @@ class MainWindow(QMainWindow):
         self.m_edit.addAction(self.a_redo)
 
         self.m_template = mb.addMenu("")
-        for a in (self.a_tpl_save, self.a_tpl_load, None, self.a_tpl_all, self.a_tpl_default, self.a_tpl_reset,
-                  None, self.a_tpl_triple, None, self.a_aliases):
+        for a in (
+            self.a_tpl_save,
+            self.a_tpl_load,
+            None,
+            self.a_tpl_all,
+            self.a_tpl_default,
+            self.a_tpl_reset,
+            None,
+            self.a_tpl_triple,
+            None,
+            self.a_aliases,
+        ):
             self.m_template.addSeparator() if a is None else self.m_template.addAction(a)
 
         self.m_well = mb.addMenu("")
-        for a in (self.a_add_track, self.a_edit_track, self.a_del_track, None, self.a_tops, self.a_survey, None,
-                  self.a_petro,
-                  self.a_calc, self.a_zones, None, self.a_stats, self.a_table):
+        for a in (
+            self.a_add_track,
+            self.a_edit_track,
+            self.a_del_track,
+            None,
+            self.a_tops,
+            self.a_survey,
+            None,
+            self.a_petro,
+            self.a_calc,
+            self.a_zones,
+            None,
+            self.a_stats,
+            self.a_table,
+        ):
             self.m_well.addSeparator() if a is None else self.m_well.addAction(a)
 
         self.m_analysis = mb.addMenu("")
@@ -312,7 +336,8 @@ class MainWindow(QMainWindow):
         for code in ("md", "tvd", "tvdss"):
             self.reference_combo.addItem(code.upper(), code)
         self.reference_combo.activated.connect(
-            lambda index: self.set_depth_reference(self.reference_combo.itemData(index)))
+            lambda index: self.set_depth_reference(self.reference_combo.itemData(index))
+        )
         tb.addWidget(self.reference_combo)
         tb.addSeparator()
         for a in (self.a_add_track, self.a_tops, self.a_petro, self.a_calc, self.a_zones):
@@ -346,8 +371,11 @@ class MainWindow(QMainWindow):
             self.a_tpl_default: (_("Use the active well's layout as the default template"), None, None),
             self.a_tpl_reset: (_("Reset default template (Triple Combo)"), None, None),
             self.a_tpl_triple: (_("Rebuild Triple Combo in the active well"), None, None),
-            self.a_aliases: (_("Mnemonic aliases…"), None,
-                             _("Curve names of your company, recognized when opening wells and applying templates")),
+            self.a_aliases: (
+                _("Mnemonic aliases…"),
+                None,
+                _("Curve names of your company, recognized when opening wells and applying templates"),
+            ),
             self.a_add_track: (_("Add track"), _("+ Track"), None),
             self.a_edit_track: (_("Edit selected track…"), None, None),
             self.a_del_track: (_("Remove selected track"), None, None),
@@ -413,8 +441,11 @@ class MainWindow(QMainWindow):
         self.tree.retranslate()
         self._refresh_recent()
         self._update_title()
-        self.statusBar().showMessage(_("Ready. Open a LAS file ({shortcut}) or drag it onto the window.").format(
-            shortcut=key_text(QKeySequence.Open)))
+        self.statusBar().showMessage(
+            _("Ready. Open a LAS file ({shortcut}) or drag it onto the window.").format(
+                shortcut=key_text(QKeySequence.Open)
+            )
+        )
         for view in self.views.values():
             view.canvas.invalidate()  # texts drawn on the log ("not available", depth unit…)
         v = self.active_view()
@@ -423,8 +454,10 @@ class MainWindow(QMainWindow):
 
     def _undo_texts(self):
         """“Undo Remove track” / “Redo Add track”: the menu says what will be undone."""
-        for action, label, text, icon in ((self.a_undo, _("Undo"), self.undo_group.undoText(), "↶"),
-                                          (self.a_redo, _("Redo"), self.undo_group.redoText(), "↷")):
+        for action, label, text, icon in (
+            (self.a_undo, _("Undo"), self.undo_group.undoText(), "↶"),
+            (self.a_redo, _("Redo"), self.undo_group.redoText(), "↷"),
+        ):
             action.setText(f"{label}: {text}" if text else label)
             action.setIconText(icon)
             action.setToolTip(f"{action.text()} ({key_text(action.shortcut())})")
@@ -502,13 +535,16 @@ class MainWindow(QMainWindow):
         if not doc:
             return
         if reference == "tvdss" and doc.well.elevation is None:
-            self.statusBar().showMessage(_("TVDSS needs the elevation of the depth reference "
-                                           "(Well ▸ Deviation survey and elevation…)."), 6000)
+            self.statusBar().showMessage(
+                _("TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."), 6000
+            )
             self._refresh_depth_controls()
             return
         if reference != "md" and doc.well.survey is None:
-            self.statusBar().showMessage(_("{well} has no deviation survey: it is drawn as a vertical well "
-                                           "(TVD = MD).").format(well=doc.title), 6000)
+            self.statusBar().showMessage(
+                _("{well} has no deviation survey: it is drawn as a vertical well (TVD = MD).").format(well=doc.title),
+                6000,
+            )
         self._keeping_view(doc, lambda: doc.set_depth_display(reference=reference))
         self._refresh_depth_controls()
 
@@ -567,9 +603,15 @@ class MainWindow(QMainWindow):
         self.scale_combo.setEditText(text)
         self.scale_combo.blockSignals(False)
         lo, hi = v.canvas.visible_depth_range()
-        self.scale_label.setText(_("{well} · scale 1:{scale} · visible {top} – {bottom} {unit}").format(
-            well=v.doc.title, scale=f"{v.canvas.current_scale():.0f}", top=f"{max(lo, v.doc.view.start):.1f}",
-            bottom=f"{min(hi, v.doc.view.stop):.1f}", unit=v.doc.view.depth_unit))
+        self.scale_label.setText(
+            _("{well} · scale 1:{scale} · visible {top} – {bottom} {unit}").format(
+                well=v.doc.title,
+                scale=f"{v.canvas.current_scale():.0f}",
+                top=f"{max(lo, v.doc.view.start):.1f}",
+                bottom=f"{min(hi, v.doc.view.stop):.1f}",
+                unit=v.doc.view.depth_unit,
+            )
+        )
 
     def _scale_from_combo(self):
         text = self.scale_combo.currentText().strip()
@@ -603,8 +645,11 @@ class MainWindow(QMainWindow):
     def open_las_dialog(self):
         start = self.settings.value("last_dir", str(Path.home()))
         paths, _filter = QFileDialog.getOpenFileNames(
-            self, _("Open well files"), start,
-            _("Well logs (*.las *.LAS *.dlis *.DLIS);;LAS (*.las *.LAS);;DLIS (*.dlis *.DLIS);;All files (*)"))
+            self,
+            _("Open well files"),
+            start,
+            _("Well logs (*.las *.LAS *.dlis *.DLIS);;LAS (*.las *.LAS);;DLIS (*.dlis *.DLIS);;All files (*)"),
+        )
         if paths:
             self.settings.setValue("last_dir", str(Path(paths[0]).parent))
             self.open_las(paths)
@@ -627,7 +672,10 @@ class MainWindow(QMainWindow):
                     if missing:
                         self.statusBar().showMessage(
                             _("{well}: the default template uses curves that are not in the well: {curves}").format(
-                                well=doc.title, curves=", ".join(missing)), 8000)
+                                well=doc.title, curves=", ".join(missing)
+                            ),
+                            8000,
+                        )
                     if well.notes:
                         corrected.append(f"{doc.title}: " + "; ".join(well.notes))
         finally:
@@ -638,8 +686,11 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(_("Loaded: {wells}").format(wells=", ".join(opened)), 5000)
         if corrected:
             # Engineers must know when their data was altered on load.
-            QMessageBox.information(self, _("Data corrected on load"),
-                                    _("Some problems in the files were corrected:") + "\n\n" + "\n".join(corrected))
+            QMessageBox.information(
+                self,
+                _("Data corrected on load"),
+                _("Some problems in the files were corrected:") + "\n\n" + "\n".join(corrected),
+            )
 
     def _default_layout(self, well) -> tuple[LogLayout, list[str]]:
         text = self.settings.value("default_template_json")
@@ -652,8 +703,15 @@ class MainWindow(QMainWindow):
                 pass
         return build_triple_combo(well), []
 
-    def add_doc(self, well, layout, petro=None, depth_reference: str = "md",
-                display_unit: str | None = None, curve_units: dict | None = None) -> WellDocument:
+    def add_doc(
+        self,
+        well,
+        layout,
+        petro=None,
+        depth_reference: str = "md",
+        display_unit: str | None = None,
+        curve_units: dict | None = None,
+    ) -> WellDocument:
         doc = WellDocument(well, layout, petro, self)
         doc.depth_reference, doc.display_unit = depth_reference, display_unit
         if curve_units is None:
@@ -669,8 +727,10 @@ class MainWindow(QMainWindow):
         view = WellView(doc)
         sub = self.mdi.addSubWindow(view)
         sub.setWindowIcon(app_icon())
-        sub.resize(min(int(sum(t.width for t in layout.tracks)) + 40, max(self.mdi.width() - 20, 400)),
-                   max(self.mdi.height() - 20, 400))
+        sub.resize(
+            min(int(sum(t.width for t in layout.tracks)) + 40, max(self.mdi.width() - 20, 400)),
+            max(self.mdi.height() - 20, 400),
+        )
         view.statusMessage.connect(lambda msg: self.statusBar().showMessage(msg))
         view.exportRequested.connect(self.export_log)
         view.closed.connect(self._doc_closed)
@@ -735,8 +795,9 @@ class MainWindow(QMainWindow):
         return _("InnoPetrol project (*{suffix})").format(suffix=PROJECT_SUFFIX)
 
     def open_project_dialog(self):
-        path, _filter = QFileDialog.getOpenFileName(self, _("Open project"), self.settings.value("last_dir", ""),
-                                                    self._project_filter())
+        path, _filter = QFileDialog.getOpenFileName(
+            self, _("Open project"), self.settings.value("last_dir", ""), self._project_filter()
+        )
         if path:
             self.open_project(path)
 
@@ -749,8 +810,10 @@ class MainWindow(QMainWindow):
         return Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
 
     def _entries(self) -> list[WellEntry]:
-        return [WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit, dict(d.curve_units))
-                for d in self.docs]
+        return [
+            WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit, dict(d.curve_units))
+            for d in self.docs
+        ]
 
     def autosave(self) -> bool:
         """Saves the open wells for recovery if there are unsaved changes. True if it saved."""
@@ -771,10 +834,15 @@ class MainWindow(QMainWindow):
             return
         saved, project = self.recovery.info()
         r = QMessageBox.question(
-            self, _("Recover work"),
-            _("InnoPetrol did not close properly last time. Restore the work saved automatically at "
-              "{time}?").format(time=saved) + "\n\n" + _("If you choose No, the saved copy is deleted."),
-            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            self,
+            _("Recover work"),
+            _("InnoPetrol did not close properly last time. Restore the work saved automatically at {time}?").format(
+                time=saved
+            )
+            + "\n\n"
+            + _("If you choose No, the saved copy is deleted."),
+            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+        )
         if r == QMessageBox.Yes:
             self.open_project(self.recovery.path, recovered_from=project)
         elif r == QMessageBox.No:
@@ -792,8 +860,9 @@ class MainWindow(QMainWindow):
             return
         self._close_all()
         for entry in result.entries:
-            self.add_doc(entry.well, entry.layout, entry.petro, entry.depth_reference, entry.display_unit,
-                         entry.curve_units)
+            self.add_doc(
+                entry.well, entry.layout, entry.petro, entry.depth_reference, entry.display_unit, entry.curve_units
+            )
         if recovered_from is False:
             self.project_path = Path(path)
             self.dirty = False
@@ -803,8 +872,9 @@ class MainWindow(QMainWindow):
             self.dirty = True  # recovered changes are not in any saved project yet
         self._update_title()
         if result.errors:
-            QMessageBox.warning(self, _("Open project"), _("Some items could not be loaded:") + "\n\n"
-                                + "\n".join(result.errors))
+            QMessageBox.warning(
+                self, _("Open project"), _("Some items could not be loaded:") + "\n\n" + "\n".join(result.errors)
+            )
 
     def save_project(self, ask: bool = False) -> bool:
         if not self.docs:
@@ -812,8 +882,7 @@ class MainWindow(QMainWindow):
         path = self.project_path
         if ask or path is None:
             default = path or Path.home() / (_("project") + PROJECT_SUFFIX)
-            name, _filter = QFileDialog.getSaveFileName(self, _("Save project"), str(default),
-                                                        self._project_filter())
+            name, _filter = QFileDialog.getSaveFileName(self, _("Save project"), str(default), self._project_filter())
             if not name:
                 return False
             path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
@@ -842,8 +911,12 @@ class MainWindow(QMainWindow):
     def _confirm_discard(self) -> bool:
         if not self.dirty:
             return True
-        r = QMessageBox.question(self, _("Unsaved changes"), _("Save the current project before continuing?"),
-                                 QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+        r = QMessageBox.question(
+            self,
+            _("Unsaved changes"),
+            _("Save the current project before continuing?"),
+            QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+        )
         if r == QMessageBox.Save:
             return self.save_project()
         return r == QMessageBox.Discard
@@ -866,8 +939,9 @@ class MainWindow(QMainWindow):
         doc = self.active_doc()
         if not doc:
             return
-        path, _filter = QFileDialog.getSaveFileName(self, _("Save template"), _("template") + TEMPLATE_SUFFIX,
-                                                    self._template_filter())
+        path, _filter = QFileDialog.getSaveFileName(
+            self, _("Save template"), _("template") + TEMPLATE_SUFFIX, self._template_filter()
+        )
         if path:
             if not path.lower().endswith(".json"):
                 path += TEMPLATE_SUFFIX
@@ -893,8 +967,9 @@ class MainWindow(QMainWindow):
         # Template scales -> this well's display units.
         doc.set_layout(doc.adopt_layout(result), _("Apply template"))
         if missing:
-            self.statusBar().showMessage(_("{well}: curves not found: {curves}").format(
-                well=doc.title, curves=", ".join(missing)), 8000)
+            self.statusBar().showMessage(
+                _("{well}: curves not found: {curves}").format(well=doc.title, curves=", ".join(missing)), 8000
+            )
         return missing
 
     def apply_to_all(self):
@@ -907,8 +982,9 @@ class MainWindow(QMainWindow):
                 missing = self._apply_layout(other, doc.layout)
                 if missing:
                     report.append(_("{well}: missing {curves}").format(well=other.title, curves=", ".join(missing)))
-        QMessageBox.information(self, _("Apply to all"),
-                                _("Layout applied.") + ("\n\n" + "\n".join(report) if report else ""))
+        QMessageBox.information(
+            self, _("Apply to all"), _("Layout applied.") + ("\n\n" + "\n".join(report) if report else "")
+        )
 
     def set_default_template(self):
         doc = self.active_doc()
@@ -943,8 +1019,13 @@ class MainWindow(QMainWindow):
             aliases = dialog.aliases()
             mnemonics.set_user_aliases(aliases)
             self.settings.setValue("mnemonic_aliases", mnemonics.aliases_to_json(aliases))
-            self.statusBar().showMessage(_("Aliases saved: they apply to wells opened and templates applied from "
-                                           "now on (Template ▸ Rebuild Triple Combo for an open well)."), 8000)
+            self.statusBar().showMessage(
+                _(
+                    "Aliases saved: they apply to wells opened and templates applied from "
+                    "now on (Template ▸ Rebuild Triple Combo for an open well)."
+                ),
+                8000,
+            )
 
     def rebuild_triple_combo(self):
         doc = self.active_doc()
@@ -1013,9 +1094,15 @@ class MainWindow(QMainWindow):
         from innopetrol.ui.base_map import BaseMapWindow
 
         if not any(d.well.location is not None for d in self.docs):
-            QMessageBox.information(self, _("Base map"), _("None of the open wells has coordinates in its header. "
-                                                           "Enter them in Well ▸ Deviation survey, elevation and "
-                                                           "location…"))
+            QMessageBox.information(
+                self,
+                _("Base map"),
+                _(
+                    "None of the open wells has coordinates in its header. "
+                    "Enter them in Well ▸ Deviation survey, elevation and "
+                    "location…"
+                ),
+            )
             return
         window = BaseMapWindow(self.docs, self)
         window.correlateRequested.connect(self.correlation)
@@ -1035,8 +1122,11 @@ class MainWindow(QMainWindow):
             docs = setup.selected()
             if len(docs) < 1:
                 return
-            self._modeless(CorrelationWindow(docs, setup.datum.currentData(), self, setup.tracks.currentData(),
-                                             setup.reference.currentData()))
+            self._modeless(
+                CorrelationWindow(
+                    docs, setup.datum.currentData(), self, setup.tracks.currentData(), setup.reference.currentData()
+                )
+            )
 
     def _modeless(self, w):
         w.setAttribute(Qt.WA_DeleteOnClose)
@@ -1091,43 +1181,76 @@ class MainWindow(QMainWindow):
     def show_help(self):
         k = key_text
         sections = [
-            (_("Zoom"), [
-                _("<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale "
-                  "({out} / {in_})").format(out=k(QKeySequence.ZoomOut), in_=k(QKeySequence.ZoomIn)),
-                _("“Fit”: whole well ({shortcut})").format(shortcut=k("Ctrl+0")),
-                _("{modifier} + wheel or trackpad pinch: continuous zoom at the cursor").format(modifier=MOD),
-                _("Exact scale: type 1:300 in the “Scale” field"),
-            ]),
-            (_("Log"), [
-                _("Wheel: scroll in depth · Shift + wheel: scroll horizontally · PgUp/PgDn, Home/End, arrows"),
-                _("Drag a track's border: change its width · Double-click a track: edit it"),
-                _("Right-click: track menu (add, move, remove, add top, scale, export)"),
-            ]),
-            (_("Well tree"), [
-                _("Double-click a curve: statistics and histogram · Double-click a top: go to that depth"),
-            ]),
-            (_("Shortcuts"), [
-                _("{open} open LAS · {save} save project · {export} export · {tsave} / {tload} save / load "
-                  "template").format(open=k(QKeySequence.Open), save=k(QKeySequence.Save), export=k("Ctrl+E"),
-                                     tsave=k("Ctrl+T"), tload=k("Ctrl+L")),
-                _("{track} add track · {tops} tops · {petro} petrophysics · {calc} calculator").format(
-                    track=k("Ctrl+Shift+T"), tops=k("Ctrl+Shift+F"), petro=k("Ctrl+P"), calc=k("Ctrl+K")),
-                _("{xplot} crossplot · {corr} correlation · {table} data table").format(
-                    xplot=k("Ctrl+X"), corr=k("Ctrl+R"), table=k("Ctrl+D")),
-            ]),
+            (
+                _("Zoom"),
+                [
+                    _(
+                        "<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale "
+                        "({out} / {in_})"
+                    ).format(out=k(QKeySequence.ZoomOut), in_=k(QKeySequence.ZoomIn)),
+                    _("“Fit”: whole well ({shortcut})").format(shortcut=k("Ctrl+0")),
+                    _("{modifier} + wheel or trackpad pinch: continuous zoom at the cursor").format(modifier=MOD),
+                    _("Exact scale: type 1:300 in the “Scale” field"),
+                ],
+            ),
+            (
+                _("Log"),
+                [
+                    _("Wheel: scroll in depth · Shift + wheel: scroll horizontally · PgUp/PgDn, Home/End, arrows"),
+                    _("Drag a track's border: change its width · Double-click a track: edit it"),
+                    _("Right-click: track menu (add, move, remove, add top, scale, export)"),
+                ],
+            ),
+            (
+                _("Well tree"),
+                [
+                    _("Double-click a curve: statistics and histogram · Double-click a top: go to that depth"),
+                ],
+            ),
+            (
+                _("Shortcuts"),
+                [
+                    _(
+                        "{open} open LAS · {save} save project · {export} export · {tsave} / {tload} save / load "
+                        "template"
+                    ).format(
+                        open=k(QKeySequence.Open),
+                        save=k(QKeySequence.Save),
+                        export=k("Ctrl+E"),
+                        tsave=k("Ctrl+T"),
+                        tload=k("Ctrl+L"),
+                    ),
+                    _("{track} add track · {tops} tops · {petro} petrophysics · {calc} calculator").format(
+                        track=k("Ctrl+Shift+T"), tops=k("Ctrl+Shift+F"), petro=k("Ctrl+P"), calc=k("Ctrl+K")
+                    ),
+                    _("{xplot} crossplot · {corr} correlation · {table} data table").format(
+                        xplot=k("Ctrl+X"), corr=k("Ctrl+R"), table=k("Ctrl+D")
+                    ),
+                ],
+            ),
         ]
         html = "<br><br>".join(f"<b>{title}</b><br>" + "<br>".join(lines) for title, lines in sections)
         QMessageBox.information(self, _("Navigation and shortcuts"), html)
 
     def show_about(self):
         version = ".".join(map(str, sys.version_info[:2]))
-        QMessageBox.about(self, _("About InnoPetrol"), "<h3>{}</h3><p>{}</p><p>{}</p>".format(
-            _("InnoPetrol — Well Viewer {version}").format(version=__version__),
-            _("Well log visualization (LAS format) for petroleum engineers: configurable tracks, linear and "
-              "logarithmic scales, fills, tops, basic petrophysics, crossplots, well correlation and export "
-              "to PDF/PNG/LAS."),
-            _("Original project 2020 · rewritten with Python {version} and PySide6.").format(version=version))
+        QMessageBox.about(
+            self,
+            _("About InnoPetrol"),
+            "<h3>{}</h3><p>{}</p><p>{}</p>".format(
+                _("InnoPetrol — Well Viewer {version}").format(version=__version__),
+                _(
+                    "Well log visualization (LAS format) for petroleum engineers: configurable tracks, linear and "
+                    "logarithmic scales, fills, tops, basic petrophysics, crossplots, well correlation and export "
+                    "to PDF/PNG/LAS."
+                ),
+                _("Original project 2020 · rewritten with Python {version} and PySide6.").format(version=version),
+            )
             + "<p>{}</p><p>{}</p>".format(
-                _("Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; "
-                  "it comes with NO WARRANTY."),
-                _("Uses Qt for Python (PySide6, LGPLv3), lasio (MIT) and NumPy (BSD).")))
+                _(
+                    "Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; "
+                    "it comes with NO WARRANTY."
+                ),
+                _("Uses Qt for Python (PySide6, LGPLv3), lasio (MIT) and NumPy (BSD)."),
+            ),
+        )

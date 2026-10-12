@@ -88,7 +88,9 @@ class Histogram(QWidget):
             return
         xa = self.x_axis
         lo, hi = xa.lo, xa.hi
-        edges = np.logspace(np.log10(lo), np.log10(hi), self.bins + 1) if self.log else np.linspace(lo, hi, self.bins + 1)
+        edges = (
+            np.logspace(np.log10(lo), np.log10(hi), self.bins + 1) if self.log else np.linspace(lo, hi, self.bins + 1)
+        )
         if len(self.series) > 1:
             self._paint_outlines(p, r, xa, edges)
             p.end()
@@ -135,8 +137,11 @@ class Histogram(QWidget):
             ly = r.top() + 6 + i * (fm.height() + 2)
             p.drawLine(QPointF(r.right() - 150, ly + fm.height() / 2), QPointF(r.right() - 130, ly + fm.height() / 2))
             p.setPen(QColor("#2c3e50"))
-            p.drawText(QRectF(r.right() - 125, ly, 120, fm.height()), Qt.AlignLeft | Qt.AlignVCenter,
-                       fm.elidedText(name, Qt.ElideRight, 120))
+            p.drawText(
+                QRectF(r.right() - 125, ly, 120, fm.height()),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                fm.elidedText(name, Qt.ElideRight, 120),
+            )
 
     def paint_overlay(self, p: QPainter, r: QRectF, xa: Axis) -> None:
         """Hook for subclasses that draw on top of the histogram (e.g. parameter picking lines)."""
@@ -244,8 +249,9 @@ class StatsDialog(QDialog):
             txt = f"<b>{m}</b>: " + _("no data in the interval")
         self.stats.setText(txt)
         color = next((c.color for t in self.doc.layout.tracks for c in t.curves if c.mnemonic == m), "#2e86c1")
-        self.hist.set_data(v, f"{m} ({curve.unit})" if curve.unit else m, self.log.isChecked(),
-                           self.bins.value(), color)
+        self.hist.set_data(
+            v, f"{m} ({curve.unit})" if curve.unit else m, self.log.isChecked(), self.bins.value(), color
+        )
 
     def _update_wells(self, m, curve, zone, docs):
         """Several wells: one outline per well and a comparison table of P10/P50/P90."""
@@ -260,14 +266,17 @@ class StatsDialog(QDialog):
             series.append((v, color_of(self.wells, d), d.title))
             if f.size:
                 p10, p50, p90 = np.percentile(f, [10, 50, 90])
-                rows.append(f"<tr><td>{d.title}</td><td>{f.size}</td><td>{p10:.4g}</td><td>{p50:.4g}</td>"
-                            f"<td>{p90:.4g}</td></tr>")
+                rows.append(
+                    f"<tr><td>{d.title}</td><td>{f.size}</td><td>{p10:.4g}</td><td>{p50:.4g}</td>"
+                    f"<td>{p90:.4g}</td></tr>"
+                )
             else:
                 rows.append(f"<tr><td>{d.title}</td><td colspan=4>{_('no data in the interval')}</td></tr>")
         head = "<tr><th align=left>{}</th><th>n</th><th>P10</th><th>P50</th><th>P90</th></tr>".format(_("Well"))
         self.stats.setText(f"<b>{m}</b> {curve.unit}<br><br><table cellspacing=4>{head}{''.join(rows)}</table>")
-        self.hist.set_series(series, f"{m} ({curve.unit})" if curve.unit else m, self.log.isChecked(),
-                             self.bins.value())
+        self.hist.set_series(
+            series, f"{m} ({curve.unit})" if curve.unit else m, self.log.isChecked(), self.bins.value()
+        )
 
 
 # ============================================================================ data table

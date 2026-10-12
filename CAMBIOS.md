@@ -34,9 +34,10 @@ def resizeEvent(self, a0):
     updtDaemon = threading.Thread(target=self.updateTrack)
     updtDaemon.start()
 
+
 def updateTrack(self):
     time.sleep(1.1)
-    self.update()          # ← llamado desde otro hilo
+    self.update()  # ← llamado desde otro hilo
 ```
 
 Qt **no es thread-safe**: sólo el hilo principal puede tocar widgets. Hacerlo desde otro hilo funciona
@@ -52,8 +53,9 @@ Si algún día hace falta trabajo en segundo plano, la herramienta correcta es `
 # antes
 i = self.st
 while i < self.end:
-    if i % 1000 == 0: ...    # dibujar marca
-    i += self.step           # 7614.0 + 0.1 + 0.1 + … nunca da exactamente 7700.0
+    if i % 1000 == 0:
+        ...  # dibujar marca
+    i += self.step  # 7614.0 + 0.1 + 0.1 + … nunca da exactamente 7700.0
 ```
 
 Sumar floats acumula error de redondeo (`0.1 + 0.2 != 0.3`). Con paso 0.5 funciona por casualidad
@@ -81,7 +83,7 @@ valor fijo usara la escala de otra curva. **Ahora** cada límite del relleno bus
 ```python
 # antes — addCurveWindow.py
 clickme = QApplication.focusWidget()
-index = self.tableWidget.indexAt(clickme.pos())   # ¿qué fila tocó el usuario?
+index = self.tableWidget.indexAt(clickme.pos())  # ¿qué fila tocó el usuario?
 ```
 
 Adivinar la fila por el widget con foco falla con el teclado o con clics rápidos. **Ahora** cada control
@@ -106,8 +108,8 @@ se conecta con una función que ya conoce a qué fila pertenece (*closure*), y l
 ```python
 # antes — por cada paintEvent, por cada muestra, por cada curva
 while i < self.end:
-    x = df.iat[j, l]                      # acceso a pandas celda por celda
-    point = QPoint(int(x), int(j*fStep))
+    x = df.iat[j, l]  # acceso a pandas celda por celda
+    point = QPoint(int(x), int(j * fStep))
     self.lines[l].append(point)
 ...
 reversedR = copy.deepcopy(self.lines[...])  # copia profunda de miles de QPoint

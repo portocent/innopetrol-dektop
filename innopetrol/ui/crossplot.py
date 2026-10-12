@@ -84,8 +84,11 @@ class CrossplotWidget(QWidget):
         self._draw_overlay(p, r)
         p.restore()
         p.setPen(BORDER)
-        p.drawText(QRectF(r.left() + 6, r.top() + 4, r.width() - 12, fm.height()), Qt.AlignRight,
-                   _("{count} points").format(count=int(ok.sum())))
+        p.drawText(
+            QRectF(r.left() + 6, r.top() + 4, r.width() - 12, fm.height()),
+            Qt.AlignRight,
+            _("{count} points").format(count=int(ok.sum())),
+        )
         if self.groups:
             self._draw_legend(p, QRectF(r.right() + 14, r.top(), bar_w - 18, r.height()), fm)
         elif self.c.size:
@@ -98,8 +101,11 @@ class CrossplotWidget(QWidget):
             p.setBrush(QColor(color))
             p.drawEllipse(QPointF(r.left() + 6, y + fm.height() / 2), 5, 5)
             p.setPen(BORDER)
-            p.drawText(QRectF(r.left() + 16, y, r.width() - 16, fm.height()), Qt.AlignLeft | Qt.AlignVCenter,
-                       fm.elidedText(name, Qt.ElideRight, r.width() - 16))
+            p.drawText(
+                QRectF(r.left() + 16, y, r.width() - 16, fm.height()),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                fm.elidedText(name, Qt.ElideRight, r.width() - 16),
+            )
 
     def _draw_points(self, p: QPainter, px, py, ok):
         """Points grouped into color levels: one drawPoints call per level instead of one
@@ -155,13 +161,16 @@ class CrossplotWidget(QWidget):
                     k = inside[int(len(inside) * 0.8)]
                     p.drawText(QPointF(xs[k] + 6, ys[k] + 4), _(name))
             p.setPen(QColor("#566573"))
-            p.drawText(QRectF(r.left() + 6, r.bottom() - 20, r.width(), 18), Qt.AlignLeft,
-                       _("Approximate lines (limestone neutron); marks every 10 p.u."))
+            p.drawText(
+                QRectF(r.left() + 6, r.bottom() - 20, r.width(), 18),
+                Qt.AlignLeft,
+                _("Approximate lines (limestone neutron); marks every 10 p.u."),
+            )
         elif self.overlay == "pickett" and self.pickett:
             pp = self.pickett
             phi = np.logspace(-2, 0, 50)
             for sw, color in ((1.0, "#1a5276"), (0.5, "#27ae60"), (0.25, "#c0392b")):
-                rt = pp.a * pp.rw / (phi ** pp.m * sw ** pp.n)
+                rt = pp.a * pp.rw / (phi**pp.m * sw**pp.n)
                 xs = r.left() + self.xa.map(self.x_from_ref(phi), r.width())
                 ys = r.bottom() - self.ya.map(rt, r.height())
                 p.setPen(QPen(QColor(color), 1.8, Qt.DashLine))
@@ -183,12 +192,17 @@ class CrossplotWidget(QWidget):
         p.drawRect(r)
         lo, hi = self.c_range
         p.drawText(QRectF(r.right() + 4, r.top(), 60, fm.height()), Qt.AlignLeft | Qt.AlignVCenter, fmt(round(hi, 4)))
-        p.drawText(QRectF(r.right() + 4, r.bottom() - fm.height(), 60, fm.height()), Qt.AlignLeft | Qt.AlignVCenter,
-                   fmt(round(lo, 4)))
+        p.drawText(
+            QRectF(r.right() + 4, r.bottom() - fm.height(), 60, fm.height()),
+            Qt.AlignLeft | Qt.AlignVCenter,
+            fmt(round(lo, 4)),
+        )
         p.save()
         p.translate(r.right() + 4, r.center().y())
         p.rotate(90)
-        p.drawText(QRectF(-r.height() / 2, -fm.height() - 4 - 50, r.height(), fm.height()), Qt.AlignCenter, self.c_label)
+        p.drawText(
+            QRectF(-r.height() / 2, -fm.height() - 4 - 50, r.height(), fm.height()), Qt.AlignCenter, self.c_label
+        )
         p.restore()
 
 
@@ -369,7 +383,9 @@ class CrossplotWindow(QDialog):
         if log:
             f = f[f > 0]
         if f.size:
-            lo, hi = (log_decades if log else nice_linear_range)(float(np.percentile(f, 0.5)), float(np.percentile(f, 99.5)))
+            lo, hi = (log_decades if log else nice_linear_range)(
+                float(np.percentile(f, 0.5)), float(np.percentile(f, 99.5))
+            )
         else:
             lo, hi = (0.1, 100) if log else (0, 1)
         try:
@@ -419,8 +435,9 @@ class CrossplotWindow(QDialog):
         plot.update()
 
     def _save(self):
-        path, _filter = QFileDialog.getSaveFileName(self, _("Save crossplot"), f"{self.doc.title}_crossplot.png",
-                                              "PNG (*.png)")
+        path, _filter = QFileDialog.getSaveFileName(
+            self, _("Save crossplot"), f"{self.doc.title}_crossplot.png", "PNG (*.png)"
+        )
         if path:
             img = QImage(self.plot.size() * 2, QImage.Format_ARGB32)
             img.setDevicePixelRatio(2)

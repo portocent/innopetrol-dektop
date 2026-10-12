@@ -38,9 +38,19 @@ def headers_height(p: QPainter, layout: LogLayout, k: float = 1.0) -> float:
     return max((header_height(t, fm, k) for t in layout.tracks), default=fm.height() * 3)
 
 
-def paint_log(p: QPainter, layout: LogLayout, well, tf: DepthTransform, x0: float, y0: float,
-              header_h: float, body_h: float, opts: RenderOptions, selected: int | None = None,
-              draw_headers: bool = True) -> None:
+def paint_log(
+    p: QPainter,
+    layout: LogLayout,
+    well,
+    tf: DepthTransform,
+    x0: float,
+    y0: float,
+    header_h: float,
+    body_h: float,
+    opts: RenderOptions,
+    selected: int | None = None,
+    draw_headers: bool = True,
+) -> None:
     """Draws the tracks starting at (x0, y0). If draw_headers is False the body starts at y0."""
     body_y = y0 + (header_h if draw_headers else 0)
     first_curves = next((i for i, t in enumerate(layout.tracks) if not t.is_depth), None)
@@ -55,14 +65,23 @@ def paint_log(p: QPainter, layout: LogLayout, well, tf: DepthTransform, x0: floa
             draw_track_body(p, body, track, well, tf, track_opts)
 
 
-def paint_headers(p: QPainter, layout: LogLayout, well, x0: float, y0: float, header_h: float,
-                  opts: RenderOptions, selected: int | None = None) -> None:
+def paint_headers(
+    p: QPainter,
+    layout: LogLayout,
+    well,
+    x0: float,
+    y0: float,
+    header_h: float,
+    opts: RenderOptions,
+    selected: int | None = None,
+) -> None:
     for i, ((x, w), track) in enumerate(zip(track_edges(layout, opts.k), layout.tracks)):
         draw_track_header(p, QRectF(x0 + x, y0, w, header_h), track, well, opts, selected == i)
 
 
-def paint_tops_overlay(p: QPainter, layout: LogLayout, well, tf: DepthTransform, x0: float, y0: float,
-                       body_h: float, opts: RenderOptions) -> None:
+def paint_tops_overlay(
+    p: QPainter, layout: LogLayout, well, tf: DepthTransform, x0: float, y0: float, body_h: float, opts: RenderOptions
+) -> None:
     """Tops drawn over the body (the screen keeps them out of the cached tiles so labels are
     never cut at a tile edge)."""
     if not well.tops:
