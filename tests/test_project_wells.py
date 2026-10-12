@@ -1,5 +1,7 @@
 """Wells in the project, loaded and with a window: the three states in the main window."""
 
+import shutil
+
 import pytest
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QMessageBox
@@ -89,3 +91,27 @@ def test_correlate_wells_selected_in_the_tree(win, monkeypatch):
     win.unload_wells([refs[1]])
     win.tree.refsCorrelateRequested.emit(refs)
     assert seen == [["Test Well 1", "1-5"]]  # the unloaded one was loaded first
+
+
+def test_add_a_folder_of_wells(qtbot, tmp_path, samples, monkeypatch):
+    monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
+    folder = tmp_path / "wells"
+    (folder / "sub").mkdir(parents=True)
+    shutil.copy(samples / "Testdata.las", folder / "Testdata.las")
+    shutil.copy(samples / "TotalDepthPrueba.las", folder / "sub" / "TotalDepthPrueba.las")
+    (folder / "broken.las").write_text("not a LAS file", encoding="utf-8")
+    (folder / "notes.txt").write_text("ignored", encoding="utf-8")
+    w = MainWindow(QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat))
+    qtbot.addWidget(w)
+
+    added, repeated, errors = w.add_folder(folder)
+    assert (added, repeated, len(errors)) == (2, 0, 1) and "broken.las" in errors[0]
+    assert len(w.wells) == 2 and not w.docs and not w.views  # listed, nothing loaded
+    assert w.a_save_proj.isEnabled()
+    assert w.add_folder(folder)[:2] == (0, 2)  # adding it again finds them already in the project
+
+    w.open_refs([w.wells.refs[0]])  # first load: it gets the default layout
+    [doc] = w.docs
+    assert doc.layout.tracks and w.views[doc]
+    w.session.save(w._project_items(), tmp_path / "p.ipproj")
+    w.dirty = False

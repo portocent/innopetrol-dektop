@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMdiArea,
     QMessageBox,
+    QProgressDialog,
     QToolBar,
     QWidget,
 )
@@ -26,7 +27,7 @@ from PySide6.QtWidgets import (
 from innopetrol import i18n
 from innopetrol.i18n import _
 from innopetrol.model import units
-from innopetrol.model.catalog import WellRef
+from innopetrol.model.catalog import WellRef, refs_from_file, well_files
 from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.mnemonics import build_triple_combo
@@ -112,6 +113,8 @@ class MainWindow(QMainWindow):
         self.tree.refsCorrelateRequested.connect(self.correlate_refs)
         self.wells.added.connect(lambda ref: self.tree.add_ref(ref, self.wells.docs.get(ref)))
         self.wells.removed.connect(self.tree.remove_ref)
+        for signal in (self.wells.added, self.wells.removed):
+            signal.connect(self._update_actions)
         self.wells.loaded.connect(lambda ref: self.tree.set_doc(ref, self.wells.docs[ref]))
         self.wells.unloaded.connect(lambda ref: self.tree.set_doc(ref, None))
         self.tree.set_template_name(self.settings.value("default_template_name"))
@@ -141,6 +144,7 @@ class MainWindow(QMainWindow):
         A = self._action
         self.a_open = A(self.open_las_dialog, QKeySequence.StandardKey.Open, needs_doc=False)
         self.a_open_proj = A(self.open_project_dialog, "Ctrl+Shift+O", needs_doc=False)
+        self.a_add_folder = A(self.add_folder_dialog, needs_doc=False)
         self.a_save_proj = A(self.save_project, QKeySequence.StandardKey.Save)
         self.a_save_proj_as = A(lambda: self.save_project(ask=True), "Ctrl+Shift+S")
         self.a_export = A(self.export_log, "Ctrl+E")
@@ -231,6 +235,7 @@ class MainWindow(QMainWindow):
         mb = self.menuBar()
         self.m_file = mb.addMenu("")
         self.m_file.addAction(self.a_open)
+        self.m_file.addAction(self.a_add_folder)
         self.recent_menu = self.m_file.addMenu("")
         self.m_file.addSeparator()
         for a in (self.a_open_proj, self.a_save_proj, self.a_save_proj_as):
@@ -368,6 +373,11 @@ class MainWindow(QMainWindow):
             # action: (menu text, toolbar text or None, status tip or None)
             self.a_open: (_("Open LAS…"), _("Open LAS"), _("Open one or more LAS files")),
             self.a_open_proj: (_("Open project…"), None, None),
+            self.a_add_folder: (
+                _("Add a folder of wells to the project…"),
+                None,
+                _("Lists every LAS/DLIS file of a folder and its subfolders without loading the data"),
+            ),
             self.a_save_proj: (_("Save project"), _("Save"), None),
             self.a_save_proj_as: (_("Save project as…"), None, None),
             self.a_export: (_("Export log (PDF / PNG)…"), _("Export"), None),
@@ -496,6 +506,8 @@ class MainWindow(QMainWindow):
             if a.property("needs_doc"):
                 a.setEnabled(has)
         self.a_corr.setEnabled(len(self.docs) >= 2)
+        for a in (self.a_save_proj, self.a_save_proj_as):
+            a.setEnabled(len(self.wells) > 0)  # wells that are not loaded are saved too
         self.scale_combo.setEnabled(has)
         self._refresh_depth_controls()
 
@@ -715,6 +727,53 @@ class MainWindow(QMainWindow):
                 _("Some problems in the files were corrected:") + "\n\n" + "\n".join(corrected),
             )
 
+    def add_folder_dialog(self):
+        folder = QFileDialog.getExistingDirectory(
+            self, _("Add a folder of wells to the project"), self.settings.value("last_dir", str(Path.home()))
+        )
+        if folder:
+            self.settings.setValue("last_dir", folder)
+            self.add_folder(folder)
+
+    def add_folder(self, folder) -> tuple[int, int, list[str]]:
+        """Add every well file of a folder (and subfolders) to the project, reading only the headers.
+        Returns (added, already in the project, problems)."""
+        files = well_files(folder)
+        added, repeated, errors = 0, 0, []
+        progress = QProgressDialog(_("Reading headers…"), _("Cancel"), 0, len(files), self)
+        progress.setWindowTitle(_("Add a folder of wells to the project"))
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setMinimumDuration(500)
+        try:
+            for i, path in enumerate(files):
+                progress.setValue(i)
+                if progress.wasCanceled():
+                    break
+                try:
+                    refs = refs_from_file(path)
+                except Exception as e:  # any unreadable file is reported and the rest are added
+                    errors.append(f"{path.name}: {e}")
+                    continue
+                for ref in refs:
+                    if self.wells.find(ref) is not None:
+                        repeated += 1
+                    else:
+                        self.wells.add(ref)
+                        added += 1
+        finally:
+            progress.close()
+        if added:
+            self.dirty = True
+        message = _("{added} wells added to the project.").format(added=added)
+        if repeated:
+            message += "\n" + _("{count} were already in the project.").format(count=repeated)
+        if errors:
+            message += "\n\n" + _("Could not read:") + "\n" + "\n".join(errors[:20])
+            if len(errors) > 20:
+                message += "\n" + _("… and {count} more.").format(count=len(errors) - 20)
+        QMessageBox.information(self, _("Add a folder of wells to the project"), message)
+        return added, repeated, errors
+
     def _default_layout(self, well) -> tuple[LogLayout, list[str]]:
         text = self.settings.value("default_template_json")
         if text:
@@ -749,8 +808,11 @@ class MainWindow(QMainWindow):
         return doc
 
     def _make_doc(self, entry: WellEntry, new: bool = False) -> WellDocument:
-        """The document of a loaded well, without a window. For a `new` well (not from a project) the
-        layout is converted to its units and the preferred unit system is applied."""
+        """The document of a loaded well, without a window. For a `new` well (never shown before) the
+        default layout is used if it has none, the layout is converted to its units and the preferred
+        unit system is applied."""
+        if new and not entry.layout.tracks:
+            entry.layout, _missing = self._default_layout(entry.well)
         doc = WellDocument(entry.well, entry.layout, entry.petro, self)
         doc.depth_reference, doc.display_unit = entry.depth_reference, entry.display_unit
         if new:

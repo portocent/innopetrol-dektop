@@ -35,8 +35,9 @@ class ProjectWells(QObject):
     loaded = Signal(object)  # WellRef (its document is in docs)
     unloaded = Signal(object)  # WellRef
 
-    def __init__(self, make_doc: Callable[[WellEntry], WellDocument], parent=None):
-        """`make_doc` turns a loaded project entry into a document (the main window wires it up)."""
+    def __init__(self, make_doc: Callable[[WellEntry, bool], WellDocument], parent=None):
+        """`make_doc(entry, new)` turns a loaded entry into a document (the main window wires it up).
+        `new` is True for a well that was never shown: it has no layout yet."""
         super().__init__(parent)
         self.make_doc = make_doc
         self.refs: list[WellRef] = []
@@ -115,10 +116,11 @@ class ProjectWells(QObject):
             ref.missing = True
             errors.append(_("{well}: file not found: {path}").format(well=ref.name, path=ref.path))
             return
+        new = "layout" not in ref.entry if ref.entry is not None else False
         entry = load_ref(ref, errors)
         if entry is None:
             return
-        self.docs[ref] = self.make_doc(entry)
+        self.docs[ref] = self.make_doc(entry, new)
         ref.entry = None  # the document holds the state now
         self.loaded.emit(ref)
 

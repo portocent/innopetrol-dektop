@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 14:03-0500\n"
+"POT-Creation-Date: 2026-10-12 14:07-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -92,6 +92,12 @@ msgid "About InnoPetrol"
 msgstr ""
 
 msgid "Add"
+msgstr ""
+
+msgid "Add a folder of wells to the project"
+msgstr ""
+
+msgid "Add a folder of wells to the project…"
 msgstr ""
 
 msgid "Add as an interval (perforation, test, comment…)…"
@@ -401,6 +407,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Could not read the file: {error}"
+msgstr ""
+
+msgid "Could not read:"
 msgstr ""
 
 #, python-brace-format
@@ -1035,6 +1044,9 @@ msgstr ""
 msgid "Linear (IGR)"
 msgstr ""
 
+msgid "Lists every LAS/DLIS file of a folder and its subfolders without loading the data"
+msgstr ""
+
 msgid "Load template"
 msgstr ""
 
@@ -1497,6 +1509,9 @@ msgid "Rainbow"
 msgstr ""
 
 msgid "Read me"
+msgstr ""
+
+msgid "Reading headers…"
 msgstr ""
 
 #, python-brace-format
@@ -2568,6 +2583,10 @@ msgid "whole well"
 msgstr ""
 
 #, python-brace-format
+msgid "{added} wells added to the project."
+msgstr ""
+
+#, python-brace-format
 msgid "{alias}: {families}"
 msgstr ""
 
@@ -2616,6 +2635,10 @@ msgid "{count} value equal to a common null marker (-999, -9999…) was treated 
 msgid_plural "{count} values equal to common null markers (-999, -9999…) were treated as missing"
 msgstr[0] ""
 msgstr[1] ""
+
+#, python-brace-format
+msgid "{count} were already in the project."
+msgstr ""
 
 #, python-brace-format
 msgid "{curve} (not available)"
@@ -2785,5 +2808,9 @@ msgid "“Fit”: whole well ({shortcut})"
 msgstr ""
 
 msgid "“To” must be greater than “From”."
+msgstr ""
+
+#, python-brace-format
+msgid "… and {count} more."
 msgstr ""
 

@@ -49,6 +49,7 @@ class WellTree(QTreeWidget):
         self.setHeaderHidden(True)
         self.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
         self._text_filter, self._curve_filter = "", ""
+        self._hidden = 0  # well items hidden by the filter (kept up to date: counting is O(1))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
         self.itemDoubleClicked.connect(self._double_click)
@@ -109,6 +110,7 @@ class WellTree(QTreeWidget):
     def remove_ref(self, ref) -> None:
         it = self._item_for_ref(ref)
         if it is not None:
+            self._hidden -= it.isHidden()
             self.takeTopLevelItem(self.indexOfTopLevelItem(it))
             self.countChanged.emit(*self.counts())
 
@@ -143,8 +145,8 @@ class WellTree(QTreeWidget):
 
     def counts(self) -> tuple[int, int]:
         """(wells shown by the filter, wells in the tree)."""
-        items = self._well_items()
-        return sum(not it.isHidden() for it in items), len(items)
+        total = self.topLevelItemCount() - 1  # the first item is the default template
+        return total - self._hidden, total
 
     def set_filter(self, text: str, curve: str) -> None:
         """Show only the wells whose name, UWI, field or company contain the words of `text` and that
@@ -160,10 +162,11 @@ class WellTree(QTreeWidget):
         return WellSummary.from_well(doc.well) if doc is not None else item.data(0, ROLE_REF).summary
 
     def _apply_filter(self, item: QTreeWidgetItem) -> None:
-        if self._text_filter or self._curve_filter:
-            item.setHidden(not matches(self._summary(item), self._text_filter, self._curve_filter))
-        else:
-            item.setHidden(False)
+        hidden = bool(self._text_filter or self._curve_filter) and not matches(
+            self._summary(item), self._text_filter, self._curve_filter
+        )
+        self._hidden += hidden - item.isHidden()
+        item.setHidden(hidden)
         self._mark_curves(item)
 
     def _mark_curves(self, item: QTreeWidgetItem) -> None:

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 14:03-0500\n"
+"POT-Creation-Date: 2026-10-12 14:07-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -92,6 +92,12 @@ msgstr "Acerca de InnoPetrol"
 
 msgid "Add"
 msgstr "Agregar"
+
+msgid "Add a folder of wells to the project"
+msgstr "Agregar una carpeta de pozos al proyecto"
+
+msgid "Add a folder of wells to the project…"
+msgstr "Agregar una carpeta de pozos al proyecto…"
 
 msgid "Add as an interval (perforation, test, comment…)…"
 msgstr "Agregar como intervalo (punzado, ensayo, comentario…)…"
@@ -408,6 +414,9 @@ msgstr "No se pudieron abrir:"
 #, python-brace-format
 msgid "Could not read the file: {error}"
 msgstr "No se pudo leer el archivo: {error}"
+
+msgid "Could not read:"
+msgstr "No se pudieron leer:"
 
 #, python-brace-format
 msgid "Could not save: {error}"
@@ -1047,6 +1056,9 @@ msgstr "Lineal"
 msgid "Linear (IGR)"
 msgstr "Lineal (IGR)"
 
+msgid "Lists every LAS/DLIS file of a folder and its subfolders without loading the data"
+msgstr "Lista todos los archivos LAS/DLIS de una carpeta y sus subcarpetas sin cargar los datos"
+
 msgid "Load template"
 msgstr "Cargar plantilla"
 
@@ -1518,6 +1530,9 @@ msgstr "Arcoíris"
 
 msgid "Read me"
 msgstr "Léame"
+
+msgid "Reading headers…"
+msgstr "Leyendo encabezados…"
 
 #, python-brace-format
 msgid "Ready. Open a LAS file ({shortcut}) or drag it onto the window."
@@ -2600,6 +2615,10 @@ msgid "whole well"
 msgstr "pozo completo"
 
 #, python-brace-format
+msgid "{added} wells added to the project."
+msgstr "{added} pozos agregados al proyecto."
+
+#, python-brace-format
 msgid "{alias}: {families}"
 msgstr "{alias}: {families}"
 
@@ -2648,6 +2667,10 @@ msgid "{count} value equal to a common null marker (-999, -9999…) was treated 
 msgid_plural "{count} values equal to common null markers (-999, -9999…) were treated as missing"
 msgstr[0] "{count} valor igual a un marcador de nulo común (-999, -9999…) se trató como faltante"
 msgstr[1] "{count} valores iguales a marcadores de nulo comunes (-999, -9999…) se trataron como faltantes"
+
+#, python-brace-format
+msgid "{count} were already in the project."
+msgstr "{count} ya estaban en el proyecto."
 
 #, python-brace-format
 msgid "{curve} (not available)"
@@ -2818,4 +2841,8 @@ msgstr "«Ajustar»: pozo completo ({shortcut})"
 
 msgid "“To” must be greater than “From”."
 msgstr "«Hasta» debe ser mayor que «Desde»."
+
+#, python-brace-format
+msgid "… and {count} more."
+msgstr "… y {count} más."
 

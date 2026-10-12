@@ -12,7 +12,7 @@ import logging
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from innopetrol.model.io import load_wells
+from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.model.location import Location, location_from_header
 from innopetrol.model.mnemonics import FAMILIES, family_of
 from innopetrol.model.well import FEET_UNITS, HeaderItem, Well, detect_encoding, las_well_name, unique_mnemonic
@@ -75,7 +75,7 @@ class WellSummary:
 
 @dataclass(eq=False)  # compared by identity: two references to the same file are still two wells
 class WellRef:
-    path: Path | None
+    path: Path | None  # absolute and resolved, so it can be compared
     source: str | None
     summary: WellSummary
     entry: dict | None = None  # the project entry while the well is not loaded (written back unchanged)
@@ -87,16 +87,11 @@ class WellRef:
 
     @classmethod
     def from_well(cls, well: Well) -> WellRef:
-        return cls(well.path, well.source, WellSummary.from_well(well))
+        return cls(well.path.resolve() if well.path else None, well.source, WellSummary.from_well(well))
 
     def same_file(self, other: WellRef) -> bool:
-        """Both point to the same well of the same file."""
-        return (
-            self.path is not None
-            and other.path is not None
-            and self.source == other.source
-            and (self.path.resolve() == other.path.resolve())
-        )
+        """Both point to the same well of the same file (paths are kept resolved)."""
+        return self.path is not None and self.path == other.path and self.source == other.source
 
 
 def summaries_from_file(path: str | Path) -> list[tuple[str | None, WellSummary]]:
@@ -161,3 +156,20 @@ def matches(summary: WellSummary, text: str = "", curve: str = "") -> bool:
     if any(word not in haystack for word in text.lower().split()):
         return False
     return not curve or bool(matching_curves(summary, curve))
+
+
+def well_files(folder: str | Path) -> list[Path]:
+    """Well files (LAS, DLIS) in a folder and its subfolders, sorted."""
+    return sorted(p for p in Path(folder).rglob("*") if p.is_file() and is_well_file(p))
+
+
+def refs_from_file(path: str | Path) -> list[WellRef]:
+    """A WellRef per well in the file (DLIS: per depth frame), from the headers. Raises on bad files.
+
+    The entry has no layout yet: the well gets the default template when it is first loaded.
+    """
+    path = Path(path).resolve()
+    return [
+        WellRef(path, source, summary, entry={"name": summary.name, "source": source, "open": False})
+        for source, summary in summaries_from_file(path)
+    ]

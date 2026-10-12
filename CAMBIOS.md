@@ -603,6 +603,18 @@ un LAS (`lasio` con `ignore_data=True`) cuesta 12 ms contra 45 ms de la lectura 
 
 Con 500 pozos, filtrar tarda 1 ms: se usa el resumen, sin leer archivos.
 
+**Agregar una carpeta de pozos** (Archivo ▸ Agregar una carpeta de pozos al proyecto…): recorre la
+carpeta y sus subcarpetas, lee **sólo los encabezados** y agrega los pozos al proyecto sin cargarlos ni
+abrir ventanas. Informa cuántos se agregaron, cuántos ya estaban (mismo archivo y marco DLIS) y cuáles
+no se pudieron leer. Un pozo agregado así recibe la plantilla por defecto la primera vez que se abre.
+
+*Medido con las 1498 LAS de Kansas:* agregar la carpeta tarda 19 s (con barra de progreso), guardar el
+proyecto 0,07 s y volver a abrirlo 0,2 s.
+
+*Un detalle de rendimiento:* el contador de pozos recorría todo el árbol en cada pozo agregado. Con
+1498 pozos eran 2 millones de pasos (0,7 s). Ahora lleva la cuenta de los ocultos al aplicar el
+filtro, así contar no cuesta nada.
+
 **Selección múltiple** (Ctrl/Shift + clic): abrir, cargar, correlacionar, descargar o quitar varios pozos
 a la vez. Correlacionar carga antes los que falten.
 
