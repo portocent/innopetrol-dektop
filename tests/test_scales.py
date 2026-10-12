@@ -41,3 +41,13 @@ def test_depth_ticks_no_float_drift():
     assert 7700.0 in t.labels or 7700.0 in t.major
     assert np.allclose(t.labels % t.label_interval, 0)
     assert t.labels.min() >= 7614.3
+
+
+@pytest.mark.parametrize("current,direction,expected", [
+    (500, 1, 240), (500, -1, 1000), (240, 1, 200),
+    (437, 1, 240), (437, -1, 500),       # escala no estándar (zoom con rueda)
+    (5769, 1, 5000), (5769, -1, 5000),   # "Ajustar" más allá del último preset
+    (10, 1, 10), (5000, -1, 5000),       # extremos
+])
+def test_next_preset(current, direction, expected):
+    assert scales.next_preset(current, direction) == expected

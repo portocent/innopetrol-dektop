@@ -248,3 +248,37 @@ def test_slow_machine_uses_previews(win, qtbot, monkeypatch):
     c.mouseReleaseEvent(ev(QEvent.MouseButtonRelease, x + 40, Qt.NoButton))
     assert win.docs[0].layout.tracks[0].width == w0 + 40 and c._drag_pending is None
     assert log_canvas.FRAME_BUDGET_MS < 50
+
+
+def test_zoom_buttons_and_pinch(win, qtbot):
+    c = win.views[win.docs[0]].canvas
+    qtbot.waitExposed(c)
+    win.activate_doc(win.docs[0])
+    c.set_scale(500)
+    win.a_zoom_in.trigger()
+    assert c.current_scale() == pytest.approx(240)
+    win.a_zoom_out.trigger()
+    win.a_zoom_out.trigger()
+    assert c.current_scale() == pytest.approx(1000)
+    win.a_fit.trigger()
+    assert c.fit_mode
+    # Desde "Ajustar" (escala no estándar) acercar salta a la estándar más próxima
+    fit_scale = c.current_scale()
+    win.a_zoom_in.trigger()
+    assert c.current_scale() < fit_scale and round(c.current_scale()) in (10, 20, 25, 50, 100, 200, 240, 500,
+                                                                            1000, 2000, 5000)
+    # Pellizco: acerca 10 % y la profundidad bajo los dedos no se mueve
+    c.set_scale(500)
+    y = c.header_h + 200
+    depth = c.depth_at(y)
+    c._pinch(0.1, y)
+    assert c.current_scale() == pytest.approx(500 / 1.1)
+    assert c.depth_at(y) == pytest.approx(depth, abs=0.01)
+
+
+def test_zoom_actions_disabled_without_wells(qtbot, tmp_path):
+    from PySide6.QtCore import QSettings
+
+    w = MainWindow(QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat))
+    qtbot.addWidget(w)
+    assert not w.a_zoom_in.isEnabled() and not w.a_zoom_out.isEnabled() and not w.a_fit.isEnabled()

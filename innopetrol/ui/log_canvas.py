@@ -2,7 +2,7 @@
 
 Navegación:
   rueda            desplaza en profundidad
-  Ctrl + rueda     zoom alrededor del cursor
+  Ctrl/⌘ + rueda   zoom alrededor del cursor (también pellizco en el trackpad)
   Shift + rueda    desplaza horizontalmente
   RePág/AvPág, Inicio/Fin, flechas
   arrastrar el borde de un track cambia su ancho; doble clic en un track lo edita.
@@ -14,11 +14,11 @@ import math
 import time
 
 import numpy as np
-from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-from innopetrol.model.scales import px_per_unit, scale_ratio
+from innopetrol.model.scales import next_preset, px_per_unit, scale_ratio
 from innopetrol.render.painter import BORDER, DepthTransform, RenderOptions, header_height
 from innopetrol.render.scene import paint_headers, paint_log, paint_tops_overlay, track_edges, total_width
 from innopetrol.ui.document import WellDocument
@@ -121,6 +121,22 @@ class LogCanvas(QWidget):
         if interactive:
             self._begin_preview()
         self._set_ppu(self.ppu * factor, anchor_depth)
+
+    def zoom_step(self, direction: int) -> None:
+        """Acercar (+1) o alejar (-1) a la siguiente escala estándar, manteniendo el centro visible."""
+        self.set_scale(next_preset(self.current_scale(), direction))
+
+    def _pinch(self, value: float, y: float) -> None:
+        """Pellizco del trackpad: value es el cambio relativo (0.1 = 10 % más cerca)."""
+        anchor = self.depth_at(y) + self.depth_shift if y > self._header_h else None
+        self.zoom(1 + value, anchor, interactive=True)
+
+    def event(self, e):
+        # macOS (y Wayland) envían el pellizco como gesto nativo; en Windows llega como Ctrl + rueda.
+        if e.type() == QEvent.NativeGesture and e.gestureType() == Qt.ZoomNativeGesture:
+            self._pinch(e.value(), e.position().y())
+            return True
+        return super().event(e)
 
     # ------------------------------------------------------------------ dibujo adaptativo
 
@@ -401,9 +417,9 @@ class LogCanvas(QWidget):
         elif key == Qt.Key_End:
             self.set_top(self.scroll_range()[1])
         elif key in (Qt.Key_Plus, Qt.Key_Equal):
-            self.zoom(1.25, interactive=True)
+            self.zoom_step(1)
         elif key == Qt.Key_Minus:
-            self.zoom(0.8, interactive=True)
+            self.zoom_step(-1)
         else:
             super().keyPressEvent(e)
 

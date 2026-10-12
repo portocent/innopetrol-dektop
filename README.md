@@ -14,8 +14,10 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 - Tracks configurables: curvas, escala lineal o logarítmica, color, grosor, estilo, rellenos entre curvas o contra un valor fijo con 10 patrones.
 - Agregar, quitar, mover, renombrar y cambiar el ancho de tracks (arrastrando el borde).
 
-**Navegación**
-- Rueda: desplazar · Ctrl + rueda: zoom en el cursor · Shift + rueda: horizontal · RePág/AvPág, Inicio/Fin.
+**Navegación** (en Mac, ⌘ en lugar de Ctrl)
+- Zoom: botones **−** / **+** junto a «Escala» (o Ctrl − / Ctrl +) saltan entre escalas estándar; «Ajustar» muestra el pozo completo (Ctrl 0); en el campo «Escala» se puede escribir una exacta, p. ej. `1:300`.
+- Zoom continuo en el cursor: Ctrl + rueda o pellizco en el trackpad.
+- Rueda: desplazar · Shift + rueda: horizontal · RePág/AvPág, Inicio/Fin.
 - Cursor con lectura de profundidad, zona y valor de todas las curvas en la barra de estado.
 - Tabla de datos sincronizada con el cursor.
 

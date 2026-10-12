@@ -15,6 +15,19 @@ MM_PER_UNIT = {"m": 1000.0, "ft": 304.8}
 SCALE_PRESETS = [10, 20, 25, 50, 100, 200, 240, 500, 1000, 2000, 5000]
 
 
+def next_preset(current: float, direction: int) -> float:
+    """Siguiente escala estándar al acercar (direction > 0, número menor) o alejar (< 0).
+
+    Desde una escala no estándar (p. ej. la de "Ajustar a la ventana") salta a la estándar más próxima
+    en esa dirección; en los extremos se queda en el límite.
+    """
+    if direction > 0:
+        smaller = [n for n in SCALE_PRESETS if n < current * 0.99]
+        return smaller[-1] if smaller else SCALE_PRESETS[0]
+    larger = [n for n in SCALE_PRESETS if n > current * 1.01]
+    return larger[0] if larger else SCALE_PRESETS[-1]
+
+
 def map_values(values: np.ndarray, left: float, right: float, log: bool, width: float) -> np.ndarray:
     """Mapea valores a coordenada x en [0, width]. Permite escalas invertidas (left > right).
 

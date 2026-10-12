@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt
@@ -28,6 +29,13 @@ LAS_FILTER = "Archivos LAS (*.las *.LAS);;Todos los archivos (*)"
 PROJECT_FILTER = f"Proyecto InnoPetrol (*{PROJECT_SUFFIX})"
 TEMPLATE_FILTER = f"Plantilla InnoPetrol (*{TEMPLATE_SUFFIX} *.json)"
 MAX_RECENT = 8
+# Tecla modificadora tal como la ve el usuario: Qt usa ⌘ en Mac para lo que en el código es "Ctrl".
+MOD = "⌘" if sys.platform == "darwin" else "Ctrl"
+
+
+def key_text(seq) -> str:
+    """Atajo con la notación del sistema: ⌘O en Mac, Ctrl+O en Windows/Linux."""
+    return QKeySequence(seq).toString(QKeySequence.NativeText)
 
 
 class MainWindow(QMainWindow):
@@ -65,7 +73,8 @@ class MainWindow(QMainWindow):
 
         self.scale_label = QLabel()
         self.statusBar().addPermanentWidget(self.scale_label)
-        self.statusBar().showMessage("Listo. Abra un archivo LAS (Ctrl+O) o arrástrelo a la ventana.")
+        self.statusBar().showMessage(f"Listo. Abra un archivo LAS ({key_text(QKeySequence.Open)}) "
+                                     "o arrástrelo a la ventana.")
         self._build_actions()
         self._build_menus()
         self._build_toolbar()
@@ -120,6 +129,12 @@ class MainWindow(QMainWindow):
         self.a_pickett = A("Gráfico de Pickett…", lambda: self.crossplot("pickett"))
         self.a_corr = A("Correlación de pozos…", self.correlation, "Ctrl+R")
         self.a_fit = A("Ajustar a la ventana", lambda: self._view_call_canvas("fit"), "Ctrl+0")
+        self.a_zoom_in = A("Acercar", lambda: self._zoom_step(1), QKeySequence.ZoomIn,
+                           "Acercar a la siguiente escala estándar")
+        self.a_zoom_out = A("Alejar", lambda: self._zoom_step(-1), QKeySequence.ZoomOut,
+                            "Alejar a la siguiente escala estándar")
+        # Ctrl+= además de Ctrl++: en muchos teclados "+" necesita Shift.
+        self.a_zoom_in.setShortcuts([QKeySequence(QKeySequence.ZoomIn), QKeySequence("Ctrl+=")])
         self.a_tile = A("Mosaico", self.mdi.tileSubWindows, needs_doc=False)
         self.a_cascade = A("Cascada", self.mdi.cascadeSubWindows, needs_doc=False)
         self.a_tabs = A("Ver como pestañas", self._toggle_tabs, needs_doc=False)
@@ -158,6 +173,8 @@ class MainWindow(QMainWindow):
             m.addSeparator() if a is None else m.addAction(a)
 
         m = mb.addMenu("&Ver")
+        m.addAction(self.a_zoom_in)
+        m.addAction(self.a_zoom_out)
         m.addAction(self.a_fit)
         self.scale_menu = m.addMenu("Escala vertical")
         for n in SCALE_PRESETS:
@@ -178,6 +195,7 @@ class MainWindow(QMainWindow):
         tb.addAction(self.a_open)
         tb.addAction(self.a_save_proj)
         tb.addSeparator()
+        tb.addAction(self.a_zoom_out)
         tb.addWidget(QLabel(" Escala "))
         self.scale_combo = QComboBox()
         self.scale_combo.setEditable(True)
@@ -188,6 +206,8 @@ class MainWindow(QMainWindow):
         self.scale_combo.activated.connect(lambda _: self._scale_from_combo())
         self.scale_combo.lineEdit().returnPressed.connect(self._scale_from_combo)
         tb.addWidget(self.scale_combo)
+        tb.addAction(self.a_zoom_in)
+        tb.addAction(self.a_fit)
         tb.addSeparator()
         for a in (self.a_add_track, self.a_tops, self.a_petro, self.a_calc, self.a_zones):
             tb.addAction(a)
@@ -204,6 +224,18 @@ class MainWindow(QMainWindow):
         self.a_table.setIconText("Datos")
         self.a_export.setIconText("Exportar")
         self.a_open.setIconText("Abrir LAS")
+        self.a_zoom_out.setIconText("−")
+        self.a_zoom_in.setIconText("+")
+        self.a_fit.setIconText("Ajustar")
+        for a in (self.a_zoom_out, self.a_zoom_in, self.a_fit):
+            a.setToolTip(f"{a.text()} ({key_text(a.shortcut())})")
+        for a in (self.a_zoom_out, self.a_zoom_in):
+            button = tb.widgetForAction(a)
+            font = button.font()
+            font.setPointSizeF(font.pointSizeF() * 1.4)
+            font.setBold(True)
+            button.setFont(font)
+            button.setMinimumWidth(30)
         self.a_save_proj.setIconText("Guardar")
 
     def _update_actions(self):
@@ -286,6 +318,11 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Escriba la escala como 1:500 o 500.", 4000)
             return
         v.canvas.set_scale(n)
+
+    def _zoom_step(self, direction: int):
+        v = self.active_view()
+        if v:
+            v.canvas.zoom_step(direction)
 
     def _set_scale(self, n):
         v = self.active_view()
@@ -655,17 +692,25 @@ class MainWindow(QMainWindow):
     # ================================================================== ayuda
 
     def show_help(self):
-        QMessageBox.information(self, "Navegación y atajos", """<b>Registro</b><br>
-Rueda: desplazar en profundidad · Ctrl + rueda: zoom en el cursor · Shift + rueda: desplazar horizontal<br>
-RePág/AvPág, Inicio/Fin, flechas, + / − · Ctrl+0: ajustar a la ventana<br>
+        k = key_text
+        QMessageBox.information(self, "Navegación y atajos", f"""<b>Zoom</b><br>
+Botones <b>−</b> y <b>+</b> junto a «Escala»: alejar / acercar a la siguiente escala estándar
+({k(QKeySequence.ZoomOut)} / {k(QKeySequence.ZoomIn)}) · «Ajustar»: pozo completo ({k("Ctrl+0")})<br>
+{MOD} + rueda o pellizco en el trackpad: zoom continuo en el cursor ·
+Escala exacta: escribir 1:300 en el campo «Escala»<br><br>
+<b>Registro</b><br>
+Rueda: desplazar en profundidad · Shift + rueda: desplazar horizontal ·
+RePág/AvPág, Inicio/Fin, flechas<br>
 Arrastrar el borde de un track: cambiar su ancho · Doble clic en un track: editarlo<br>
 Clic derecho: menú del track (agregar, mover, eliminar, agregar tope, escala, exportar)<br><br>
 <b>Árbol de pozos</b><br>
 Doble clic en una curva: estadísticas e histograma · Doble clic en un tope: ir a esa profundidad<br><br>
 <b>Atajos</b><br>
-Ctrl+O abrir LAS · Ctrl+S guardar proyecto · Ctrl+E exportar · Ctrl+T / Ctrl+L guardar / cargar plantilla<br>
-Ctrl+Shift+T agregar track · Ctrl+Shift+F topes · Ctrl+P petrofísica · Ctrl+K calculadora<br>
-Ctrl+X crossplot · Ctrl+R correlación · Ctrl+D tabla de datos""")
+{k(QKeySequence.Open)} abrir LAS · {k(QKeySequence.Save)} guardar proyecto · {k("Ctrl+E")} exportar ·
+{k("Ctrl+T")} / {k("Ctrl+L")} guardar / cargar plantilla<br>
+{k("Ctrl+Shift+T")} agregar track · {k("Ctrl+Shift+F")} topes · {k("Ctrl+P")} petrofísica ·
+{k("Ctrl+K")} calculadora<br>
+{k("Ctrl+X")} crossplot · {k("Ctrl+R")} correlación · {k("Ctrl+D")} tabla de datos""")
 
     def show_about(self):
         QMessageBox.about(self, "Acerca de InnoPetrol", f"""<h3>InnoPetrol — Visor de Pozos {__version__}</h3>
