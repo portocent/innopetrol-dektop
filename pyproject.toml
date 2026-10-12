@@ -45,6 +45,9 @@ packages = ["innopetrol"]
 testpaths = ["tests"]
 qt_api = "pyside6"
 timeout = 120
+# Real-data tests download third-party files: run them explicitly with  pytest -m realdata
+markers = ["realdata: runs the program over real well files downloaded to a local cache"]
+addopts = "-m 'not realdata'"
 
 [tool.ruff]
 line-length = 120

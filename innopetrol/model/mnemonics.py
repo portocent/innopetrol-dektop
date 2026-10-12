@@ -54,7 +54,25 @@ FAMILIES: dict[str, Family] = {
         Family(
             "gamma_ray",
             N_("Gamma ray"),
-            ("GR", "SGR", "CGR", "GRC", "HGR", "ECGR", "GRD", "GAM", "GR_EDTC", "HSGR", "GRGC", "GRS", "GRN"),
+            (
+                "GR",
+                "SGR",
+                "CGR",
+                "GRC",
+                "HGR",
+                "ECGR",
+                "GRD",
+                "GAM",
+                "GR_EDTC",
+                "HSGR",
+                "GRGC",
+                "GRS",
+                "GRN",
+                "GKUT",
+                "GRKT",
+                "GRTH",
+                "GRTO",
+            ),
             0,
             150,
             color="#1e8449",
@@ -63,7 +81,7 @@ FAMILIES: dict[str, Family] = {
         Family(
             "caliper",
             N_("Caliper"),
-            ("CALI", "CAL", "HCAL", "CALS", "C1", "CAL1", "CALX", "CALY", "LCAL"),
+            ("CALI", "CAL", "HCAL", "CALS", "C1", "CAL1", "CALX", "CALY", "LCAL", "MCAL"),
             6,
             16,
             color="#5d6d7e",
@@ -82,7 +100,7 @@ FAMILIES: dict[str, Family] = {
         Family(
             "medium_res",
             N_("Medium resistivity"),
-            ("LLS", "ILM", "AT30", "RLA3", "HMRS", "RM", "M2R3", "RMED", "AHT30", "HLLS", "RLLS"),
+            ("LLS", "ILM", "AT30", "RLA3", "HMRS", "RM", "M2R3", "RMED", "AHT30", "HLLS", "RLLS", "RILM"),
             0.2,
             2000,
             log=True,
@@ -92,7 +110,22 @@ FAMILIES: dict[str, Family] = {
         Family(
             "shallow_res",
             N_("Shallow resistivity"),
-            ("MSFL", "MSFLC", "SFLU", "SFL", "RXO", "AT10", "LL8", "RXOZ", "MLL", "RXO8", "AHT10", "RSHAL"),
+            (
+                "MSFL",
+                "MSFLC",
+                "SFLU",
+                "SFL",
+                "RXO",
+                "AT10",
+                "LL8",
+                "RXOZ",
+                "MLL",
+                "RXO8",
+                "AHT10",
+                "RSHAL",
+                "RLL3",
+                "RILS",
+            ),
             0.2,
             2000,
             log=True,
@@ -102,7 +135,7 @@ FAMILIES: dict[str, Family] = {
         Family(
             "density",
             N_("Density"),
-            ("RHOB", "RHOZ", "DEN", "ZDEN", "RHO8", "DENS", "HROM", "RHOM"),
+            ("RHOB", "RHOZ", "DEN", "ZDEN", "RHO8", "DENS", "HROM", "RHOM", "RHOC", "ERHO"),
             1.95,
             2.95,
             color="#c0392b",
@@ -119,18 +152,40 @@ FAMILIES: dict[str, Family] = {
         Family(
             "neutron",
             N_("Neutron"),
-            ("NPHI", "TNPH", "NPOR", "CNC", "NPHS", "CN", "NEU", "APLC", "NPLS", "CNCF", "HNPO", "NPHZ"),
+            (
+                "NPHI",
+                "TNPH",
+                "NPOR",
+                "CNC",
+                "NPHS",
+                "CN",
+                "NEU",
+                "APLC",
+                "NPLS",
+                "CNCF",
+                "HNPO",
+                "NPHZ",
+                "NEUT",
+                "CNPOR",
+                "ENPH",
+                "PHIN",
+            ),
             0.45,
             -0.15,
             color="#2471a3",
             style="dash",
         ),
-        Family("pef", N_("Photoelectric factor"), ("PEF", "PE", "PEFZ", "PEF8", "HPEF"), 0, 10, color="#7d3c98"),
+        Family("pef", N_("Photoelectric factor"), ("PEF", "PE", "PEFZ", "PEF8", "HPEF", "EPE"), 0, 10, color="#7d3c98"),
         Family(
             "sonic", N_("Sonic"), ("DT", "DTC", "DTCO", "DTLN", "AC", "DT4P", "DTL", "DTCM"), 140, 40, color="#7d3c98"
         ),
         Family(
-            "porosity_density", N_("Density porosity"), ("DPHI", "PHID", "DPHZ", "DPOR"), 0.45, -0.15, color="#c0392b"
+            "porosity_density",
+            N_("Density porosity"),
+            ("DPHI", "PHID", "DPHZ", "DPOR", "EDPH"),
+            0.45,
+            -0.15,
+            color="#c0392b",
         ),
         Family("effective_porosity", N_("Effective porosity"), ("PHIE", "PHI", "PHIT", "POR"), 0.5, 0, color="#1f618d"),
         Family("vsh", N_("Shale volume"), ("VSH", "VCL", "VSHALE", "VCLAY", "VSHGR"), 0, 1, color="#7e5109"),
@@ -263,9 +318,12 @@ def default_scale(well, mnemonic: str, family: str | None = None) -> tuple[float
     if fam and fam.left is not None and fam.right is not None:
         left, right = fam.left, fam.right
         curve_unit = data_unit(curve, fam.unit) if curve is not None else fam.unit
-        if fam.unit and curve_unit and curve_unit != fam.unit:
-            left, right = (float(v) for v in units.convert([left, right], fam.unit, curve_unit))
-        return _clean(left), _clean(right), fam.log
+        try:
+            if fam.unit and curve_unit and curve_unit != fam.unit:
+                left, right = (float(v) for v in units.convert([left, right], fam.unit, curve_unit))
+            return _clean(left), _clean(right), fam.log
+        except ValueError:
+            pass  # another kind of unit (old neutron logs in API counts): the family scale does not apply
     if curve is None or not curve.has_data:
         return 0.0, 1.0, False
     lo, hi = curve.min, curve.max

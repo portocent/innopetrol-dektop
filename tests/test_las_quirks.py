@@ -122,3 +122,40 @@ def test_deep_well_depth_9999_25_is_kept(tmp_path):
         well=well_header(unit="FT", null="-999.25"),
     )
     assert w.depth.tolist() == [9999.0, 9999.25, 9999.5] and w.notes == []
+
+
+def test_windows_nan_text_is_read_as_missing(tmp_path):
+    """Windows programs print invalid numbers as -1.#IND or -1.#IO (found in the Kansas archive)."""
+    w = write_las(tmp_path / "w.las", ["1000.0 50 2.4", "1000.5 -1.#IO 2.5", "1001.0 -1.#IND00 2.6", "1001.5 60 2.3"])
+    gr = w.curves["GR"].values
+    assert np.isnan(gr[1]) and np.isnan(gr[2]) and gr[3] == 60
+
+
+def test_neutron_in_api_counts(tmp_path):
+    """Old neutron logs are in API counts: no porosity scale is forced and petrophysics ignores them."""
+    from innopetrol.model import petro
+    from innopetrol.model.mnemonics import build_triple_combo
+
+    curves = [" DEPT.M : depth", " GR.GAPI : gamma", " RHOB.G/C3 : density", " NPHI.API : neutron counts"]
+    path = tmp_path / "n.las"
+    text = [
+        "~VERSION INFORMATION",
+        " VERS. 2.0 :",
+        " WRAP. NO :",
+        "~WELL INFORMATION",
+        *well_header(),
+        "~CURVE INFORMATION",
+        *curves,
+        "~A",
+        "1000.0 50 2.4 400",
+        "1000.5 60 2.5 350",
+        "1001.0 70 2.45 300",
+    ]
+    path.write_text("\n".join(text) + "\n", encoding="utf-8")
+    w = Well.from_las(path)
+    layout = build_triple_combo(w)
+    nphi = next(c for t in layout.tracks for c in t.curves if c.mnemonic == "NPHI")
+    assert (nphi.left, nphi.right) != (0.45, -0.15)  # scale from the data, not the porosity default
+    p = petro.PetroParams(gr_curve="GR", rhob_curve="RHOB", nphi_curve="NPHI", phi_method="nd_average")
+    names = [f.mnemonic for f in petro.build_formulas(w, p)]
+    assert "PHIT" in names and "PHID" not in names  # density porosity only

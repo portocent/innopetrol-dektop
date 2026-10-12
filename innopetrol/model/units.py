@@ -44,6 +44,14 @@ _UNITS = [
     Unit("kPa", "kPa", "pressure", 1000.0),
     Unit("MPa", "MPa", "pressure", 1e6),
     Unit("bar", "bar", "pressure", 1e5),
+    # Units recognized (for labels and checks) that have nothing to convert to.
+    Unit("gAPI", "gAPI", "gamma_ray", 1.0),
+    Unit("ohm.m", "ohm·m", "resistivity", 1.0),
+    Unit("mV", "mV", "sp", 1.0),
+    Unit("b/e", "b/e", "pef", 1.0),
+    Unit("mD", "mD", "permeability", 1.0),
+    Unit("mmho/m", "mmho/m", "conductivity", 1.0),
+    Unit("cps", "cps", "count_rate", 1.0),
 ]
 UNITS = {u.key: u for u in _UNITS}
 
@@ -55,11 +63,13 @@ _ALIASES = {
     "in": ("IN", "INCH", "INCHES", '"'),
     "mm": ("MM",),
     "cm": ("CM",),
-    "g/cm3": ("G/C3", "G/CC", "GM/CC", "G/CM3", "GR/CC", "GRAM/CC", "GC3", "GM/C3", "G/CM³", "GR/CM3"),
+    # "DEN" as a unit is used by some writers for bulk density in g/cm³ (seen in the Kansas archive).
+    "g/cm3": ("G/C3", "G/CC", "GM/CC", "G/CM3", "GR/CC", "GRAM/CC", "GC3", "GM/C3", "G/CM³", "GR/CM3", "DEN", "GCC"),
     "kg/m3": ("K/M3", "KG/M3", "KGM3", "KG/M³"),
     "us/ft": ("US/F", "US/FT", "USEC/FT", "USEC/F", "US/FOOT", "µS/FT", "µS/F", "USF"),
     "us/m": ("US/M", "USEC/M", "µS/M", "USM"),
-    "v/v": ("V/V", "DEC", "FRAC", "FRACTION", "M3/M3", "CFCF", "DECIMAL", "CU.FT/CU.FT"),
+    # "POR" is also used for porosity in percent: mnemonics.data_unit checks the values and reads it as %.
+    "v/v": ("V/V", "DEC", "FRAC", "FRACTION", "M3/M3", "CFCF", "DECIMAL", "CU.FT/CU.FT", "DECP", "PHI-DEC", "POR"),
     "%": ("%", "PU", "P.U.", "PERCENT", "PCT", "PERC"),
     "degC": ("DEGC", "DEG C", "°C", "DEGCEL", "CELSIUS"),
     "degF": ("DEGF", "DEG F", "°F", "DEGFAH", "FAHRENHEIT"),
@@ -67,6 +77,13 @@ _ALIASES = {
     "kPa": ("KPA",),
     "MPa": ("MPA",),
     "bar": ("BAR", "BARS"),
+    "gAPI": ("GAPI", "API", "GAMMAAPI", "API-GR", "APIGR", "API_UNITS"),
+    "ohm.m": ("OHMM", "OHM.M", "OHM-M", "OHM/M", "OHMS", "OHM", "OHM-METER", "OHMS-M", "Ω.M", "OHM*M"),
+    "mV": ("MV", "MILLIVOLT", "MILLIVOLTS"),
+    "b/e": ("B/E", "BARN/E", "BARNS/E", "B/ELEC", "BN/E", "BARN", "BARNS", "PE"),
+    "mD": ("MD", "MDARCY", "MILLIDARCY"),
+    "mmho/m": ("MMHO", "MMHO-M", "MMHO/M", "MMHOS/M", "MS/M"),
+    "cps": ("CPS", "COUNTS/SECOND", "CNT/S", "C/S"),
 }
 _ALIAS_INDEX = {alias.replace(" ", ""): key for key, aliases in _ALIASES.items() for alias in aliases}
 

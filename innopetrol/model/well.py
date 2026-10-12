@@ -19,6 +19,10 @@ FEET_UNITS = {"F", "FT", "FEET", "FOOT", "FT.", "FEET."}
 # Missing-value markers found in real files even when the header declares a different NULL.
 # Only negative markers: 999 or 9999 can be valid depths or readings.
 NULL_MARKERS = (-999.0, -999.25, -999.99, -9999.0, -9999.25)
+# Missing values lasio should read as NaN: the NULL declared in the header and text markers such as
+# "-1.#IND" or "-1.#IO" (how Windows programs print an invalid number). Numeric markers like 9999.25
+# are not in the list on purpose (they can be real depths in deep wells); NULL_MARKERS handles them.
+LASIO_NULL_POLICY = ["NULL", "(null)", "-", "NA", "INF", "IO", "IND"]
 # Values that LAS 1.2 writers put in the WELL value field when the real name is in the description.
 _GENERIC_WELL_NAMES = {"", "WELL", "WELL NAME", "WELLNAME", "NAME"}
 
@@ -92,9 +96,9 @@ class Well:
         path = Path(path)
         # lasio logs a warning when it switches engines for WRAP=YES files; that is not an error.
         logging.getLogger("lasio").setLevel(logging.ERROR)
-        # "strict": only the NULL declared in the header. lasio's broader policies also treat 9999.25
-        # as null, which would delete real depths in deep wells; other markers are handled below.
-        las = lasio.read(str(path), encoding=detect_encoding(path), ignore_header_errors=True, null_policy="strict")
+        las = lasio.read(
+            str(path), encoding=detect_encoding(path), ignore_header_errors=True, null_policy=LASIO_NULL_POLICY
+        )
         if not las.curves:
             raise ValueError(_("the file contains no curves"))
         depth = np.asarray(las.index, dtype=float)

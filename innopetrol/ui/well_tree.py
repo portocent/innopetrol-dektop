@@ -191,7 +191,7 @@ class WellTree(QTreeWidget):
                 options = [
                     k for k, u in units.UNITS.items() if u.dimension == units.UNITS[doc.curve_units[name]].dimension
                 ]
-            if options:
+            if len(options) > 1:  # something to convert to
                 sub = menu.addMenu(_("Display unit"))
                 current = doc.curve_units.get(name)
                 original = sub.addAction(_("As in the file ({unit})").format(unit=doc.well.curves[name].unit))

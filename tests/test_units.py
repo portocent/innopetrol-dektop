@@ -21,7 +21,8 @@ from innopetrol.model import units
         ("IN", "in"),
         ("F", None),
         ("C", None),
-        ("GAPI", None),
+        ("GAPI", "gAPI"),
+        ("FOO", None),
         ("", None),
         (None, None),
     ],
@@ -74,4 +75,8 @@ def test_system_units():
     assert units.system_unit("G/C3", "oilfield") is None  # already the preferred unit
     assert units.system_unit("PU", "oilfield") == "v/v"
     assert units.system_unit("GAPI", "metric") is None and units.system_unit("G/C3", "file") is None
-    assert units.convertible("US/F") == ["us/ft", "us/m"] and units.convertible("GAPI") == []
+    assert (
+        units.convertible("US/F") == ["us/ft", "us/m"]
+        and units.convertible("GAPI") == ["gAPI"]
+        and units.convertible("FOO") == []
+    )

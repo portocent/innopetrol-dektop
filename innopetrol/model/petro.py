@@ -217,9 +217,21 @@ def param_expr(well, p: PetroParams, key: str) -> str:
     return expr
 
 
-def _available(well, mnemonic: str | None) -> str | None:
-    """The mnemonic if the well has that curve, otherwise None."""
-    return mnemonic if mnemonic and mnemonic in well.curves else None
+def _available(well, mnemonic: str | None, expected: str | None = None) -> str | None:
+    """The mnemonic if the well has that curve (in a unit convertible to `expected`), otherwise None.
+
+    A curve whose unit is of another kind cannot be used: old neutron logs, for example, are in API
+    counts, not porosity, and must not be taken as a fraction.
+    """
+    from innopetrol.model.mnemonics import data_unit
+
+    if not mnemonic or mnemonic not in well.curves:
+        return None
+    if expected is not None:
+        unit = data_unit(well.curves[mnemonic], expected)
+        if unit is not None and units.UNITS[unit].dimension != units.UNITS[expected].dimension:
+            return None
+    return mnemonic
 
 
 class _Builder:
@@ -255,7 +267,7 @@ class _Builder:
 
     def porosity(self) -> None:
         p, well = self.p, self.well
-        density, neutron = _available(well, p.rhob_curve), _available(well, p.nphi_curve)
+        density, neutron = _available(well, p.rhob_curve, "g/cm3"), _available(well, p.nphi_curve, "v/v")
         if density is None:
             return
         rhob = input_ref(well, density, "g/cm3")
@@ -285,7 +297,7 @@ class _Builder:
                 f"{_num(p.surface_temp)} + {_num(p.gradient)} * TVD / 100",
             )
             temperature = "TFORM"
-        elif p.temp_mode == "curve" and (curve := _available(well, p.temp_curve)) is not None:
+        elif p.temp_mode == "curve" and (curve := _available(well, p.temp_curve, p.temp_unit)) is not None:
             temperature = input_ref(well, curve, p.temp_unit)
         if not temperature:
             return self.param("rw")
