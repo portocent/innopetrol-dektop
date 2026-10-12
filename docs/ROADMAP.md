@@ -117,6 +117,33 @@ Items marked **[checked]** were verified in the code.
   histograms. Code signing and notarization need paid certificates: see `docs/DISTRIBUTION.md`.
   Still open: projects with hundreds of wells (lazy loading, filters), copying data into the project.
 
+## Next
+
+Pending items, grouped. Each one keeps the rules in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+**Interaction and display**
+- Core track (points with error bars), interval track (perforations, DST, losses, runs) and comments.
+- Select an interval with the mouse for statistics, zone creation or export.
+- Cursor synchronized across wells and a thickness ruler; horizontal zoom.
+
+**Data and scale**
+- Projects with hundreds of wells: filterable well list, lazy loading, curve search.
+- Option to copy the data into the project (today projects reference file paths).
+- LAS 3.0, several runs per file, CSV/ASCII import with column and unit mapping.
+- Array curves from DLIS (images, NMR T2).
+
+**Petrophysics and quality control**
+- Waxman-Smits, Rw from SP, permeability (Timur, Coates), cutoff sensitivity.
+- Depth shifting/matching, splicing runs, despike and smoothing filters.
+- Quality flags (bad hole from CALI − BS, high DRHO) masking density/neutron.
+- GR normalization across wells (the multi-well histogram already shows when it is needed).
+
+**Trust and distribution**
+- Real public data (Volve, Kansas Geological Survey) in the tests, benchmarked against a reference
+  spreadsheet or commercial software.
+- Equations with their references shown inside the application.
+- Code signing and notarization (needs certificates; see [DISTRIBUTION.md](DISTRIBUTION.md)).
+
 ## Recommended order
 
 | Phase | Content | Why first |

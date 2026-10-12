@@ -382,6 +382,63 @@ seleccionados" abre la correlación con ese orden.
 
 Es la herramienta para ver si hace falta normalizar el GR antes de calcular Vsh en varios pozos.
 
+### 3.7 Mantenibilidad: que cualquiera pueda arreglarlo mañana
+
+El objetivo fue que quien llegue al proyecto lo entienda y lo pueda cambiar sin miedo, sin perder
+rendimiento y sin agregar capas innecesarias. Primero se midió y después se corrigió.
+
+**Herramientas que vigilan solas (en la CI y antes de cada commit):**
+- **ruff** (lint y formato) con reglas de complejidad: una función de más de 12 caminos o 60
+  instrucciones hace fallar la revisión. Así el código no vuelve a crecer en bloques difíciles de leer.
+- **mypy** (tipos): encontró 25 problemas, como valores que podían ser `None` sin control. Ahora no
+  queda ninguno.
+- **pre-commit:** corre ruff y compila las traducciones antes de cada commit.
+- **Cobertura de pruebas:** se muestra en cada ejecución. Pasó del 81% al 85%, porque los tres
+  diálogos que no tenían pruebas (topes, survey y exportación) ahora las tienen.
+- **Formato:** todo el código se formateó una sola vez, en un commit aparte y marcado en
+  `.git-blame-ignore-revs`, para que `git blame` siga mostrando quién escribió cada línea.
+
+**Duplicación eliminada.** Había cinco helpers repetidos en varios archivos (campos numéricos, selector
+de zonas, lectura de números con coma, búsqueda de columnas en CSV, dos paletas viridis). Ahora hay una
+sola copia de cada uno: `ui/widgets.py`, `model/text_tables.py` y `render/colormaps.py`. Al unificar la
+lectura de CSV apareció un error escondido: los surveys alineados con espacios de ancho variable no se
+leían. Quedó corregido, con una prueba.
+
+**Funciones largas divididas en pasos con nombre:**
+- **Evaluador de la calculadora:** antes era una función con 20 ramas. Ahora tiene una tabla que asocia
+  cada tipo de elemento de la expresión con su función.
+- **Petrofísica:** `build_formulas` se convirtió en pasos ordenados (Vsh → porosidad → saturación →
+  volúmenes → banderas). Agregar un modelo nuevo significa tocar un solo paso.
+- **Dibujo del encabezado:** una función por tipo de track.
+- **Diálogo de petrofísica (715 líneas):** se separó en tres archivos, y cada pestaña se construye en
+  su propio método. La decisión de qué tracks de resultados crear y dónde ubicarlos pasó al modelo
+  (`model/petro_layout.py`), con pruebas que no necesitan ventanas.
+- **Ventana principal:** el estado de la sesión (proyecto, cambios sin guardar, recientes,
+  autoguardado) pasó a `ui/session.py`, que se prueba sin widgets. Los textos de ayuda y "Acerca de"
+  pasaron a su propio archivo.
+
+**Cómo se comprobó que nada cambió:**
+- **Imágenes:** antes de empezar se guardaron imágenes de referencia del registro (con escalas de
+  respaldo, relleno por color, volúmenes y encabezado), las fórmulas petrofísicas y los valores de Sw.
+  Después de cada refactor se generaron de nuevo y se compararon: tienen que ser idénticas píxel a
+  píxel, y lo fueron.
+- **Rendimiento:** el tiempo de redibujo se midió intercalando la versión vieja y la nueva, y quedó
+  dentro del ruido (menos de 1%).
+
+**Documentación para quien llega**, en inglés para poder compartirla:
+- **`docs/ARCHITECTURE.md`:** las capas, el flujo de datos y las cinco reglas que nunca hay que romper
+  (por ejemplo, que los datos se guardan siempre en MD y en las unidades del archivo). También indica
+  qué código es crítico para el rendimiento.
+- **`CONTRIBUTING.md`:** cómo preparar el entorno, las convenciones, y recetas paso a paso para agregar
+  una familia de curvas, un tipo de track, un modelo petrofísico, un idioma o una acción.
+
+**Lo que se dejó como está, a propósito:**
+- **Tamaño de la ventana principal:** tiene unas 1150 líneas. Su parte más grande es la declaración de
+  acciones, menús y textos, que se lee de corrido; repartirla en más clases agregaría saltos entre
+  archivos sin hacerla más clara.
+- **Números en las fórmulas:** las constantes petrofísicas (0,083 de Larionov, 21,5 de Arps) se dejaron
+  escritas en las fórmulas. Ponerles nombre las haría más difíciles de comparar con la bibliografía.
+
 ## 4. Arquitectura
 
 ```

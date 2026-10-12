@@ -113,11 +113,18 @@ zoom, el cambio de tamaño de la ventana o el arrastre del borde de un track mue
 liviana y dibuja con calidad completa al terminar el gesto. Mover el cursor y desplazarse reutilizan
 lo ya dibujado, así que se mantienen fluidos también en equipos modestos.
 
-## Pruebas
+## Desarrollo
 
 ```bash
-uv run pytest
+uv sync && uv run pre-commit install
+uv run pytest            # pruebas (sin abrir ventanas)
+uv run ruff check && uv run ruff format --check && uv run mypy
 ```
+
+[CONTRIBUTING.md](CONTRIBUTING.md) (en inglés) explica las convenciones y trae recetas paso a paso: nueva
+familia de curvas, tipo de track, modelo petrofísico, idioma, acción. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+describe las capas, el flujo de datos, las invariantes (datos siempre en MD y en las unidades del archivo,
+deshacer por instantáneas…) y qué código es crítico para el rendimiento.
 
 Las pruebas de interfaz corren sin abrir ventanas (modo *offscreen*). GitHub Actions las ejecuta en
 Windows, Linux y macOS en cada cambio, y además construye y prueba el ejecutable de cada sistema
@@ -127,13 +134,15 @@ Windows, Linux y macOS en cada cambio, y además construye y prueba el ejecutabl
 
 ```
 innopetrol/
-  model/     datos y cálculos puros (sin Qt): pozo, escalas, layout, plantillas, mnemónicos,
-             calculadora, petrofísica, topes, proyecto
+  model/     datos y cálculos puros (sin Qt): pozo, LAS/DLIS, unidades, survey, vista de profundidad,
+             layout, plantillas, mnemónicos, calculadora, petrofísica, topes, ubicación, proyecto
   render/    dibujo con QPainter, compartido por la pantalla y la exportación PDF/PNG
-  ui/        ventanas y diálogos PySide6
+  ui/        ventanas, diálogos y widgets PySide6; sesión (proyecto, autoguardado)
   locale/    traducciones de la interfaz (gettext: .po editable + .mo compilado)
 tests/       pruebas automáticas (pytest + pytest-qt)
-packaging/   construcción del ejecutable con PyInstaller
+packaging/   ejecutables e instaladores (PyInstaller, Inno Setup, DMG, tar.gz)
+tools/       mantenimiento de los catálogos de traducción
+docs/        arquitectura, roadmap, distribución
 samples/     archivos LAS de ejemplo
 ```
 

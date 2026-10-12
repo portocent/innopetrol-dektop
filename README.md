@@ -111,11 +111,18 @@ resizing the window or dragging a track border show a lightweight preview and th
 happens when the gesture ends. Moving the cursor and scrolling reuse what has already been drawn, so they
 stay smooth on modest hardware too.
 
-## Tests
+## Development
 
 ```bash
-uv run pytest
+uv sync && uv run pre-commit install
+uv run pytest            # tests (offscreen)
+uv run ruff check && uv run ruff format --check && uv run mypy
 ```
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the conventions and step-by-step recipes (new curve family,
+track kind, petrophysical model, language, action). [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+explains the layers, the data flow, the invariants (data always in MD and file units, undo by
+snapshots…) and which code is performance-critical.
 
 Interface tests run without opening windows (*offscreen* mode). GitHub Actions runs them on
 Windows, Linux and macOS on every change, and also builds and tests each system's executable
@@ -140,13 +147,15 @@ if a translation drops a `{placeholder}`, or if the compiled `.mo` is out of dat
 
 ```
 innopetrol/
-  model/     pure data and calculations (no Qt): well, scales, layout, templates, mnemonics,
-             calculator, petrophysics, tops, project
+  model/     pure data and calculations (no Qt): well, LAS/DLIS, units, survey, depth view, layout,
+             templates, mnemonics, calculator, petrophysics, tops, location, project
   render/    QPainter drawing, shared by the screen and the PDF/PNG export
-  ui/        PySide6 windows and dialogs
+  ui/        PySide6 windows, dialogs and widgets; session (project, autosave)
   locale/    interface translations (gettext: editable .po + compiled .mo)
 tests/       automated tests (pytest + pytest-qt)
-packaging/   executable build with PyInstaller
+packaging/   executables and installers (PyInstaller, Inno Setup, DMG, tar.gz)
+tools/       translation catalog maintenance
+docs/        architecture, roadmap, distribution
 samples/     example LAS files
 ```
 
