@@ -162,26 +162,40 @@ class StatsDialog(QDialog):
 
 
 class CurveTableModel(QAbstractTableModel):
+    """Depth columns (MD, plus TVD/TVDSS when a survey or elevation exists) followed by every curve."""
+
     def __init__(self, well, parent=None):
         super().__init__(parent)
         self.well = well
-        self.names = list(well.curves)
+        self._build()
+
+    def _build(self):
+        w = self.well
+        self.depths = [(f"{w.depth_mnemonic}\n{w.depth_unit}", w.depth)]
+        if w.survey is not None or w.elevation is not None:
+            tvd = w.tvd()
+            if w.survey is not None:
+                self.depths.append((f"TVD\n{w.depth_unit}", tvd))
+            if w.elevation is not None:
+                self.depths.append((f"TVDSS\n{w.depth_unit}", tvd - w.elevation))
+        self.names = list(w.curves)
 
     def refresh(self):
         self.beginResetModel()
-        self.names = list(self.well.curves)
+        self._build()
         self.endResetModel()
 
     def rowCount(self, parent=QModelIndex()):
         return 0 if parent.isValid() else self.well.depth.size
 
     def columnCount(self, parent=QModelIndex()):
-        return 0 if parent.isValid() else len(self.names) + 1
+        return 0 if parent.isValid() else len(self.names) + len(self.depths)
 
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.DisplayRole:
             r, c = index.row(), index.column()
-            v = self.well.depth[r] if c == 0 else self.well.curves[self.names[c - 1]].values[r]
+            nd = len(self.depths)
+            v = self.depths[c][1][r] if c < nd else self.well.curves[self.names[c - nd]].values[r]
             return "" if not np.isfinite(v) else f"{v:.4f}".rstrip("0").rstrip(".")
         if role == Qt.TextAlignmentRole:
             return int(Qt.AlignRight | Qt.AlignVCenter)
@@ -191,9 +205,9 @@ class CurveTableModel(QAbstractTableModel):
         if role != Qt.DisplayRole:
             return None
         if orientation == Qt.Horizontal:
-            if section == 0:
-                return f"{self.well.depth_mnemonic}\n{self.well.depth_unit}"
-            c = self.well.curves[self.names[section - 1]]
+            if section < len(self.depths):
+                return self.depths[section][0]
+            c = self.well.curves[self.names[section - len(self.depths)]]
             return f"{c.mnemonic}\n{c.unit}"
         return str(section + 1)
 
@@ -221,6 +235,7 @@ class DataTableWindow(QDialog):
         lay.addWidget(self.view)
         doc.cursorMoved.connect(self._follow)
         doc.curvesChanged.connect(self.model.refresh)
+        doc.layoutChanged.connect(self.model.refresh)  # survey or elevation changed
         self.view.selectionModel().currentRowChanged.connect(self._row_changed)
         self._internal = False
 

@@ -91,12 +91,20 @@ Items marked **[checked]** were verified in the code.
 - **Unit validation in the calculator** (porosity in % vs fraction) and warnings for physically impossible
   values (φ > 0.6, Sw > 1 before clipping).
 
+## Status
+
+- **Phase 1 (done):** correlation unit bug fixed, LGPL-3.0-or-later license, LAS loader hardened with a
+  corpus of real-world quirks. Real public datasets (Volve, KGS) still need to be added for benchmarking.
+- **Phase 2 (done):** DLIS reading (one well per depth frame; array channels not yet supported),
+  deviation surveys with minimum curvature, KB/DF/GL elevation, drawing in MD/TVD/TVDSS and m/ft,
+  correlation in TVDSS.
+
 ## Recommended order
 
 | Phase | Content | Why first |
 |---|---|---|
-| 1 | Correlation unit bug (done) · LICENSE · real-data corpus (Volve/KGS) in the tests | Fixes a real error, makes sharing legal and gives the base to validate everything else |
-| 2 | DLIS · surveys + TVD/TVDSS + datum · display depth unit | Without these, real project data cannot be opened or correlated correctly |
+| 1 | Correlation unit bug · LICENSE · corpus of real-world LAS quirks in the tests **(done)** | Fixes a real error, makes sharing legal and gives the base to validate everything else |
+| 2 | DLIS · surveys + TVD/TVDSS + datum · display depth unit **(done)** | Without these, real project data cannot be opened or correlated correctly |
 | 3 | Undo/redo · zone parameters · Simandoux/Indonesia · temperature-corrected Rw · graphical parameter picking | Interpretation becomes trustworthy and correctable |
 | 4 | Wrap-around · color-map fill · lithology track · log header · click-to-pick tops | Professional presentation quality |
 | 5 | Signing/notarization and installers · editable aliases · autosave · base map · multi-well | Deployment and scale |

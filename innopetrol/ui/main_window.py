@@ -124,6 +124,24 @@ class MainWindow(QMainWindow):
         self.a_edit_track = A(lambda: self._view_call("edit_track"), "Ctrl+Shift+E")
         self.a_del_track = A(lambda: self._view_call("remove_track"))
         self.a_tops = A(lambda: self.edit_tops(self.active_doc()), "Ctrl+Shift+F")
+        self.a_survey = A(self.edit_survey)
+        # Depth reference (MD/TVD/TVDSS) and display unit of the active well.
+        self.reference_group = QActionGroup(self)
+        self.reference_actions = {}
+        for code in ("md", "tvd", "tvdss"):
+            a = QAction(self, checkable=True)
+            a.setProperty("needs_doc", True)
+            a.triggered.connect(lambda _checked=False, code=code: self.set_depth_reference(code))
+            self.reference_group.addAction(a)
+            self.reference_actions[code] = a
+        self.unit_group = QActionGroup(self)
+        self.unit_actions = {}
+        for code in ("file", "m", "ft"):
+            a = QAction(self, checkable=True)
+            a.setProperty("needs_doc", True)
+            a.triggered.connect(lambda _checked=False, code=code: self.set_display_unit(None if code == "file" else code))
+            self.unit_group.addAction(a)
+            self.unit_actions[code] = a
         self.a_petro = A(self.petrophysics, "Ctrl+P")
         self.a_calc = A(self.calculator, "Ctrl+K")
         self.a_zones = A(self.zone_summary)
@@ -176,7 +194,8 @@ class MainWindow(QMainWindow):
             self.m_template.addSeparator() if a is None else self.m_template.addAction(a)
 
         self.m_well = mb.addMenu("")
-        for a in (self.a_add_track, self.a_edit_track, self.a_del_track, None, self.a_tops, None, self.a_petro,
+        for a in (self.a_add_track, self.a_edit_track, self.a_del_track, None, self.a_tops, self.a_survey, None,
+                  self.a_petro,
                   self.a_calc, self.a_zones, None, self.a_stats, self.a_table):
             self.m_well.addSeparator() if a is None else self.m_well.addAction(a)
 
@@ -191,6 +210,12 @@ class MainWindow(QMainWindow):
         self.scale_menu = self.m_view.addMenu("")
         for n in SCALE_PRESETS:
             self.scale_menu.addAction(f"1:{n}").triggered.connect(lambda _checked=False, n=n: self._set_scale(n))
+        self.reference_menu = self.m_view.addMenu("")
+        for a in self.reference_actions.values():
+            self.reference_menu.addAction(a)
+        self.unit_menu = self.m_view.addMenu("")
+        for a in self.unit_actions.values():
+            self.unit_menu.addAction(a)
         self.m_view.addSeparator()
         for a in (self.a_tile, self.a_cascade, self.a_tabs):
             self.m_view.addAction(a)
@@ -225,6 +250,15 @@ class MainWindow(QMainWindow):
         tb.addWidget(self.scale_combo)
         tb.addAction(self.a_zoom_in)
         tb.addAction(self.a_fit)
+        tb.addSeparator()
+        self.reference_title = QLabel()
+        tb.addWidget(self.reference_title)
+        self.reference_combo = QComboBox()
+        for code in ("md", "tvd", "tvdss"):
+            self.reference_combo.addItem(code.upper(), code)
+        self.reference_combo.activated.connect(
+            lambda index: self.set_depth_reference(self.reference_combo.itemData(index)))
+        tb.addWidget(self.reference_combo)
         tb.addSeparator()
         for a in (self.a_add_track, self.a_tops, self.a_petro, self.a_calc, self.a_zones):
             tb.addAction(a)
@@ -261,6 +295,13 @@ class MainWindow(QMainWindow):
             self.a_edit_track: (_("Edit selected track…"), None, None),
             self.a_del_track: (_("Remove selected track"), None, None),
             self.a_tops: (_("Formation tops…"), _("Tops"), None),
+            self.a_survey: (_("Deviation survey and elevation…"), None, None),
+            self.reference_actions["md"]: (_("Measured depth (MD)"), None, None),
+            self.reference_actions["tvd"]: (_("True vertical depth (TVD)"), None, None),
+            self.reference_actions["tvdss"]: (_("True vertical depth subsea (TVDSS)"), None, None),
+            self.unit_actions["file"]: (_("As in the file"), None, None),
+            self.unit_actions["m"]: (_("Meters"), None, None),
+            self.unit_actions["ft"]: (_("Feet"), None, None),
             self.a_petro: (_("Basic petrophysics (Vsh, φ, Sw)…"), _("Petrophysics"), None),
             self.a_calc: (_("Curve calculator…"), _("Calculator"), None),
             self.a_zones: (_("Zone summary (net pay)…"), _("Zones"), None),
@@ -294,6 +335,9 @@ class MainWindow(QMainWindow):
         self.m_analysis.setTitle(_("&Analysis"))
         self.m_view.setTitle(_("&View"))
         self.scale_menu.setTitle(_("Vertical scale"))
+        self.reference_menu.setTitle(_("Depth reference"))
+        self.unit_menu.setTitle(_("Depth unit"))
+        self.reference_title.setText(" " + _("Depth") + " ")
         self.language_menu.setTitle("Language / Idioma")  # bilingual on purpose: findable in any language
         self.m_help.setTitle(_("&Help"))
         self.language_actions[i18n.current_language()].setChecked(True)
@@ -333,6 +377,7 @@ class MainWindow(QMainWindow):
                 a.setEnabled(has)
         self.a_corr.setEnabled(len(self.docs) >= 2)
         self.scale_combo.setEnabled(has)
+        self._refresh_depth_controls()
 
     # ================================================================== active well
 
@@ -363,6 +408,56 @@ class MainWindow(QMainWindow):
         if isinstance(v, WellView):
             self.tree.select_doc(v.doc)
             self._show_scale(v)
+            self._refresh_depth_controls()
+
+    def _refresh_depth_controls(self):
+        """Checks/enables the depth reference and unit controls for the active well."""
+        v = self.active_view()
+        doc = v.doc if v else None
+        has_elevation = doc is not None and doc.well.elevation is not None
+        self.reference_actions["tvdss"].setEnabled(has_elevation)
+        reference = doc.view.reference if doc else "md"
+        self.reference_actions[reference].setChecked(True)
+        self.unit_actions[doc.display_unit or "file" if doc else "file"].setChecked(True)
+        self.reference_combo.setEnabled(doc is not None)
+        self.reference_combo.setCurrentIndex(self.reference_combo.findData(reference))
+        model = self.reference_combo.model()
+        model.item(self.reference_combo.findData("tvdss")).setEnabled(has_elevation)
+
+    def set_depth_reference(self, reference: str):
+        doc = self.active_doc()
+        if not doc:
+            return
+        if reference == "tvdss" and doc.well.elevation is None:
+            self.statusBar().showMessage(_("TVDSS needs the elevation of the depth reference "
+                                           "(Well ▸ Deviation survey and elevation…)."), 6000)
+            self._refresh_depth_controls()
+            return
+        if reference != "md" and doc.well.survey is None:
+            self.statusBar().showMessage(_("{well} has no deviation survey: it is drawn as a vertical well "
+                                           "(TVD = MD).").format(well=doc.title), 6000)
+        self._keeping_view(doc, lambda: doc.set_depth_display(reference=reference))
+        self._refresh_depth_controls()
+
+    def set_display_unit(self, unit: str | None):
+        doc = self.active_doc()
+        if doc:
+            self._keeping_view(doc, lambda: doc.set_depth_display(unit=unit))
+            self._refresh_depth_controls()
+
+    def _keeping_view(self, doc, change):
+        """Applies a depth display change keeping the same well depth centered and the same 1:N scale."""
+        v = self.views.get(doc)
+        if v is None:
+            change()
+            return
+        c = v.canvas
+        fit, ratio = c.fit_mode, c.current_scale()
+        md_center = float(doc.view.to_md(c.depth_at(c.header_h + c.body_h / 2)))
+        change()
+        if not fit:
+            c.set_scale(ratio)
+            c.center_on(float(doc.view.to_display(md_center)))
 
     def activate_doc(self, doc):
         v = self.views.get(doc)
@@ -690,6 +785,15 @@ class MainWindow(QMainWindow):
             doc.set_layout(build_triple_combo(doc.well))
 
     # ================================================================== tools
+
+    def edit_survey(self):
+        doc = self.active_doc()
+        if doc:
+            from innopetrol.ui.survey_dialog import SurveyDialog
+
+            if SurveyDialog(doc, self).exec():
+                self.tree.refresh(doc)
+                self._refresh_depth_controls()
 
     def edit_tops(self, doc):
         if doc:

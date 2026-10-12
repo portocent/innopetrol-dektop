@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 22:07-0500\n"
+"POT-Creation-Date: 2026-10-11 23:23-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -99,6 +99,9 @@ msgstr "Aplicar a todos"
 msgid "Approximate lines (limestone neutron); marks every 10 p.u."
 msgstr "Líneas aproximadas (neutrón en caliza); marcas cada 10 p.u."
 
+msgid "As in the file"
+msgstr "Como en el archivo"
+
 msgid "Automatic (from the first curve)"
 msgstr "Automática (según la primera curva)"
 
@@ -169,6 +172,14 @@ msgstr "Color"
 
 msgid "Color:"
 msgstr "Color:"
+
+#, python-brace-format
+msgid ""
+"Columns: MD, inclination and azimuth in degrees, with MD in the same unit as the log ({unit}). "
+"Headers in English or Spanish are recognized."
+msgstr ""
+"Columnas: MD, inclinación y azimut en grados, con MD en la misma unidad que el registro ({unit})."
+" Se reconocen encabezados en inglés o español."
 
 msgid "Company"
 msgstr "Compañía"
@@ -337,11 +348,17 @@ msgctxt "track title"
 msgid "Depth"
 msgstr "Prof."
 
+msgid "Depth reference"
+msgstr "Referencia de profundidad"
+
 msgid "Depth reference:"
 msgstr "Referencia de profundidad:"
 
 msgid "Depth track"
 msgstr "Track de profundidad"
+
+msgid "Depth unit"
+msgstr "Unidad de profundidad"
 
 #, python-brace-format
 msgid ""
@@ -353,6 +370,13 @@ msgstr ""
 
 msgid "Description:"
 msgstr "Descripción:"
+
+msgid "Deviation survey and elevation…"
+msgstr "Survey de desviación y elevación…"
+
+#, python-brace-format
+msgid "Deviation survey: {count} stations, max. inclination {inc}°"
+msgstr "Survey de desviación: {count} estaciones, inclinación máx. {inc}°"
 
 msgid "Dolomite"
 msgstr "Dolomita"
@@ -383,6 +407,9 @@ msgstr "Editar track…"
 
 msgid "Effective porosity"
 msgstr "Porosidad efectiva"
+
+msgid "Elevation:"
+msgstr "Elevación:"
 
 #, python-brace-format
 msgid "Error: {error}"
@@ -424,6 +451,9 @@ msgstr "Exportar…"
 
 msgid "Expression:"
 msgstr "Expresión:"
+
+msgid "Feet"
+msgstr "Pies"
 
 msgid "Field"
 msgstr "Campo"
@@ -500,6 +530,12 @@ msgstr "Imagen guardada."
 msgid "Import CSV…"
 msgstr "Importar CSV…"
 
+msgid "Import survey"
+msgstr "Importar survey"
+
+msgid "Import survey (CSV/TXT)…"
+msgstr "Importar survey (CSV/TXT)…"
+
 msgid "Import tops"
 msgstr "Importar topes"
 
@@ -528,6 +564,9 @@ msgstr "Intervalo:"
 #, python-brace-format
 msgid "Interval: {start} – {stop} {unit} (step {step})"
 msgstr "Intervalo: {start} – {stop} {unit} (paso {step})"
+
+msgid "Known elevation of the depth reference (KB/DF) above sea level"
+msgstr "Elevación conocida de la referencia de profundidad (KB/DF) sobre el nivel del mar"
 
 #, python-brace-format
 msgid "LAS exported: {path}"
@@ -608,6 +647,9 @@ msgstr "Profundidad medida (MD)"
 msgid "Medium resistivity"
 msgstr "Resistividad media"
 
+msgid "Meters"
+msgstr "Metros"
+
 msgid "Method:"
 msgstr "Método:"
 
@@ -687,6 +729,9 @@ msgstr "Sin aplanar (profundidad)"
 
 msgid "No grid"
 msgstr "Sin grilla"
+
+msgid "No survey: the well is treated as vertical (TVD = MD)."
+msgstr "Sin survey: el pozo se trata como vertical (TVD = MD)."
 
 msgid "No tops defined: the whole well is summarized (Well ▸ Formation tops…)."
 msgstr "Sin topes definidos: se resume el pozo completo (Pozo ▸ Topes de formación…)."
@@ -797,11 +842,18 @@ msgstr "Listo. Abra un archivo LAS ({shortcut}) o arrástrelo a la ventana."
 msgid "Rebuild Triple Combo in the active well"
 msgstr "Reconstruir Triple Combo en el pozo activo"
 
+#, python-brace-format
+msgid "Reference elevation: {value} {unit}"
+msgstr "Elevación de referencia: {value} {unit}"
+
 msgid "Remove"
 msgstr "Quitar"
 
 msgid "Remove selected track"
 msgstr "Eliminar track seleccionado"
+
+msgid "Remove survey"
+msgstr "Quitar survey"
 
 #, python-brace-format
 msgid "Remove the track “{title}” and its settings?"
@@ -956,6 +1008,18 @@ msgstr "Desv. estándar: {value}"
 
 msgid "Style"
 msgstr "Estilo"
+
+#, python-brace-format
+msgid "Survey and elevation — {well}"
+msgstr "Survey y elevación — {well}"
+
+msgid "Surveys (*.csv *.txt *.dev *.svy);;All files (*)"
+msgstr "Surveys (*.csv *.txt *.dev *.svy);;Todos los archivos (*)"
+
+msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
+msgstr ""
+"TVDSS necesita la elevación de la referencia de profundidad (Pozo ▸ Survey de desviación y "
+"elevación…)."
 
 #, python-brace-format
 msgid "Template saved: {path}"
@@ -1346,6 +1410,10 @@ msgstr[0] "se eliminó {count} muestra con profundidad repetida (se conserva la 
 msgstr[1] "se eliminaron {count} muestras con profundidad repetida (se conserva la primera)"
 
 #, python-brace-format
+msgid "{count} stations · maximum inclination {inc}° · TVD at total depth {tvd} {unit} (MD {md} {unit})"
+msgstr "{count} estaciones · inclinación máxima {inc}° · TVD en el fondo {tvd} {unit} (MD {md} {unit})"
+
+#, python-brace-format
 msgid "{count} value equal to a common null marker (-999, -9999…) was treated as missing"
 msgid_plural "{count} values equal to common null markers (-999, -9999…) were treated as missing"
 msgstr[0] "{count} valor igual a un marcador de nulo común (-999, -9999…) se trató como faltante"
@@ -1412,6 +1480,10 @@ msgstr "{track} agregar track · {tops} topes · {petro} petrofísica · {calc} 
 #, python-brace-format
 msgid "{well} - log 1:{scale}"
 msgstr "{well} - registro 1:{scale}"
+
+#, python-brace-format
+msgid "{well} has no deviation survey: it is drawn as a vertical well (TVD = MD)."
+msgstr "{well} no tiene survey de desviación: se dibuja como pozo vertical (TVD = MD)."
 
 #, python-brace-format
 msgid "{well} · scale 1:{scale} · visible {top} – {bottom} {unit}"

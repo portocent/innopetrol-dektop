@@ -96,6 +96,12 @@ class WellTree(QTreeWidget):
         item.setToolTip(0, str(w.path) if w.path else doc.title)
 
         info = QTreeWidgetItem(item, [_("Well information")])
+        if w.elevation is not None:
+            QTreeWidgetItem(info, [_("Reference elevation: {value} {unit}").format(
+                value=f"{w.elevation:g}", unit=w.depth_unit)])
+        if w.survey is not None:
+            QTreeWidgetItem(info, [_("Deviation survey: {count} stations, max. inclination {inc}°").format(
+                count=w.survey.md.size, inc=f"{w.survey.max_inclination:.1f}")])
         if w.notes:
             fixes = QTreeWidgetItem(info, [_("Corrections on load ({count})").format(count=len(w.notes))])
             fixes.setForeground(0, QBrush(QColor("#b9770e")))

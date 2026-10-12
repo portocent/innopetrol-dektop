@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 22:07-0500\n"
+"POT-Creation-Date: 2026-10-11 23:23-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -96,6 +96,9 @@ msgstr ""
 msgid "Approximate lines (limestone neutron); marks every 10 p.u."
 msgstr ""
 
+msgid "As in the file"
+msgstr ""
+
 msgid "Automatic (from the first curve)"
 msgstr ""
 
@@ -165,6 +168,12 @@ msgid "Color"
 msgstr ""
 
 msgid "Color:"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Columns: MD, inclination and azimuth in degrees, with MD in the same unit as the log ({unit}). "
+"Headers in English or Spanish are recognized."
 msgstr ""
 
 msgid "Company"
@@ -332,10 +341,16 @@ msgctxt "track title"
 msgid "Depth"
 msgstr ""
 
+msgid "Depth reference"
+msgstr ""
+
 msgid "Depth reference:"
 msgstr ""
 
 msgid "Depth track"
+msgstr ""
+
+msgid "Depth unit"
 msgstr ""
 
 #, python-brace-format
@@ -345,6 +360,13 @@ msgid ""
 msgstr ""
 
 msgid "Description:"
+msgstr ""
+
+msgid "Deviation survey and elevation…"
+msgstr ""
+
+#, python-brace-format
+msgid "Deviation survey: {count} stations, max. inclination {inc}°"
 msgstr ""
 
 msgid "Dolomite"
@@ -375,6 +397,9 @@ msgid "Edit track…"
 msgstr ""
 
 msgid "Effective porosity"
+msgstr ""
+
+msgid "Elevation:"
 msgstr ""
 
 #, python-brace-format
@@ -416,6 +441,9 @@ msgid "Export…"
 msgstr ""
 
 msgid "Expression:"
+msgstr ""
+
+msgid "Feet"
 msgstr ""
 
 msgid "Field"
@@ -493,6 +521,12 @@ msgstr ""
 msgid "Import CSV…"
 msgstr ""
 
+msgid "Import survey"
+msgstr ""
+
+msgid "Import survey (CSV/TXT)…"
+msgstr ""
+
 msgid "Import tops"
 msgstr ""
 
@@ -520,6 +554,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Interval: {start} – {stop} {unit} (step {step})"
+msgstr ""
+
+msgid "Known elevation of the depth reference (KB/DF) above sea level"
 msgstr ""
 
 #, python-brace-format
@@ -601,6 +638,9 @@ msgstr ""
 msgid "Medium resistivity"
 msgstr ""
 
+msgid "Meters"
+msgstr ""
+
 msgid "Method:"
 msgstr ""
 
@@ -679,6 +719,9 @@ msgid "No flattening (depth)"
 msgstr ""
 
 msgid "No grid"
+msgstr ""
+
+msgid "No survey: the well is treated as vertical (TVD = MD)."
 msgstr ""
 
 msgid "No tops defined: the whole well is summarized (Well ▸ Formation tops…)."
@@ -788,10 +831,17 @@ msgstr ""
 msgid "Rebuild Triple Combo in the active well"
 msgstr ""
 
+#, python-brace-format
+msgid "Reference elevation: {value} {unit}"
+msgstr ""
+
 msgid "Remove"
 msgstr ""
 
 msgid "Remove selected track"
+msgstr ""
+
+msgid "Remove survey"
 msgstr ""
 
 #, python-brace-format
@@ -946,6 +996,16 @@ msgid "Std. deviation: {value}"
 msgstr ""
 
 msgid "Style"
+msgstr ""
+
+#, python-brace-format
+msgid "Survey and elevation — {well}"
+msgstr ""
+
+msgid "Surveys (*.csv *.txt *.dev *.svy);;All files (*)"
+msgstr ""
+
+msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
 msgstr ""
 
 #, python-brace-format
@@ -1330,6 +1390,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #, python-brace-format
+msgid "{count} stations · maximum inclination {inc}° · TVD at total depth {tvd} {unit} (MD {md} {unit})"
+msgstr ""
+
+#, python-brace-format
 msgid "{count} value equal to a common null marker (-999, -9999…) was treated as missing"
 msgid_plural "{count} values equal to common null markers (-999, -9999…) were treated as missing"
 msgstr[0] ""
@@ -1393,6 +1457,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "{well} - log 1:{scale}"
+msgstr ""
+
+#, python-brace-format
+msgid "{well} has no deviation survey: it is drawn as a vertical well (TVD = MD)."
 msgstr ""
 
 #, python-brace-format
