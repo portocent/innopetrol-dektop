@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 13:21-0500\n"
+"POT-Creation-Date: 2026-10-12 14:00-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -58,6 +58,9 @@ msgstr "(calculada)"
 
 msgid "(constant)"
 msgstr "(constante)"
+
+msgid "(file not found)"
+msgstr "(archivo no encontrado)"
 
 msgid "(no color)"
 msgstr "(sin color)"
@@ -252,6 +255,9 @@ msgstr "Caliper − trépano mayor que:"
 msgid "Caliper:"
 msgstr "Caliper:"
 
+msgid "Cancel"
+msgstr "Cancelar"
+
 msgid "Cascade"
 msgstr "Cascada"
 
@@ -298,13 +304,6 @@ msgid "Click wells in order to draw a correlation section · double-click opens 
 msgstr ""
 "Haga clic en los pozos en orden para trazar una sección de correlación · doble clic abre un pozo · arrastre para "
 "mover, rueda para zoom"
-
-#, python-brace-format
-msgid "Close the well “{name}”?"
-msgstr "¿Está seguro de cerrar el pozo «{name}»?"
-
-msgid "Close well"
-msgstr "Cerrar pozo"
 
 msgid "Color"
 msgstr "Color"
@@ -964,6 +963,10 @@ msgid "Interval:"
 msgstr "Intervalo:"
 
 #, python-brace-format
+msgid "Interval: {start} – {stop} {unit}"
+msgstr "Intervalo: {start} – {stop} {unit}"
+
+#, python-brace-format
 msgid "Interval: {start} – {stop} {unit} (step {step})"
 msgstr "Intervalo: {start} – {stop} {unit} (paso {step})"
 
@@ -1047,12 +1050,32 @@ msgstr "Cargar plantilla"
 msgid "Load template and apply to the active well…"
 msgstr "Cargar plantilla y aplicar al pozo activo…"
 
+msgid "Load wells"
+msgstr "Cargar pozos"
+
+msgid "Load without opening a window"
+msgstr "Cargar sin abrir ventana"
+
 #, python-brace-format
 msgid "Loaded: {wells}"
 msgstr "Cargado: {wells}"
 
+msgid "Loading wells"
+msgstr "Cargando pozos"
+
+msgid "Loading wells…"
+msgstr "Cargando pozos…"
+
+#, python-brace-format
+msgid "Loading {well}…"
+msgstr "Cargando {well}…"
+
 msgid "Location"
 msgstr "Ubicación"
+
+#, python-brace-format
+msgid "Location: {x:g}, {y:g}"
+msgstr "Ubicación: {x:g}, {y:g}"
 
 msgid "Log"
 msgstr "Log"
@@ -1312,6 +1335,9 @@ msgstr "Petrolero (ft, g/cm³, µs/ft, °F, psi, in)"
 msgid "One sample = {step} {unit}"
 msgstr "Una muestra = {step} {unit}"
 
+msgid "Open"
+msgstr "Abrir"
+
 msgid "Open LAS"
 msgstr "Abrir LAS"
 
@@ -1516,6 +1542,12 @@ msgstr "Referencia:"
 msgid "Remove"
 msgstr "Quitar"
 
+msgid "Remove from project"
+msgstr "Quitar del proyecto"
+
+msgid "Remove from project…"
+msgstr "Quitar del proyecto…"
+
 msgid "Remove selected track"
 msgstr "Eliminar track seleccionado"
 
@@ -1543,6 +1575,12 @@ msgstr "Eliminar track"
 #, python-brace-format
 msgid "Remove track “{title}”"
 msgstr "Quitar track «{title}»"
+
+#, python-brace-format
+msgid "Remove “{well}” from the project? Its tops, intervals and computed curves are lost; the well file is not touched."
+msgstr ""
+"¿Quitar «{well}» del proyecto? Se pierden sus topes, intervalos y curvas calculadas; el archivo del pozo no se "
+"modifica."
 
 msgid "Rename track"
 msgstr "Renombrar track"
@@ -1775,11 +1813,11 @@ msgstr "Suavizado (promedio móvil)"
 msgid "Solid"
 msgstr "Continua"
 
-msgid "Some items could not be loaded:"
-msgstr "Algunos elementos no se pudieron cargar:"
-
 msgid "Some problems in the files were corrected:"
 msgstr "Se corrigieron algunos problemas en los archivos:"
+
+msgid "Some wells could not be loaded:"
+msgstr "No se pudieron cargar algunos pozos:"
 
 msgid "Sonic"
 msgstr "Sónico"
@@ -1883,6 +1921,10 @@ msgstr "Ensayo (DST)"
 
 msgid "The Pickett plot needs the resistivity and density curves."
 msgstr "El gráfico de Pickett necesita las curvas de resistividad y densidad."
+
+#, python-brace-format
+msgid "The changes to “{well}” are kept, but they can no longer be undone. Continue?"
+msgstr "Los cambios en «{well}» se conservan, pero ya no se podrán deshacer. ¿Continuar?"
 
 msgid "The curves were computed. Points to review:"
 msgstr "Las curvas se calcularon. Puntos a revisar:"
@@ -2007,6 +2049,9 @@ msgstr "Unidad:"
 #, python-brace-format
 msgid "Unknown families were ignored: {families}"
 msgstr "Se ignoraron familias desconocidas: {families}"
+
+msgid "Unload from memory"
+msgstr "Descargar de memoria"
 
 msgid "Unsaved changes"
 msgstr "Cambios sin guardar"
@@ -2621,6 +2666,14 @@ msgid "{open} open LAS · {save} save project · {export} export · {tsave} / {t
 msgstr "{open} abrir LAS · {save} guardar proyecto · {export} exportar · {tsave} / {tload} guardar / cargar plantilla"
 
 #, python-brace-format
+msgid ""
+"{path}\n"
+"Not loaded: double-click to open it."
+msgstr ""
+"{path}\n"
+"No cargado: doble clic para abrirlo."
+
+#, python-brace-format
 msgid "{row}: a fixed value needs at least one curve in the track to be placed"
 msgstr "{row}: un valor fijo necesita al menos una curva en el track para ubicarse"
 
@@ -2687,6 +2740,10 @@ msgstr "{well}: no se pudo recalcular {curve}: {error}"
 #, python-brace-format
 msgid "{well}: curves not found: {curves}"
 msgstr "{well}: curvas no encontradas: {curves}"
+
+#, python-brace-format
+msgid "{well}: file not found: {path}"
+msgstr "{well}: archivo no encontrado: {path}"
 
 #, python-brace-format
 msgid "{well}: invalid location"

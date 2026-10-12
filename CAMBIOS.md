@@ -573,6 +573,31 @@ comentarios:
 - *En el proyecto:* se guardan las profundidades y los valores originales, no la grilla, así se pueden
   volver a ubicar al reabrirlo aunque cambie el archivo LAS.
 
+### 3.11 Escala: proyectos con cientos de pozos
+
+**Tres estados de un pozo.** Antes, pozo del proyecto = ventana abierta: cada pozo creaba siempre una
+ventana y cerrarla lo sacaba del proyecto. Con 300 pozos eran 300 ventanas y todo leído en memoria.
+Ahora un pozo puede estar:
+- *en el proyecto:* sólo su **resumen** (nombre, rango de profundidad, curvas con unidad, ubicación,
+  UWI, campo y compañía), sin leer sus datos. Se ve en el árbol en cursiva y gris;
+- *cargado:* sus datos están en memoria y las herramientas lo pueden usar;
+- *con ventana:* además se ve su registro.
+
+Cerrar la ventana ya no pierde nada (por eso ya no pregunta). Desde el árbol: doble clic abre un pozo
+no cargado, "Descargar de memoria" libera sus datos sin perder sus cambios y "Quitar del proyecto…"
+lo saca (pide confirmación; el archivo no se toca).
+
+**El proyecto guarda el resumen** de cada pozo (formato versión 2). Al abrirlo se cargan sólo los pozos
+que tenían la ventana abierta al guardar; el resto queda listado. Un pozo no cargado se reescribe
+**idéntico** al guardar, así nunca se pierde nada de un pozo que no se tocó. Los proyectos de la
+versión 1 abren como antes (todos los pozos), y su resumen se lee del encabezado del archivo.
+
+*Medido con 500 LAS reales de Kansas:* abrir el proyecto tarda **0,02 s**. Leer sólo el encabezado de
+un LAS (`lasio` con `ignore_data=True`) cuesta 12 ms contra 45 ms de la lectura completa.
+
+*Decisión de diseño:* las herramientas multipozo (correlación, crossplot, histograma, normalización)
+trabajan con los pozos **cargados**. Para usar otros, se cargan antes desde el árbol.
+
 ## 4. Arquitectura
 
 ```

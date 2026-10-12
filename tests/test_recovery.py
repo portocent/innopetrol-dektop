@@ -18,8 +18,6 @@ def make_window(qtbot, tmp_path):
 
 def finish(w):
     w.dirty = False
-    for v in w.views.values():
-        v.confirm_close = False
 
 
 def test_autosave_and_restore_after_a_crash(qtbot, tmp_path, samples):

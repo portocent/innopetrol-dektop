@@ -4,6 +4,7 @@ from PySide6.QtCore import QSettings
 
 from innopetrol.model.mnemonics import build_triple_combo
 from innopetrol.ui.document import WellDocument
+from innopetrol.ui.project_wells import entry_of
 from innopetrol.ui.session import MAX_RECENT, Session
 
 
@@ -22,7 +23,7 @@ def test_recent_files_most_recent_first_without_duplicates(tmp_path):
 
 def test_save_autosave_and_restore(tmp_path, testdata_well, qapp):
     s = make(tmp_path)
-    docs = [WellDocument(testdata_well, build_triple_combo(testdata_well))]
+    docs = [entry_of(WellDocument(testdata_well, build_triple_combo(testdata_well)))]
     assert not s.autosave(docs)  # nothing changed
     s.dirty = True
     assert s.autosave(docs) and s.recovery.pending()

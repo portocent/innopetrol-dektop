@@ -115,7 +115,7 @@ class Well:
         depth_unit = "ft" if unit_raw in FEET_UNITS else "m"
 
         header = [HeaderItem(i.mnemonic, i.unit or "", str(i.value), i.descr or "") for i in las.well]
-        name = _well_name(las)
+        name = las_well_name(las)
         curves: dict[str, Curve] = {}
         for c in las.curves[1:]:
             mnem = unique_mnemonic(c.mnemonic.strip() or "CURVE", curves)
@@ -319,7 +319,7 @@ def clean_samples(depth: np.ndarray, curves: dict[str, Curve]) -> tuple[np.ndarr
     return depth[order].copy(), notes
 
 
-def _well_name(las) -> str:
+def las_well_name(las) -> str:
     if "WELL" not in las.well:
         return ""
     item = las.well["WELL"]

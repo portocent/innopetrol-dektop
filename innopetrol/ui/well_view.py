@@ -38,7 +38,6 @@ class WellView(QWidget):
         lay.addWidget(self.hbar, 1, 0)
         self.setWindowTitle(doc.title)
         self._syncing = False
-        self.confirm_close = True
 
         self.canvas.viewChanged.connect(self._sync_bars)
         self.vbar.valueChanged.connect(self._vbar_moved)
@@ -286,10 +285,6 @@ class WellView(QWidget):
         self.statusMessage.emit(_("Exported {count} samples to {path}").format(count=int(mask.sum()), path=path))
 
     def closeEvent(self, e):
-        if self.confirm_close:
-            r = QMessageBox.question(self, _("Close well"), _("Close the well “{name}”?").format(name=self.doc.title))
-            if r != QMessageBox.StandardButton.Yes:  # formerly: retval == 1024 (a magic number)
-                e.ignore()
-                return
+        # Closing the window loses nothing: the well stays loaded and in the project.
         e.accept()
         self.closed.emit(self.doc)

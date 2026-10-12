@@ -65,7 +65,6 @@ def _smoke_test(app, window, expected: int) -> int:
             window.settings.setValue("language", previous_language)
         for view in window.views.values():
             ok = ok and not view.canvas.grab().isNull()
-            view.confirm_close = False
         window.dirty = False
         result["code"] = 0 if ok else 1
         print("smoke-test", "OK" if ok else "FAILED", f"({len(window.docs)}/{expected} wells)", flush=True)

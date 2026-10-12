@@ -108,8 +108,6 @@ def test_live_language_switch(qtbot, tmp_path, samples):
     assert w2.m_file.title() == "&Archivo"
     w2.set_language("en")
     assert w2.m_file.title() == "&File"
-    for v in list(w.views.values()) + list(w2.views.values()):
-        v.confirm_close = False
     w.dirty = w2.dirty = False
 
 

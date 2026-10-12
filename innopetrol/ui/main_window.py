@@ -26,11 +26,12 @@ from PySide6.QtWidgets import (
 from innopetrol import i18n
 from innopetrol.i18n import _
 from innopetrol.model import units
+from innopetrol.model.catalog import WellRef
 from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.mnemonics import build_triple_combo
 from innopetrol.model.project import SUFFIX as PROJECT_SUFFIX
-from innopetrol.model.project import ProjectError, load_project
+from innopetrol.model.project import ProjectError, WellEntry, is_open, read_project
 from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.model.template import SUFFIX as TEMPLATE_SUFFIX
 from innopetrol.model.template import (
@@ -44,6 +45,7 @@ from innopetrol.model.template import (
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.help_dialogs import show_about, show_help
+from innopetrol.ui.project_wells import ProjectWells
 from innopetrol.ui.session import Session
 from innopetrol.ui.well_tree import WellTree
 from innopetrol.ui.well_view import WellView
@@ -70,7 +72,8 @@ class MainWindow(QMainWindow):
         if app is not None:
             i18n.install_qt_translator(app, i18n.current_language())
 
-        self.docs: list[WellDocument] = []
+        # The project's wells (loaded or not); a loaded well may or may not have a window (views).
+        self.wells = ProjectWells(self._make_doc, self)
         self.views: dict[WellDocument, WellView] = {}
         self.session = Session(self.settings)
         self._windows: list[QWidget] = []  # open non-modal windows (keeps them from being garbage collected)
@@ -100,6 +103,14 @@ class MainWindow(QMainWindow):
         self.tree.topsRequested.connect(self.edit_tops)
         self.tree.intervalsRequested.connect(self.edit_intervals)
         self.tree.topActivated.connect(self._go_to_top)
+        self.tree.refOpenRequested.connect(lambda ref: self.open_refs([ref]))
+        self.tree.refLoadRequested.connect(lambda ref: self.load_refs([ref]))
+        self.tree.refUnloadRequested.connect(self.unload_well)
+        self.tree.refRemoveRequested.connect(self.remove_well)
+        self.wells.added.connect(lambda ref: self.tree.add_ref(ref, self.wells.docs.get(ref)))
+        self.wells.removed.connect(self.tree.remove_ref)
+        self.wells.loaded.connect(lambda ref: self.tree.set_doc(ref, self.wells.docs[ref]))
+        self.wells.unloaded.connect(lambda ref: self.tree.set_doc(ref, None))
         self.tree.set_template_name(self.settings.value("default_template_name"))
 
         self.scale_label = QLabel()
@@ -476,7 +487,7 @@ class MainWindow(QMainWindow):
         self.retranslate()
 
     def _update_actions(self):
-        has = bool(self.docs)
+        has = bool(self.views)  # these actions work on the active well window
         for a in self.findChildren(QAction):
             if a.property("needs_doc"):
                 a.setEnabled(has)
@@ -491,7 +502,7 @@ class MainWindow(QMainWindow):
         widget = sub.widget() if sub is not None else None
         if isinstance(widget, WellView):
             return widget
-        return self.views.get(self.docs[0]) if len(self.docs) == 1 else None
+        return next(iter(self.views.values())) if len(self.views) == 1 else None
 
     def active_doc(self) -> WellDocument | None:
         v = self.active_view()
@@ -583,7 +594,8 @@ class MainWindow(QMainWindow):
             c.center_on(float(doc.view.to_display(md_center)))
 
     def activate_doc(self, doc):
-        v = self.views.get(doc)
+        """Bring the well's window to the front, opening it if it was closed."""
+        v = self.views.get(doc) or self.show_doc(doc)
         if v:
             self.mdi.setActiveSubWindow(v.parentWidget())
             if v.parentWidget().isMinimized():
@@ -667,6 +679,12 @@ class MainWindow(QMainWindow):
                     continue
                 self._add_recent(path)
                 for well in wells:
+                    known = self.wells.find(WellRef.from_well(well))
+                    if known is not None:  # already in the project: show it instead of adding it twice
+                        errors += self.wells.ensure_loaded([known], self)
+                        if known in self.wells.docs:
+                            self.activate_doc(self.wells.docs[known])
+                        continue
                     layout, missing = self._default_layout(well)
                     doc = self.add_doc(well, layout)
                     opened.append(doc.title)
@@ -704,6 +722,11 @@ class MainWindow(QMainWindow):
                 pass
         return build_triple_combo(well), []
 
+    @property
+    def docs(self) -> list[WellDocument]:
+        """The loaded wells, in project order (with or without a window)."""
+        return self.wells.loaded_docs()
+
     def add_doc(
         self,
         well,
@@ -713,23 +736,42 @@ class MainWindow(QMainWindow):
         display_unit: str | None = None,
         curve_units: dict | None = None,
     ) -> WellDocument:
-        doc = WellDocument(well, layout, petro, self)
-        doc.depth_reference, doc.display_unit = depth_reference, display_unit
-        if curve_units is None:
-            doc.adopt_layout(layout)  # template scales -> this well's units
+        """Add a well that was just read to the project, and open its window."""
+        entry = WellEntry(well, layout, petro, depth_reference, display_unit, curve_units or {})
+        doc = self._make_doc(entry, new=curve_units is None)
+        self.wells.add(WellRef.from_well(well), doc)
+        self.show_doc(doc)
+        self.dirty = True
+        return doc
+
+    def _make_doc(self, entry: WellEntry, new: bool = False) -> WellDocument:
+        """The document of a loaded well, without a window. For a `new` well (not from a project) the
+        layout is converted to its units and the preferred unit system is applied."""
+        doc = WellDocument(entry.well, entry.layout, entry.petro, self)
+        doc.depth_reference, doc.display_unit = entry.depth_reference, entry.display_unit
+        if new:
+            doc.adopt_layout(entry.layout)  # template scales -> this well's units
             system = self.settings.value("unit_system") or "file"
             if system != "file":
                 doc.apply_unit_system(system)
         else:
-            doc.curve_units = dict(curve_units)
+            doc.curve_units = dict(entry.curve_units)
         doc.reset_history()  # opening a well is not an undoable change
         self.undo_group.addStack(doc.undo_stack)
-        self.undo_group.setActiveStack(doc.undo_stack)
+        for sig in (doc.layoutChanged, doc.curvesChanged, doc.topsChanged):
+            sig.connect(self._mark_dirty)
+        self._update_actions()
+        return doc
+
+    def show_doc(self, doc: WellDocument) -> WellView:
+        """The window of a loaded well (created if it has none)."""
+        if doc in self.views:
+            return self.views[doc]
         view = WellView(doc)
         sub = self.mdi.addSubWindow(view)
         sub.setWindowIcon(app_icon())
         sub.resize(
-            min(int(sum(t.width for t in layout.tracks)) + 40, max(self.mdi.width() - 20, 400)),
+            min(int(sum(t.width for t in doc.layout.tracks)) + 40, max(self.mdi.width() - 20, 400)),
             max(self.mdi.height() - 20, 400),
         )
         view.statusMessage.connect(lambda msg: self.statusBar().showMessage(msg))
@@ -737,23 +779,82 @@ class MainWindow(QMainWindow):
         view.statsRequested.connect(lambda d, interval: self.show_stats(d, None, interval))
         view.closed.connect(self._doc_closed)
         view.canvas.viewChanged.connect(lambda v=view: self._show_scale(v))
-        for sig in (doc.layoutChanged, doc.curvesChanged, doc.topsChanged):
-            sig.connect(self._mark_dirty)
-        self.docs.append(doc)
         self.views[doc] = view
-        self.tree.add_doc(doc)
+        self.undo_group.setActiveStack(doc.undo_stack)
         sub.show()
         self._update_actions()
-        self.dirty = True
-        return doc
+        return view
 
     def _doc_closed(self, doc):
-        if doc in self.docs:
-            self.docs.remove(doc)
-            self.views.pop(doc, None)
-            self.undo_group.removeStack(doc.undo_stack)
-            self.tree.remove_doc(doc)
+        """A well window was closed: the well stays loaded and in the project."""
+        if self.views.pop(doc, None) is not None:
             self._update_actions()
+
+    def load_refs(self, refs: list[WellRef]) -> list[WellDocument]:
+        """Load wells of the project (with a progress dialog for many). Problems are shown together."""
+        errors = self.wells.ensure_loaded(refs, self)
+        if errors:
+            message = _("Some wells could not be loaded:") + "\n\n" + "\n".join(errors)
+            QMessageBox.warning(self, _("Load wells"), message)
+        return [self.wells.docs[r] for r in refs if r in self.wells.docs]
+
+    def open_refs(self, refs: list[WellRef]) -> None:
+        """Load wells if needed and show their windows."""
+        for doc in self.load_refs(refs):
+            self.activate_doc(doc)
+
+    def _close_window(self, doc) -> None:
+        view = self.views.get(doc)
+        sub = view.parentWidget() if view is not None else None
+        if sub is not None:
+            sub.close()
+
+    def _discard_doc(self, doc) -> None:
+        """Forget a document that is no longer loaded."""
+        self._close_window(doc)
+        self.undo_group.removeStack(doc.undo_stack)
+        doc.deleteLater()
+
+    def unload_well(self, ref: WellRef) -> None:
+        """Free the data of a well; it stays in the project with all its changes (not its undo history)."""
+        doc = self.wells.docs.get(ref)
+        if doc is None:
+            return
+        if doc.undo_stack.count() and (
+            QMessageBox.question(
+                self,
+                _("Unload from memory"),
+                _("The changes to “{well}” are kept, but they can no longer be undone. Continue?").format(
+                    well=doc.title
+                ),
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
+            return
+        self.wells.unload(ref)
+        self._discard_doc(doc)
+        self._update_actions()
+
+    def remove_well(self, ref: WellRef, confirm: bool = True) -> None:
+        """Take a well out of the project (its file is not touched)."""
+        if confirm and (
+            QMessageBox.question(
+                self,
+                _("Remove from project"),
+                _(
+                    "Remove “{well}” from the project? Its tops, intervals and computed curves are lost; "
+                    "the well file is not touched."
+                ).format(well=ref.name),
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
+            return
+        doc = self.wells.docs.get(ref)
+        self.wells.remove(ref)
+        if doc is not None:
+            self._discard_doc(doc)
+        self.dirty = True
+        self._update_actions()
 
     # The session keeps this state; these properties keep the window's simple API.
     @property
@@ -825,7 +926,10 @@ class MainWindow(QMainWindow):
             self.open_project(path)
 
     def autosave(self) -> bool:
-        return self.session.autosave(self.docs)
+        return self.session.autosave(self._project_items())
+
+    def _project_items(self) -> list:
+        return self.wells.items(lambda doc: doc in self.views)
 
     def check_recovery(self) -> None:
         """At startup: offers to restore the work of a session that did not close properly."""
@@ -860,27 +964,24 @@ class MainWindow(QMainWindow):
             self._update_title()
 
     def _load_project_file(self, path) -> bool:
-        """Replaces the open wells with those of a project file. False if nothing was opened."""
-        if self.docs and not self._confirm_discard():
+        """Replaces the project's wells with those of a project file. Only the wells whose window was
+        open when it was saved are loaded; the rest are listed in the tree. False if nothing was opened."""
+        if len(self.wells) and not self._confirm_discard():
             return False
         try:
-            result = load_project(path)
+            refs = read_project(path)
         except ProjectError as e:
             QMessageBox.warning(self, _("Open project"), str(e))
             return False
         self._close_all()
-        for entry in result.entries:
-            self.add_doc(
-                entry.well, entry.layout, entry.petro, entry.depth_reference, entry.display_unit, entry.curve_units
-            )
-        if result.errors:
-            QMessageBox.warning(
-                self, _("Open project"), _("Some items could not be loaded:") + "\n\n" + "\n".join(result.errors)
-            )
+        for ref in refs:
+            self.wells.add(ref)
+        self.open_refs([r for r in refs if is_open(r)])
+        self.dirty = False
         return True
 
     def save_project(self, ask: bool = False) -> bool:
-        if not self.docs:
+        if not len(self.wells):
             return False
         path = self.project_path
         if ask or path is None:
@@ -890,7 +991,7 @@ class MainWindow(QMainWindow):
                 return False
             path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
         try:
-            self.session.save(self.docs, path)
+            self.session.save(self._project_items(), path)
         except OSError as e:
             QMessageBox.warning(self, _("Save project"), _("Could not save: {error}").format(error=e))
             return False
@@ -904,9 +1005,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(_("InnoPetrol — Well Viewer") + name)
 
     def _close_all(self):
-        for v in list(self.views.values()):
-            v.confirm_close = False
-            v.parentWidget().close()
+        """Close every window and take every well out of the project."""
+        for ref in list(self.wells.refs):
+            self.remove_well(ref, confirm=False)
 
     def _confirm_discard(self) -> bool:
         if not self.dirty:
@@ -922,7 +1023,7 @@ class MainWindow(QMainWindow):
         return r == QMessageBox.StandardButton.Discard
 
     def closeEvent(self, e):
-        if self.docs and not self._confirm_discard():
+        if len(self.wells) and not self._confirm_discard():
             e.ignore()
             return
         self.settings.setValue("geometry", self.saveGeometry())

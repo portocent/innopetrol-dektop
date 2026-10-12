@@ -33,6 +33,20 @@ LAS / DLIS file ──► model.io.load_well ──► Well (depth in MD, curves
      ui.LogCanvas (screen, tile cache)           render.export (PDF / PNG at scale)
 ```
 
+### Wells in a project
+
+A project can hold hundreds of wells, so a well has three states:
+
+1. **In the project:** a `WellRef` (`model/catalog.py`) with the file path and a `WellSummary`
+   (name, depth range, curves, location…). Nothing is read from the file; while the well is not
+   loaded, the `WellRef` keeps its project entry and `save_project` writes it back unchanged.
+2. **Loaded:** it has a `WellDocument`. `ui/project_wells.ProjectWells` keeps every `WellRef` and the
+   documents of the loaded ones; `ensure_loaded` loads wells on demand (with progress for many).
+3. **Shown:** it also has a window (`MainWindow.views`). Closing the window keeps the well loaded.
+
+`MainWindow.docs` are the loaded wells. Projects store each well's summary and whether its window was
+open; opening a project loads only those wells.
+
 ### Invariants
 
 Never break these.
@@ -80,12 +94,14 @@ Never break these.
 | `model/equations.py` | Every equation with its variables, validity and bibliographic reference (shown in the program). |
 | `model/workbook.py` | Excel output: tables and the verification workbook (the equations as spreadsheet formulas). |
 | `model/layout.py`, `template.py`, `project.py` | Layout dataclasses and their JSON files. |
+| `model/catalog.py` | `WellRef` and `WellSummary`: the wells of a project without their data; header-only reading. |
 | `render/painter.py` | Drawing of track bodies and headers (curves, backup scales, fills, color maps, volumes, tops). |
 | `render/export.py` | PNG and paginated PDF with the log heading. |
 | `ui/main_window.py` | Composition root: menus, actions, opening wells, launching tools. |
 | `ui/session.py` | Project file, unsaved changes, recent files, autosave and recovery (no widgets). |
 | `ui/log_canvas.py` | Interactive log with tile cache and adaptive previews. |
-| `ui/document.py` | `WellDocument`: state of an open well, signals, undo. |
+| `ui/document.py` | `WellDocument`: state of a loaded well, signals, undo. |
+| `ui/project_wells.py` | `ProjectWells`: the project's wells, loading and unloading them. |
 
 ## Validation
 

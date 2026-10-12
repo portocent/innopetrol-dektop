@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 
+from innopetrol.model.catalog import WellRef
 from innopetrol.model.project import WellEntry, save_project
 
 AUTOSAVE_NAME = "autosave.ipproj"
@@ -30,7 +31,7 @@ class Recovery:
     def _info_path(self) -> Path:
         return self.folder / INFO_NAME
 
-    def save(self, entries: list[WellEntry], project_path: Path | None) -> None:
+    def save(self, entries: list[WellEntry | WellRef], project_path: Path | None) -> None:
         """Writes the autosave atomically: a crash while writing never leaves a half-written file."""
         self.folder.mkdir(parents=True, exist_ok=True)
         tmp = self.folder / (AUTOSAVE_NAME + ".tmp")

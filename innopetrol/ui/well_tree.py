@@ -1,7 +1,9 @@
-"""Side tree: open wells, header information, curves and tops.
+"""Side tree: the wells of the project, with header information, curves and tops.
 
-Each item keeps a direct reference to its document (Qt.UserRole). The original code looked
-items up by title text or by position, and got out of sync when wells were closed.
+Each well item keeps its WellRef (ROLE_REF) and, when the well is loaded, its document (ROLE_DOC).
+The original code looked items up by title text or by position, and got out of sync when wells were
+closed. Wells that are not loaded show their summary; those children are built only when the item
+is expanded, so a project with hundreds of wells does not create thousands of items up front.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ from PySide6.QtWidgets import QMenu, QTreeWidget, QTreeWidgetItem
 
 from innopetrol.i18n import _
 from innopetrol.model import units
+from innopetrol.model.catalog import WellRef, WellSummary
 from innopetrol.model.equations import EQUATIONS, curve_equations
 from innopetrol.model.intervals import KINDS as INTERVAL_KINDS
 from innopetrol.model.mnemonics import FAMILIES, family_of
@@ -21,6 +24,7 @@ from innopetrol.ui.document import WellDocument
 ROLE_DOC = Qt.ItemDataRole.UserRole
 ROLE_KIND = Qt.ItemDataRole.UserRole + 1
 ROLE_NAME = Qt.ItemDataRole.UserRole + 2
+ROLE_REF = Qt.ItemDataRole.UserRole + 3
 
 
 class WellTree(QTreeWidget):
@@ -32,6 +36,10 @@ class WellTree(QTreeWidget):
     topsRequested = Signal(object)
     intervalsRequested = Signal(object)
     topActivated = Signal(object, float)
+    refOpenRequested = Signal(object)  # WellRef: load if needed and show its window
+    refLoadRequested = Signal(object)
+    refUnloadRequested = Signal(object)
+    refRemoveRequested = Signal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -39,6 +47,7 @@ class WellTree(QTreeWidget):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
         self.itemDoubleClicked.connect(self._double_click)
+        self.itemExpanded.connect(self._expanded)
         self.template_item = QTreeWidgetItem([""])
         self._template_name: str | None = None
         self.set_template_name(None)
@@ -52,9 +61,10 @@ class WellTree(QTreeWidget):
     def retranslate(self):
         self.set_template_name(self._template_name)
         for i in range(self.topLevelItemCount()):
-            doc = self.topLevelItem(i).data(0, ROLE_DOC)
-            if doc is not None:
-                self.refresh(doc)
+            item = self.topLevelItem(i)
+            ref = item.data(0, ROLE_REF)
+            if ref is not None:
+                self.set_doc(ref, item.data(0, ROLE_DOC))
 
     def _item_for(self, doc) -> QTreeWidgetItem | None:
         for i in range(self.topLevelItemCount()):
@@ -63,19 +73,55 @@ class WellTree(QTreeWidget):
                 return it
         return None
 
-    def add_doc(self, doc: WellDocument):
-        item = QTreeWidgetItem()
-        item.setData(0, ROLE_DOC, doc)
-        self.addTopLevelItem(item)
-        self._populate(item, doc)
-        item.setExpanded(True)
-        doc.curvesChanged.connect(lambda: self.refresh(doc))
-        doc.topsChanged.connect(lambda: self.refresh(doc))
+    def _item_for_ref(self, ref) -> QTreeWidgetItem | None:
+        for i in range(self.topLevelItemCount()):
+            it = self.topLevelItem(i)
+            if it is not None and it.data(0, ROLE_REF) is ref:
+                return it
+        return None
 
-    def remove_doc(self, doc):
-        it = self._item_for(doc)
+    def add_ref(self, ref: WellRef, doc: WellDocument | None = None) -> None:
+        item = QTreeWidgetItem()
+        item.setData(0, ROLE_REF, ref)
+        self.addTopLevelItem(item)
+        self._fill(item, ref, doc)
+
+    def set_doc(self, ref: WellRef, doc: WellDocument | None) -> None:
+        """The well was loaded (doc) or unloaded (None)."""
+        item = self._item_for_ref(ref)
+        if item is not None:
+            expanded = item.isExpanded()
+            item.takeChildren()
+            self._fill(item, ref, doc)
+            item.setExpanded(expanded)
+
+    def remove_ref(self, ref) -> None:
+        it = self._item_for_ref(ref)
         if it is not None:
             self.takeTopLevelItem(self.indexOfTopLevelItem(it))
+
+    def _fill(self, item: QTreeWidgetItem, ref: WellRef, doc: WellDocument | None) -> None:
+        item.setData(0, ROLE_DOC, doc)
+        if doc is not None:
+            item.setChildIndicatorPolicy(QTreeWidgetItem.ChildIndicatorPolicy.DontShowIndicatorWhenChildless)
+            item.setForeground(0, self.palette().text())
+            self._populate(item, doc)
+            item.setExpanded(True)
+            doc.curvesChanged.connect(lambda: self.refresh(doc))
+            doc.topsChanged.connect(lambda: self.refresh(doc))
+            return
+        font = QFont(self.font())
+        font.setItalic(True)
+        item.setFont(0, font)
+        item.setText(0, ref.name + ("  " + _("(file not found)") if ref.missing else ""))
+        item.setForeground(0, QBrush(QColor("#c0392b" if ref.missing else "#566573")))
+        item.setToolTip(0, _("{path}\nNot loaded: double-click to open it.").format(path=ref.path or ""))
+        item.setChildIndicatorPolicy(QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator)
+
+    def _expanded(self, item: QTreeWidgetItem) -> None:
+        ref = item.data(0, ROLE_REF)
+        if ref is not None and item.data(0, ROLE_DOC) is None and item.childCount() == 0:
+            _add_summary(item, ref.summary)
 
     def refresh(self, doc):
         it = self._item_for(doc)
@@ -175,9 +221,18 @@ class WellTree(QTreeWidget):
             item = item.parent()
         return None
 
+    @staticmethod
+    def _ref_of(item):
+        while item is not None and item.parent() is not None:
+            item = item.parent()
+        return item.data(0, ROLE_REF) if item is not None else None
+
     def _double_click(self, item, _col):
         doc = self._doc_of(item)
         if doc is None:
+            ref = self._ref_of(item)
+            if ref is not None:
+                self.refOpenRequested.emit(ref)
             return
         kind = item.data(0, ROLE_KIND)
         if kind == "curve":
@@ -193,10 +248,19 @@ class WellTree(QTreeWidget):
 
     def _menu(self, pos):
         item = self.itemAt(pos)
-        doc = self._doc_of(item)
-        if doc is None:
+        doc, ref = self._doc_of(item), self._ref_of(item)
+        if ref is None:
             return
         menu = QMenu(self)
+        if doc is None:
+            menu.addAction(_("Open")).triggered.connect(lambda: self.refOpenRequested.emit(ref))
+            menu.addAction(_("Load without opening a window")).triggered.connect(
+                lambda: self.refLoadRequested.emit(ref)
+            )
+            menu.addSeparator()
+            menu.addAction(_("Remove from project…")).triggered.connect(lambda: self.refRemoveRequested.emit(ref))
+            menu.exec(self.viewport().mapToGlobal(pos))
+            return
         if item.data(0, ROLE_KIND) == "curve":
             name = item.data(0, ROLE_NAME)
             menu.addAction(_("Statistics and histogram…")).triggered.connect(
@@ -229,7 +293,29 @@ class WellTree(QTreeWidget):
                 )
         menu.addAction(_("Show well window")).triggered.connect(lambda: self.docActivated.emit(doc))
         menu.addAction(_("Edit tops…")).triggered.connect(lambda: self.topsRequested.emit(doc))
+        menu.addSeparator()
+        menu.addAction(_("Unload from memory")).triggered.connect(lambda: self.refUnloadRequested.emit(ref))
+        menu.addAction(_("Remove from project…")).triggered.connect(lambda: self.refRemoveRequested.emit(ref))
         menu.exec(self.viewport().mapToGlobal(pos))
+
+
+def _add_summary(parent: QTreeWidgetItem, summary: WellSummary) -> None:
+    """Children of a well that is not loaded: what its summary tells."""
+    info = QTreeWidgetItem(parent, [_("Well information")])
+    interval = _("Interval: {start} – {stop} {unit}").format(
+        start=f"{summary.start:g}", stop=f"{summary.stop:g}", unit=summary.depth_unit
+    )
+    QTreeWidgetItem(info, [interval])
+    for label, value in (("UWI", summary.uwi), (_("Field"), summary.field_name), (_("Company"), summary.company)):
+        if value:
+            QTreeWidgetItem(info, [f"{label}: {value}"])
+    if summary.location is not None:
+        QTreeWidgetItem(info, [_("Location: {x:g}, {y:g}").format(x=summary.location.x, y=summary.location.y)])
+    curves = QTreeWidgetItem(parent, [_("Curves ({count})").format(count=len(summary.curves))])
+    for mnemonic, unit in summary.curves:
+        fam = FAMILIES.get(family_of(mnemonic) or "")
+        QTreeWidgetItem(curves, [mnemonic + (f"  [{unit}]" if unit else "") + (f"  · {_(fam.name)}" if fam else "")])
+    QTreeWidgetItem(parent, [_("Tops ({count})").format(count=summary.tops)])
 
 
 def _curve_label(doc: WellDocument, mnemonic: str, curve) -> str:

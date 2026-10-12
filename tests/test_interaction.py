@@ -22,7 +22,6 @@ def view(testdata_well, qtbot):
 
     doc = WellDocument(testdata_well, build_triple_combo(testdata_well))
     v = WellView(doc)
-    v.confirm_close = False
     qtbot.addWidget(v)
     v.resize(900, 700)
     v.show()

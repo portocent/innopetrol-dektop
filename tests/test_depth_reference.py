@@ -20,8 +20,6 @@ def win(qtbot, tmp_path, samples):
     w.open_las([str(samples / "Testdata.las")])
     yield w
     w.dirty = False
-    for v in w.views.values():
-        v.confirm_close = False
 
 
 def slant_survey():

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 13:21-0500\n"
+"POT-Creation-Date: 2026-10-12 14:00-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,6 +56,9 @@ msgid "(computed)"
 msgstr ""
 
 msgid "(constant)"
+msgstr ""
+
+msgid "(file not found)"
 msgstr ""
 
 msgid "(no color)"
@@ -248,6 +251,9 @@ msgstr ""
 msgid "Caliper:"
 msgstr ""
 
+msgid "Cancel"
+msgstr ""
+
 msgid "Cascade"
 msgstr ""
 
@@ -293,13 +299,6 @@ msgstr ""
 msgid ""
 "Click wells in order to draw a correlation section · double-click opens a well · drag to pan, "
 "wheel to zoom"
-msgstr ""
-
-#, python-brace-format
-msgid "Close the well “{name}”?"
-msgstr ""
-
-msgid "Close well"
 msgstr ""
 
 msgid "Color"
@@ -952,6 +951,10 @@ msgid "Interval:"
 msgstr ""
 
 #, python-brace-format
+msgid "Interval: {start} – {stop} {unit}"
+msgstr ""
+
+#, python-brace-format
 msgid "Interval: {start} – {stop} {unit} (step {step})"
 msgstr ""
 
@@ -1035,11 +1038,31 @@ msgstr ""
 msgid "Load template and apply to the active well…"
 msgstr ""
 
+msgid "Load wells"
+msgstr ""
+
+msgid "Load without opening a window"
+msgstr ""
+
 #, python-brace-format
 msgid "Loaded: {wells}"
 msgstr ""
 
+msgid "Loading wells"
+msgstr ""
+
+msgid "Loading wells…"
+msgstr ""
+
+#, python-brace-format
+msgid "Loading {well}…"
+msgstr ""
+
 msgid "Location"
+msgstr ""
+
+#, python-brace-format
+msgid "Location: {x:g}, {y:g}"
 msgstr ""
 
 msgid "Log"
@@ -1296,6 +1319,9 @@ msgstr ""
 msgid "One sample = {step} {unit}"
 msgstr ""
 
+msgid "Open"
+msgstr ""
+
 msgid "Open LAS"
 msgstr ""
 
@@ -1496,6 +1522,12 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
+msgid "Remove from project"
+msgstr ""
+
+msgid "Remove from project…"
+msgstr ""
+
 msgid "Remove selected track"
 msgstr ""
 
@@ -1522,6 +1554,12 @@ msgstr ""
 
 #, python-brace-format
 msgid "Remove track “{title}”"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Remove “{well}” from the project? Its tops, intervals and computed curves are lost; the well file"
+" is not touched."
 msgstr ""
 
 msgid "Rename track"
@@ -1750,10 +1788,10 @@ msgstr ""
 msgid "Solid"
 msgstr ""
 
-msgid "Some items could not be loaded:"
+msgid "Some problems in the files were corrected:"
 msgstr ""
 
-msgid "Some problems in the files were corrected:"
+msgid "Some wells could not be loaded:"
 msgstr ""
 
 msgid "Sonic"
@@ -1855,6 +1893,10 @@ msgid "Test (DST)"
 msgstr ""
 
 msgid "The Pickett plot needs the resistivity and density curves."
+msgstr ""
+
+#, python-brace-format
+msgid "The changes to “{well}” are kept, but they can no longer be undone. Continue?"
 msgstr ""
 
 msgid "The curves were computed. Points to review:"
@@ -1977,6 +2019,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Unknown families were ignored: {families}"
+msgstr ""
+
+msgid "Unload from memory"
 msgstr ""
 
 msgid "Unsaved changes"
@@ -2591,6 +2636,12 @@ msgid "{open} open LAS · {save} save project · {export} export · {tsave} / {t
 msgstr ""
 
 #, python-brace-format
+msgid ""
+"{path}\n"
+"Not loaded: double-click to open it."
+msgstr ""
+
+#, python-brace-format
 msgid "{row}: a fixed value needs at least one curve in the track to be placed"
 msgstr ""
 
@@ -2656,6 +2707,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "{well}: curves not found: {curves}"
+msgstr ""
+
+#, python-brace-format
+msgid "{well}: file not found: {path}"
 msgstr ""
 
 #, python-brace-format

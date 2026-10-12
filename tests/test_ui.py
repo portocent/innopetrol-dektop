@@ -19,8 +19,6 @@ def win(qtbot, tmp_path, samples):
     w.open_las([str(samples / "Testdata.las"), str(samples / "TotalDepthPrueba.las")])
     yield w
     w.dirty = False
-    for v in w.views.values():
-        v.confirm_close = False
 
 
 def test_open_wells(win):
@@ -28,18 +26,17 @@ def test_open_wells(win):
     assert win.tree.topLevelItemCount() == 3  # template + 2 wells
 
 
-def test_close_well_updates_tree(win, samples):
+def test_closing_the_window_keeps_the_well(win, samples):
     doc = win.docs[0]
-    view = win.views[doc]
-    view.confirm_close = False
-    view.parentWidget().close()
-    assert [d.title for d in win.docs] == ["1-5"]
+    win.views[doc].parentWidget().close()
+    assert doc not in win.views and [d.title for d in win.docs] == ["Test Well 1", "1-5"]  # still loaded
     texts = [win.tree.topLevelItem(i).text(0) for i in range(win.tree.topLevelItemCount())]
-    assert "Test Well 1" not in texts and "1-5" in texts
-    # Reopening does not overwrite the other well's item (bug in the original code)
+    assert "Test Well 1" in texts and "1-5" in texts
+    # Opening the same file again shows the well instead of adding it twice
     win.open_las([str(samples / "Testdata.las")])
     texts = [win.tree.topLevelItem(i).text(0) for i in range(win.tree.topLevelItemCount())]
     assert texts.count("1-5") == 1 and texts.count("Test Well 1") == 1
+    assert doc in win.views
 
 
 def test_canvas_navigation(win, qtbot):

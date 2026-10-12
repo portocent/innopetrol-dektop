@@ -78,8 +78,6 @@ def win(qtbot, tmp_path, samples):
     w.open_las([str(samples / "Testdata.las")])
     yield w
     w.dirty = False
-    for v in w.views.values():
-        v.confirm_close = False
 
 
 def test_unit_system_menu_applies_to_open_and_new_wells(win, samples):

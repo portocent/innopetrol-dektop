@@ -95,5 +95,3 @@ def test_window_menu_follows_the_active_well(qtbot, tmp_path, samples):
     w.a_undo.trigger()
     assert w.a_redo.isEnabled() and not w.a_undo.isEnabled()
     w.dirty = False
-    for v in w.views.values():
-        v.confirm_close = False

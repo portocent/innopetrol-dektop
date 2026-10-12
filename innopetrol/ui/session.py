@@ -9,6 +9,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QSettings, QStandardPaths
 
+from innopetrol.model.catalog import WellRef
 from innopetrol.model.project import WellEntry, save_project
 from innopetrol.ui.recovery import Recovery
 
@@ -41,16 +42,10 @@ class Session:
         self.settings.setValue("recent", [str(path), *recent][:MAX_RECENT])
 
     # ---------------------------------------------------------------- project file
-    @staticmethod
-    def entries(docs) -> list[WellEntry]:
-        """What a project stores about each open well."""
-        return [
-            WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit, dict(d.curve_units)) for d in docs
-        ]
-
-    def save(self, docs, path: Path) -> None:
-        """Writes the project (raises OSError) and makes it the current, saved one."""
-        save_project(path, self.entries(docs))
+    def save(self, items: list[WellEntry | WellRef], path: Path) -> None:
+        """Writes the project (raises OSError) and makes it the current, saved one.
+        `items`: the project's wells (ProjectWells.items)."""
+        save_project(path, items)
         self.project_path = path
         self.dirty = False
         self.recovery.discard()  # everything is in the project now
@@ -63,12 +58,12 @@ class Session:
         self.add_recent(path)
 
     # ---------------------------------------------------------------- autosave and recovery
-    def autosave(self, docs) -> bool:
-        """Saves the open wells for recovery if there are unsaved changes. True if it saved."""
-        if not (self.dirty and docs):
+    def autosave(self, items: list[WellEntry | WellRef]) -> bool:
+        """Saves the project's wells for recovery if there are unsaved changes. True if it saved."""
+        if not (self.dirty and items):
             return False
         try:
-            self.recovery.save(self.entries(docs), self.project_path)
+            self.recovery.save(items, self.project_path)
         except OSError:
             log.exception("Autosave failed")
             return False
