@@ -174,6 +174,7 @@ class FormulaSpec:
     unit: str
     description: str
     formula: str
+    raw: str | None = None  # the same calculation before limiting to a valid range (for quality control)
 
 
 def input_ref(well, mnem: str, expected: str) -> str:
@@ -245,8 +246,8 @@ class _Builder:
     def param(self, key: str) -> str:
         return param_expr(self.well, self.p, key)
 
-    def add(self, mnemonic: str, unit: str, description: str, formula: str) -> None:
-        self.out.append(FormulaSpec(mnemonic, unit, description, formula))
+    def add(self, mnemonic: str, unit: str, description: str, formula: str, raw: str | None = None) -> None:
+        self.out.append(FormulaSpec(mnemonic, unit, description, formula, raw))
 
     def has(self, mnemonic: str) -> bool:
         return any(f.mnemonic == mnemonic for f in self.out)
@@ -281,7 +282,7 @@ class _Builder:
             self.add("PHID", "v/v", _("Density porosity"), f"clip({phid}, -0.15, 0.6)")
             phit = f"(PHID + {phin}) / 2" if method_key == "nd_average" else f"sqrt((PHID ** 2 + {phin} ** 2) / 2)"
         method = _(PHI_METHODS[method_key])
-        self.add("PHIT", "v/v", _("Total porosity - {method}").format(method=method), f"clip({phit}, 0, 0.6)")
+        self.add("PHIT", "v/v", _("Total porosity - {method}").format(method=method), f"clip({phit}, 0, 0.6)", phit)
         phie = "clip(PHIT * (1 - VSH), 0, 0.6)" if self.has("VSH") else "PHIT"
         self.add("PHIE", "v/v", _("Effective porosity"), phie)
 
@@ -332,7 +333,8 @@ class _Builder:
         else:
             core = f"(({a} * {rw}) / (PHIE ** {m} * {rt})) ** (1 / {n})"
         sw = f"where((PHIE > 0) & ({rt} > 0), clip({core}, 0, 1), nan)"
-        self.add("SW", "v/v", _("Sw - {model}").format(model=_(SW_MODELS[model])), sw)
+        raw = f"where((PHIE > 0) & ({rt} > 0), {core}, nan)"
+        self.add("SW", "v/v", _("Sw - {model}").format(model=_(SW_MODELS[model])), sw, raw)
 
     def volumes(self) -> None:
         """For the lithology / fluids track: shale + matrix + porosity = 1, porosity split into water
@@ -376,6 +378,76 @@ def compute(well, p: PetroParams) -> list[Curve]:
         env[spec.mnemonic] = values
         curves.append(Curve(spec.mnemonic, spec.unit, spec.description, values, formula=spec.formula))
     return curves
+
+
+# ---------------------------------------------------------------- quality control
+
+QC_MIN_SAMPLES = 5  # a finding needs at least this many samples…
+QC_MIN_FRACTION = 0.02  # …and this fraction of the zone
+
+
+@dataclass
+class QcFinding:
+    kind: str  # sw_above_1 | phi_negative | phi_high | density_range | neutron_range
+    zone: str | None  # None = the whole well
+    count: int
+    fraction: float
+
+    def message(self) -> str:
+        pct = f"{self.fraction:.0%}"
+        where = _(" in zone {zone}").format(zone=self.zone) if self.zone else ""
+        texts = {
+            "sw_above_1": _(
+                "Sw above 1 in {pct} of the samples{where} before limiting: Rw or m may be too high, or the "
+                "rock is shaly (try a shaly-sand model)."
+            ),
+            "phi_negative": _(
+                "Porosity below 0 in {pct} of the samples{where}: the rock is denser than the matrix density "
+                "(dolomite, anhydrite?) or the density is affected by the hole."
+            ),
+            "phi_high": _("Porosity above 0.6 in {pct} of the samples{where}: washed-out hole or wrong density units."),
+            "density_range": _(
+                "Density outside 1.0–3.2 g/cm³ in {pct} of the samples{where}: bad hole or wrong units."
+            ),
+            "neutron_range": _(
+                "Neutron porosity above 0.6 in {pct} of the samples{where}: bad hole, or the curve is not porosity."
+            ),
+        }
+        return texts[self.kind].format(pct=pct, where=where)
+
+
+def qc_report(well, p: PetroParams, curves: list[Curve]) -> list[QcFinding]:
+    """Results to review: values that had to be limited and inputs outside physical ranges, per zone."""
+    env = well.formula_env()
+    env.update({c.mnemonic: c.values for c in curves})
+    checks: dict[str, np.ndarray] = {}
+    raw = {spec.mnemonic: spec.raw for spec in build_formulas(well, p) if spec.raw}
+    with np.errstate(invalid="ignore"):
+        if "SW" in raw:
+            checks["sw_above_1"] = evaluate(raw["SW"], env) > 1
+        if "PHIT" in raw:
+            phit = evaluate(raw["PHIT"], env)
+            checks["phi_negative"], checks["phi_high"] = phit < 0, phit > 0.6
+        density = _available(well, p.rhob_curve, "g/cm3")
+        if density:
+            rhob = evaluate(input_ref(well, density, "g/cm3"), env)
+            checks["density_range"] = (rhob < 1.0) | (rhob > 3.2)
+        neutron = _available(well, p.nphi_curve, "v/v")
+        if neutron and "PHID" in env:
+            checks["neutron_range"] = evaluate(input_ref(well, neutron, "v/v"), env) > 0.6
+    # With tops, each zone is reported on its own (the part above the first top too); without, the whole well.
+    zones: list[tuple[str | None, np.ndarray]] = [(None, np.ones(well.depth.shape, bool))]
+    if well.tops:
+        first = min(t.depth for t in well.tops)
+        zones = [(_("(above the first top)"), well.interval_mask(None, first))] if first > well.start else []
+        zones += [(z.name, well.interval_mask(z.top, z.base)) for z in zones_from_tops(well.tops, well.stop)]
+    findings = []
+    for kind, flagged in checks.items():
+        for name, mask in zones:
+            count, total = int(np.sum(flagged & mask)), int(np.sum(mask))
+            if total and count >= QC_MIN_SAMPLES and count / total >= QC_MIN_FRACTION:
+                findings.append(QcFinding(kind, name, count, count / total))
+    return findings
 
 
 # ---------------------------------------------------------------- zone summary

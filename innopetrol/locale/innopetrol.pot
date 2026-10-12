@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 12:45-0500\n"
+"POT-Creation-Date: 2026-10-12 12:47-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,6 +19,10 @@ msgstr ""
 
 #, python-brace-format
 msgid " (zone {zone})"
+msgstr ""
+
+#, python-brace-format
+msgid " in zone {zone}"
 msgstr ""
 
 msgid "&Analysis"
@@ -470,6 +474,10 @@ msgid "Density - Neutron"
 msgstr ""
 
 msgid "Density correction"
+msgstr ""
+
+#, python-brace-format
+msgid "Density outside 1.0–3.2 g/cm³ in {pct} of the samples{where}: bad hole or wrong units."
 msgstr ""
 
 msgid "Density porosity"
@@ -1029,6 +1037,10 @@ msgstr ""
 msgid "Neutron - Density"
 msgstr ""
 
+#, python-brace-format
+msgid "Neutron porosity above 0.6 in {pct} of the samples{where}: bad hole, or the curve is not porosity."
+msgstr ""
+
 msgid "Neutron-density (RMS, gas zones)"
 msgstr ""
 
@@ -1219,6 +1231,16 @@ msgid "Place “{name}” here"
 msgstr ""
 
 msgid "Porosity"
+msgstr ""
+
+#, python-brace-format
+msgid "Porosity above 0.6 in {pct} of the samples{where}: washed-out hole or wrong density units."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Porosity below 0 in {pct} of the samples{where}: the rock is denser than the matrix density "
+"(dolomite, anhydrite?) or the density is affected by the hole."
 msgstr ""
 
 msgid "Printed"
@@ -1541,6 +1563,12 @@ msgid "Sw - {model}"
 msgstr ""
 
 #, python-brace-format
+msgid ""
+"Sw above 1 in {pct} of the samples{where} before limiting: Rw or m may be too high, or the rock "
+"is shaly (try a shaly-sand model)."
+msgstr ""
+
+#, python-brace-format
 msgid "TVD ({unit})"
 msgstr ""
 
@@ -1577,6 +1605,9 @@ msgid "Test"
 msgstr ""
 
 msgid "The Pickett plot needs the resistivity and density curves."
+msgstr ""
+
+msgid "The curves were computed. Points to review:"
 msgstr ""
 
 msgid "The fill takes the color of its curve's value at each depth, along the curve's scale."

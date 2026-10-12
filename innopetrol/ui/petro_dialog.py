@@ -492,6 +492,15 @@ class PetroDialog(QDialog):
             self.doc.add_curves(curves)
             if self.add_track.isChecked():
                 self._update_results_track([c.mnemonic for c in curves])
+        findings = petro.qc_report(self.doc.well, p, curves)
+        if findings:
+            QMessageBox.information(
+                self,
+                _("Petrophysics"),
+                _("The curves were computed. Points to review:")
+                + "\n\n"
+                + "\n".join("• " + f.message() for f in findings[:12]),
+            )
         self.accept()
 
     def _export_workbook(self):

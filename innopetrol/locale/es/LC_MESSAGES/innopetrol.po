@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 12:45-0500\n"
+"POT-Creation-Date: 2026-10-12 12:47-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -21,6 +21,10 @@ msgstr ""
 #, python-brace-format
 msgid " (zone {zone})"
 msgstr " (zona {zone})"
+
+#, python-brace-format
+msgid " in zone {zone}"
+msgstr " en la zona {zone}"
 
 msgid "&Analysis"
 msgstr "&Análisis"
@@ -477,6 +481,10 @@ msgstr "Densidad - Neutrón"
 
 msgid "Density correction"
 msgstr "Corrección de densidad"
+
+#, python-brace-format
+msgid "Density outside 1.0–3.2 g/cm³ in {pct} of the samples{where}: bad hole or wrong units."
+msgstr "Densidad fuera de 1,0–3,2 g/cm³ en el {pct} de las muestras{where}: pozo en mal estado o unidades equivocadas."
 
 msgid "Density porosity"
 msgstr "Porosidad densidad"
@@ -1039,6 +1047,10 @@ msgstr "Neutrón (NPHI):"
 msgid "Neutron - Density"
 msgstr "Neutrón - Densidad"
 
+#, python-brace-format
+msgid "Neutron porosity above 0.6 in {pct} of the samples{where}: bad hole, or the curve is not porosity."
+msgstr "Porosidad neutrón mayor que 0,6 en el {pct} de las muestras{where}: pozo en mal estado, o la curva no es de porosidad."
+
 msgid "Neutron-density (RMS, gas zones)"
 msgstr "Neutrón-densidad (RMS, zonas con gas)"
 
@@ -1234,6 +1246,18 @@ msgstr "Poner «{name}» aquí"
 
 msgid "Porosity"
 msgstr "Porosidad"
+
+#, python-brace-format
+msgid "Porosity above 0.6 in {pct} of the samples{where}: washed-out hole or wrong density units."
+msgstr "Porosidad mayor que 0,6 en el {pct} de las muestras{where}: pozo derrumbado o unidades de densidad equivocadas."
+
+#, python-brace-format
+msgid ""
+"Porosity below 0 in {pct} of the samples{where}: the rock is denser than the matrix density (dolomite, anhydrite?) or"
+" the density is affected by the hole."
+msgstr ""
+"Porosidad menor que 0 en el {pct} de las muestras{where}: la roca es más densa que la matriz elegida (¿dolomía, "
+"anhidrita?) o la densidad está afectada por el pozo."
 
 msgid "Printed"
 msgstr "Impreso"
@@ -1560,6 +1584,14 @@ msgid "Sw - {model}"
 msgstr "Sw - {model}"
 
 #, python-brace-format
+msgid ""
+"Sw above 1 in {pct} of the samples{where} before limiting: Rw or m may be too high, or the rock is shaly (try a "
+"shaly-sand model)."
+msgstr ""
+"Sw mayor que 1 en el {pct} de las muestras{where} antes de limitar: Rw o m pueden ser demasiado altos, o la roca es "
+"arcillosa (pruebe un modelo de arenas arcillosas)."
+
+#, python-brace-format
 msgid "TVD ({unit})"
 msgstr "TVD ({unit})"
 
@@ -1597,6 +1629,9 @@ msgstr "Probar"
 
 msgid "The Pickett plot needs the resistivity and density curves."
 msgstr "El gráfico de Pickett necesita las curvas de resistividad y densidad."
+
+msgid "The curves were computed. Points to review:"
+msgstr "Las curvas se calcularon. Puntos a revisar:"
 
 msgid "The fill takes the color of its curve's value at each depth, along the curve's scale."
 msgstr "El relleno toma, en cada profundidad, el color del valor de su curva según la escala de la curva."
