@@ -92,8 +92,9 @@ class WellView(QWidget):
         if track.is_depth:
             name, ok = QInputDialog.getText(self, _("Depth track"), _("Title:"), text=track.title)
             if ok:
-                track.title = name
-                self.doc.layoutChanged.emit()
+                with self.doc.undo_step(_("Rename track")):
+                    track.title = name
+                    self.doc.layoutChanged.emit()
             return
         TrackEditor(self.doc, index, self).exec()
 
@@ -135,8 +136,9 @@ class WellView(QWidget):
         track = self.doc.layout.tracks[index]
         name, ok = QInputDialog.getText(self, _("Rename track"), _("Title:"), text=track.title)
         if ok:
-            track.title = name
-            self.doc.layoutChanged.emit()
+            with self.doc.undo_step(_("Rename track")):
+                track.title = name
+                self.doc.layoutChanged.emit()
 
     def add_top_at(self, depth: float):
         """Adds a top at a display depth; tops are always stored in measured depth."""
@@ -149,7 +151,7 @@ class WellView(QWidget):
         if ok and name.strip():
             tops = list(self.doc.well.tops)
             tops.append(Top(name.strip(), round(md, 2), PALETTE[len(tops) % len(PALETTE)]))
-            self.doc.set_tops(tops)
+            self.doc.set_tops(tops, _("Add top {name}").format(name=name.strip()))
 
     # ------------------------------------------------------------------ context menu
 

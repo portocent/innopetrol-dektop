@@ -45,21 +45,31 @@ class Histogram(QWidget):
         self.label, self.log, self.bins, self.color = label, log, bins, QColor(color)
         self.update()
 
+    @property
+    def plot_area(self) -> QRectF:
+        return plot_rect(QRectF(self.rect()), QFontMetricsF(self.font()))
+
+    @property
+    def x_axis(self) -> Axis | None:
+        if self.values.size == 0:
+            return None
+        lo, hi = (log_decades if self.log else nice_linear_range)(float(self.values.min()), float(self.values.max()))
+        return Axis(lo, hi, self.log, self.label)
+
     def paintEvent(self, e):
         p = QPainter(self)
         p.fillRect(self.rect(), QColor("#f7f8f9"))
-        fm = QFontMetricsF(self.font())
-        r = plot_rect(QRectF(self.rect()), fm)
+        r = self.plot_area
         if self.values.size == 0:
             p.drawText(self.rect(), Qt.AlignCenter, _("No data in the interval"))
             p.end()
             return
-        lo, hi = (log_decades if self.log else nice_linear_range)(float(self.values.min()), float(self.values.max()))
+        xa = self.x_axis
+        lo, hi = xa.lo, xa.hi
         edges = np.logspace(np.log10(lo), np.log10(hi), self.bins + 1) if self.log else np.linspace(lo, hi, self.bins + 1)
         counts, _edges = np.histogram(self.values, edges)
         freq = counts / counts.sum() * 100
         ymax = max(float(freq.max()) * 1.1, 1)
-        xa = Axis(lo, hi, self.log, self.label)
         ya = Axis(0, ymax, False, _("Frequency (%)"))
         draw_axes(p, r, xa, ya)
         xs = r.left() + xa.map(edges, r.width())
@@ -74,7 +84,11 @@ class Histogram(QWidget):
         pts = [(xs[i + 1], r.bottom() - c) for i, c in enumerate(cum)]
         for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
             p.drawLine(int(x0), int(y0), int(x1), int(y1))
+        self.paint_overlay(p, r, xa)
         p.end()
+
+    def paint_overlay(self, p: QPainter, r: QRectF, xa: Axis) -> None:
+        """Hook for subclasses that draw on top of the histogram (e.g. parameter picking lines)."""
 
 
 class StatsDialog(QDialog):

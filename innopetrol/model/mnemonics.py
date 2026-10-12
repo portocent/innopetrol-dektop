@@ -69,6 +69,8 @@ FAMILIES: dict[str, Family] = {f.key: f for f in [
            style="dash"),
     Family("permeability", N_("Permeability"), ("PERM", "K", "PERMCORE", "KCORE", "KINT", "KLOG"),
            0.01, 10000, log=True, color="#117864"),
+    Family("temperature", N_("Temperature"), ("TEMP", "BHT", "MTEM", "MTEMP", "TEMPC", "TMP", "HTEM", "TFORM"),
+           color="#c0392b"),
 ]}
 FAMILIES = {k: dataclasses.replace(f, unit=_FAMILY_UNITS.get(k)) for k, f in FAMILIES.items()}
 

@@ -74,6 +74,15 @@ class Well:
         """True vertical depth of every sample (the well is assumed vertical without a survey)."""
         return self.depth.copy() if self.survey is None else self.survey.tvd_at(self.depth)
 
+    def formula_env(self) -> dict[str, np.ndarray]:
+        """Names available in calculator formulas: every curve, plus DEPTH (MD) and TVD of each
+        sample in the well's depth unit (a curve with the same name takes precedence)."""
+        env = {m: c.values for m, c in self.curves.items()}
+        env.setdefault("DEPTH", self.depth)
+        if "TVD" not in env:
+            env["TVD"] = self.tvd()
+        return env
+
     @classmethod
     def from_las(cls, path: str | Path) -> Well:
         path = Path(path)

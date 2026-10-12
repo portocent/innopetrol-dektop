@@ -99,9 +99,13 @@ Items marked **[checked]** were verified in the code.
   deviation surveys with minimum curvature, KB/DF/GL elevation, drawing in MD/TVD/TVDSS and m/ft,
   correlation in TVDSS.
 
-- **Phase 3 (started):** curve units — recognition of file unit spellings, display conversion per curve
+- **Phase 3 (done):** curve units — recognition of file unit spellings, display conversion per curve
   or by unit system (oilfield / metric), mislabeled % and kg/m³ detected from the values, and
   calculations that convert their inputs explicitly (results no longer depend on input units).
+  Undo/redo (one history per well, snapshot based, display changes excluded). Petrophysics
+  parameters by zone, Simandoux and Indonesia, Rw at formation temperature (Arps, gradient on TVD or
+  temperature curve), graphical picking of clean/shale GR (histogram) and Rw (Pickett plot).
+  Still open from item A.5: Waxman-Smits, Rw from SP, permeability and cutoff sensitivity.
 
 ## Recommended order
 
@@ -109,6 +113,6 @@ Items marked **[checked]** were verified in the code.
 |---|---|---|
 | 1 | Correlation unit bug · LICENSE · corpus of real-world LAS quirks in the tests **(done)** | Fixes a real error, makes sharing legal and gives the base to validate everything else |
 | 2 | DLIS · surveys + TVD/TVDSS + datum · display depth unit **(done)** | Without these, real project data cannot be opened or correlated correctly |
-| 3 | Curve units (done) · undo/redo · zone parameters · Simandoux/Indonesia · temperature-corrected Rw · graphical parameter picking | Interpretation becomes trustworthy and correctable |
+| 3 | Curve units · undo/redo · zone parameters · Simandoux/Indonesia · temperature-corrected Rw · graphical parameter picking **(done)** | Interpretation becomes trustworthy and correctable |
 | 4 | Wrap-around · color-map fill · lithology track · log header · click-to-pick tops | Professional presentation quality |
 | 5 | Signing/notarization and installers · editable aliases · autosave · base map · multi-well | Deployment and scale |

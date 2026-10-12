@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import replace
 
 import numpy as np
 from PySide6.QtCore import Qt
@@ -10,10 +11,10 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog,
                                QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
                                QListWidget, QListWidgetItem, QMessageBox, QPlainTextEdit, QPushButton, QTableWidget, QTableWidgetItem,
-                               QVBoxLayout)
+                               QTabWidget, QVBoxLayout, QWidget)
 
 from innopetrol.i18n import _
-from innopetrol.model import petro
+from innopetrol.model import petro, units
 from innopetrol.model.calculator import CalculatorError, FUNCTIONS, curve_ref, evaluate
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
 from innopetrol.model.mnemonics import find_curve, make_curve_style
@@ -50,19 +51,17 @@ class PetroDialog(QDialog):
         super().__init__(parent)
         self.doc = doc
         w = doc.well
-        p = doc.petro or petro.PetroParams(
-            gr_curve=find_curve(w, "gamma_ray"), rhob_curve=find_curve(w, "density"),
-            nphi_curve=find_curve(w, "neutron"), rt_curve=find_curve(w, "deep_res"),
-        )
-        if doc.petro is None and p.gr_curve:
-            gr = w.curves[p.gr_curve].values
-            p.gr_clean, p.gr_shale = (round(float(v), 1) for v in np.nanpercentile(gr, [5, 95]))
-        if doc.petro is None and p.nphi_curve:
-            p.phi_method = "nd_average"
-        self.setWindowTitle(_("Basic petrophysics — {well}").format(well=doc.title))
+        p = doc.petro or self._initial_params()
+        self.zones = zones_from_tops(w.tops, w.stop)
+        self.setWindowTitle(_("Petrophysics — {well}").format(well=doc.title))
         self.setWindowIcon(app_icon())
         lay = QVBoxLayout(self)
+        tabs = QTabWidget()
+        lay.addWidget(tabs)
 
+        # ---------------------------------------------------------------- Vsh and porosity
+        page = QWidget()
+        page_lay = QVBoxLayout(page)
         g1 = QGroupBox(_("Shale volume (Vsh) from gamma ray"))
         f1 = QFormLayout(g1)
         self.gr = _curve_combo(doc, p.gr_curve)
@@ -77,10 +76,13 @@ class PetroDialog(QDialog):
         gr_row.addWidget(self.gr_clean)
         gr_row.addWidget(QLabel(_("Shale GR")))
         gr_row.addWidget(self.gr_shale)
+        pick_gr = QPushButton(_("Pick on histogram…"))
+        pick_gr.clicked.connect(lambda: self._pick_gr(None))
+        gr_row.addWidget(pick_gr)
         f1.addRow(_("GR curve:"), self.gr)
         f1.addRow(gr_row)
         f1.addRow(_("Method:"), self.vsh_method)
-        lay.addWidget(g1)
+        page_lay.addWidget(g1)
 
         g2 = QGroupBox(_("Porosity"))
         f2 = QFormLayout(g2)
@@ -101,30 +103,112 @@ class PetroDialog(QDialog):
         f2.addRow(_("Neutron (NPHI):"), self.nphi)
         f2.addRow(rho_row)
         f2.addRow(_("Method:"), self.phi_method)
-        lay.addWidget(g2)
+        page_lay.addWidget(g2)
+        page_lay.addStretch()
+        tabs.addTab(page, _("Vsh and porosity"))
 
-        g3 = QGroupBox(_("Water saturation — Archie"))
+        # ---------------------------------------------------------------- water saturation
+        page = QWidget()
+        page_lay = QVBoxLayout(page)
+        g3 = QGroupBox(_("Water saturation"))
         f3 = QGridLayout(g3)
         self.rt = _curve_combo(doc, p.rt_curve)
+        self.sw_model = QComboBox()
+        for k, v in petro.SW_MODELS.items():
+            self.sw_model.addItem(_(v), k)
+        self.sw_model.setCurrentIndex(max(self.sw_model.findData(p.sw_model), 0))
+        self.sw_model.setToolTip(_("Archie is valid in clean rock. In shaly sands the clay conducts "
+                                   "electricity and Archie overestimates Sw; Simandoux and Indonesia "
+                                   "correct for it using Vsh and the shale resistivity Rsh."))
         self.rw = _spin(p.rw, 0.001, 100, 0.005, 4)
         self.a = _spin(p.a, 0.1, 5)
         self.m = _spin(p.m, 1, 4)
         self.n = _spin(p.n, 1, 4)
+        self.rsh = _spin(p.rsh, 0.01, 1000, 0.1, 3)
         f3.addWidget(QLabel(_("Resistivity Rt:")), 0, 0)
-        f3.addWidget(self.rt, 0, 1, 1, 7)
-        for i, (lbl, s) in enumerate((("Rw", self.rw), ("a", self.a), ("m", self.m), ("n", self.n))):
-            f3.addWidget(QLabel(lbl), 1, i * 2)
-            f3.addWidget(s, 1, i * 2 + 1)
-        lay.addWidget(g3)
+        f3.addWidget(self.rt, 0, 1, 1, 9)
+        f3.addWidget(QLabel(_("Model:")), 1, 0)
+        f3.addWidget(self.sw_model, 1, 1, 1, 9)
+        for i, (lbl, spin) in enumerate((("Rw", self.rw), ("a", self.a), ("m", self.m), ("n", self.n),
+                                         ("Rsh", self.rsh))):
+            f3.addWidget(QLabel(lbl), 2, i * 2)
+            f3.addWidget(spin, 2, i * 2 + 1)
+        pick_rw = QPushButton(_("Pick Rw on Pickett plot…"))
+        pick_rw.clicked.connect(lambda: self._pick_rw(None))
+        f3.addWidget(pick_rw, 3, 0, 1, 10, Qt.AlignLeft)
+        page_lay.addWidget(g3)
+
+        g5 = QGroupBox(_("Rw at formation temperature (Arps)"))
+        f5 = QFormLayout(g5)
+        self.temp_mode = QComboBox()
+        for k, v in petro.TEMP_MODES.items():
+            self.temp_mode.addItem(_(v), k)
+        self.temp_mode.setCurrentIndex(max(self.temp_mode.findData(p.temp_mode), 0))
+        self.temp_unit = QComboBox()
+        self.temp_unit.addItem("°C", "degC")
+        self.temp_unit.addItem("°F", "degF")
+        self.temp_unit.setCurrentIndex(max(self.temp_unit.findData(p.temp_unit), 0))
+        self._temp_unit = p.temp_unit
+        self.rw_temp = _spin(p.rw_temp, -50, 500, 1, 1)
+        self.surface_temp = _spin(p.surface_temp, -50, 200, 1, 1)
+        self.gradient = _spin(p.gradient, 0, 20, 0.1, 2)
+        self.temp_curve = _curve_combo(doc, p.temp_curve)
+        self.gradient_label = QLabel()
+        f5.addRow(_("Formation temperature:"), self.temp_mode)
+        f5.addRow(_("Temperature unit:"), self.temp_unit)
+        f5.addRow(_("Rw measured at:"), self.rw_temp)
+        f5.addRow(_("Surface temperature:"), self.surface_temp)
+        f5.addRow(self.gradient_label, self.gradient)
+        f5.addRow(_("Temperature curve:"), self.temp_curve)
+        self.temp_form = f5
+        page_lay.addWidget(g5)
+        page_lay.addStretch()
+        tabs.addTab(page, _("Water saturation"))
+
+        # ---------------------------------------------------------------- zones
+        page = QWidget()
+        page_lay = QVBoxLayout(page)
+        zone_hint = QLabel(_("Parameters that change by formation. An empty cell uses the value of the other "
+                             "tabs. Zones are the intervals between formation tops."))
+        zone_hint.setWordWrap(True)
+        page_lay.addWidget(zone_hint)
+        self.zone_table = QTableWidget(len(self.zones), len(petro.ZONE_PARAMS))
+        self.zone_table.setHorizontalHeaderLabels([_(v) for v in petro.ZONE_PARAMS.values()])
+        self.zone_table.setVerticalHeaderLabels([f"{z.name}  ({z.top:g}–{z.base:g})" for z in self.zones])
+        self.zone_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.zone_table.horizontalHeader().setMinimumSectionSize(52)
+        self.zone_table.horizontalHeader().setStretchLastSection(True)
+        for r, z in enumerate(self.zones):
+            for c, key in enumerate(petro.ZONE_PARAMS):
+                value = p.zones.get(z.name, {}).get(key)
+                self.zone_table.setItem(r, c, QTableWidgetItem("" if value is None else f"{value:g}"))
+        page_lay.addWidget(self.zone_table, 1)
+        zone_buttons = QHBoxLayout()
+        self.zone_pick_gr = QPushButton(_("Pick GR for the selected zone…"))
+        self.zone_pick_gr.clicked.connect(lambda: self._pick_gr(self._selected_zone()))
+        self.zone_pick_rw = QPushButton(_("Pick Rw for the selected zone…"))
+        self.zone_pick_rw.clicked.connect(lambda: self._pick_rw(self._selected_zone()))
+        clear = QPushButton(_("Clear the selected zone"))
+        clear.clicked.connect(self._clear_zone)
+        for b in (self.zone_pick_gr, self.zone_pick_rw, clear):
+            zone_buttons.addWidget(b)
+        zone_buttons.addStretch()
+        page_lay.addLayout(zone_buttons)
+        if not self.zones:
+            no_tops = QLabel(_("Define formation tops first (Well ▸ Formation tops…)."))
+            no_tops.setStyleSheet("color: #b9770e")
+            page_lay.addWidget(no_tops)
+            page.setEnabled(False)
+        tabs.addTab(page, _("Parameters by zone"))
 
         g4 = QGroupBox(_("Cutoffs (net reservoir / net pay)"))
         f4 = QHBoxLayout(g4)
         self.vsh_cut = _spin(p.vsh_cut, 0, 1)
         self.phi_cut = _spin(p.phi_cut, 0, 1)
         self.sw_cut = _spin(p.sw_cut, 0, 1)
-        for lbl, s in (("Vsh ≤", self.vsh_cut), ("φe ≥", self.phi_cut), ("Sw ≤", self.sw_cut)):
+        for lbl, spin in (("Vsh ≤", self.vsh_cut), ("φe ≥", self.phi_cut), ("Sw ≤", self.sw_cut)):
             f4.addWidget(QLabel(lbl))
-            f4.addWidget(s)
+            f4.addWidget(spin)
         lay.addWidget(g4)
 
         self.add_track = QCheckBox(_("Add/update a “Petrophysical results” track"))
@@ -138,23 +222,206 @@ class PetroDialog(QDialog):
         buttons.rejected.connect(self.reject)
         lay.addWidget(buttons)
 
+        self.sw_model.currentIndexChanged.connect(self._update_enabled)
+        self.temp_mode.currentIndexChanged.connect(self._update_enabled)
+        self.temp_unit.currentIndexChanged.connect(self._temp_unit_changed)
+        self._update_enabled()
+
+    def _initial_params(self) -> petro.PetroParams:
+        """First-time parameters guessed from the well's curves."""
+        w = self.doc.well
+        p = petro.PetroParams(
+            gr_curve=find_curve(w, "gamma_ray"), rhob_curve=find_curve(w, "density"),
+            nphi_curve=find_curve(w, "neutron"), rt_curve=find_curve(w, "deep_res"),
+            temp_curve=find_curve(w, "temperature"),
+        )
+        if p.gr_curve:
+            gr = w.curves[p.gr_curve].values
+            p.gr_clean, p.gr_shale = (round(float(v), 1) for v in np.nanpercentile(gr, [5, 95]))
+            if p.rt_curve:
+                # Shale resistivity: median Rt where the gamma ray is highest.
+                rt = w.curves[p.rt_curve].values
+                shale = gr >= np.nanpercentile(gr, 90)
+                rsh = np.nanmedian(rt[shale & np.isfinite(rt) & (rt > 0)]) if shale.any() else np.nan
+                if np.isfinite(rsh):
+                    p.rsh = round(float(rsh), 2)
+        if p.nphi_curve:
+            p.phi_method = "nd_average"
+        if w.depth_unit == "ft":  # oilfield habits: °F and °F/100 ft
+            p.temp_unit, p.surface_temp, p.rw_temp, p.gradient = "degF", 60.0, 75.0, 1.5
+        else:
+            p.temp_unit, p.surface_temp, p.rw_temp, p.gradient = "degC", 15.0, 24.0, 2.7
+        return p
+
+    def _update_enabled(self):
+        self.rsh.setEnabled(self.sw_model.currentData() != "archie")
+        mode = self.temp_mode.currentData()
+        for wdg, on in ((self.temp_unit, mode != "none"), (self.rw_temp, mode != "none"),
+                        (self.surface_temp, mode == "gradient"), (self.gradient, mode == "gradient"),
+                        (self.temp_curve, mode == "curve")):
+            wdg.setEnabled(on)
+            label = self.temp_form.labelForField(wdg)
+            if label is not None:
+                label.setEnabled(on)
+        unit = self.temp_unit.currentText()
+        self.gradient_label.setText(_("Gradient ({unit}/100 {depth_unit} TVD):").format(
+            unit=unit, depth_unit=self.doc.well.depth_unit))
+
+    def _temp_unit_changed(self):
+        """Converts the temperatures when the unit changes, so the meaning of the values is kept."""
+        new = self.temp_unit.currentData()
+        old, self._temp_unit = self._temp_unit, new
+        if old != new:
+            for spin in (self.rw_temp, self.surface_temp):
+                spin.setValue(float(units.convert(spin.value(), old, new)))
+            self.gradient.setValue(self.gradient.value() * (9 / 5 if new == "degF" else 5 / 9))
+        self._update_enabled()
+
+    # ---------------------------------------------------------------- zones
+    def _selected_zone(self) -> int | None:
+        rows = {i.row() for i in self.zone_table.selectedIndexes()}
+        if not rows and self.zone_table.currentRow() >= 0:
+            rows = {self.zone_table.currentRow()}
+        if len(rows) != 1:
+            QMessageBox.information(self, _("Parameters by zone"), _("Select one zone in the table."))
+            return -1
+        return rows.pop()
+
+    def _clear_zone(self):
+        row = self._selected_zone()
+        if row is not None and row >= 0:
+            for c in range(self.zone_table.columnCount()):
+                self.zone_table.item(row, c).setText("")
+
+    def _zone_cell(self, row: int, key: str) -> QTableWidgetItem:
+        return self.zone_table.item(row, list(petro.ZONE_PARAMS).index(key))
+
+    def _zone_overrides(self) -> dict[str, dict[str, float]]:
+        out: dict[str, dict[str, float]] = {}
+        for r, z in enumerate(self.zones):
+            for key in petro.ZONE_PARAMS:
+                text = self._zone_cell(r, key).text().strip().replace(",", ".")
+                if not text:
+                    continue
+                try:
+                    value = float(text)
+                except ValueError:
+                    raise ValueError(_("Zone {zone}, {parameter}: “{text}” is not a number.").format(
+                        zone=z.name, parameter=_(petro.ZONE_PARAMS[key]), text=text)) from None
+                out.setdefault(z.name, {})[key] = value
+        return out
+
+    def _set_zone_value(self, row: int, key: str, value: float, default: float):
+        self._zone_cell(row, key).setText("" if value == default else f"{value:g}")
+
+    # ---------------------------------------------------------------- graphical picking
+    def _interval(self, row: int | None) -> tuple[np.ndarray, str] | None:
+        """Mask of the samples to pick from, and its name (None = whole well)."""
+        if row is None:
+            return np.ones(self.doc.well.depth.shape, bool), _("whole well")
+        if row < 0:
+            return None
+        z = self.zones[row]
+        return self.doc.well.interval_mask(z.top, z.base), z.name
+
+    def _pick_gr(self, row: int | None):
+        from innopetrol.ui.pickers import GrPickerDialog
+
+        interval = self._interval(row)
+        mnem = self.gr.currentData()
+        if interval is None:
+            return
+        if not mnem:
+            QMessageBox.information(self, _("Petrophysics"), _("Select the GR curve first."))
+            return
+        mask, name = interval
+        curve = self.doc.well.curves[mnem]
+        clean, shale = self.gr_clean.value(), self.gr_shale.value()
+        if row is not None:
+            clean = _float(self._zone_cell(row, "gr_clean").text(), clean)
+            shale = _float(self._zone_cell(row, "gr_shale").text(), shale)
+        label = f"{mnem} ({curve.unit})" if curve.unit else mnem
+        dlg = GrPickerDialog(curve.values[mask], clean, shale, label, name, self)
+        if dlg.exec():
+            clean, shale = dlg.result_values()
+            if row is None:
+                self.gr_clean.setValue(clean)
+                self.gr_shale.setValue(shale)
+            else:
+                self._set_zone_value(row, "gr_clean", clean, self.gr_clean.value())
+                self._set_zone_value(row, "gr_shale", shale, self.gr_shale.value())
+
+    def _pick_rw(self, row: int | None):
+        from innopetrol.ui.pickers import PickettPickerDialog
+
+        interval = self._interval(row)
+        if interval is None:
+            return
+        mask, name = interval
+        try:
+            p = self.params()
+        except ValueError as e:
+            QMessageBox.warning(self, _("Petrophysics"), str(e))
+            return
+        if not p.rt_curve or not p.rhob_curve:
+            QMessageBox.information(self, _("Petrophysics"),
+                                    _("The Pickett plot needs the resistivity and density curves."))
+            return
+        # Porosity with the current parameters (Sw is not needed for the plot).
+        curves = {c.mnemonic: c for c in petro.compute(self.doc.well, replace(p, rt_curve=None))}
+        phie = curves["PHIE"].values
+        rt = self.doc.well.curves[p.rt_curve].values
+        zone = self.zones[row].name if row is not None else None
+        rw, a, m, n = (p.value(k, zone) for k in ("rw", "a", "m", "n"))
+        vsh = curves["VSH"].values[mask] if "VSH" in curves else None
+        dlg = PickettPickerDialog(rt[mask], phie[mask], rw, a, m, n, name, vsh, self)
+        if dlg.exec():
+            values = dict(zip(("rw", "a", "m", "n"), dlg.result_values()))
+            if row is None:
+                for key, value in values.items():
+                    getattr(self, key).setValue(value)
+            else:
+                for key, value in values.items():
+                    self._set_zone_value(row, key, value, getattr(self, key).value())
+
+    # ---------------------------------------------------------------- compute
     def params(self) -> petro.PetroParams:
+        """Parameters in the dialog. Raises ValueError if a zone cell is not a number."""
         return petro.PetroParams(
             gr_curve=self.gr.currentData(), gr_clean=self.gr_clean.value(), gr_shale=self.gr_shale.value(),
             vsh_method=self.vsh_method.currentData(), rhob_curve=self.rhob.currentData(),
             rho_ma=self.rho_ma.value(), rho_fl=self.rho_fl.value(), nphi_curve=self.nphi.currentData(),
             phi_method=self.phi_method.currentData(), rt_curve=self.rt.currentData(), rw=self.rw.value(),
             a=self.a.value(), m=self.m.value(), n=self.n.value(), vsh_cut=self.vsh_cut.value(),
-            phi_cut=self.phi_cut.value(), sw_cut=self.sw_cut.value(),
+            phi_cut=self.phi_cut.value(), sw_cut=self.sw_cut.value(), sw_model=self.sw_model.currentData(),
+            rsh=self.rsh.value(), temp_mode=self.temp_mode.currentData(), temp_unit=self.temp_unit.currentData(),
+            rw_temp=self.rw_temp.value(), surface_temp=self.surface_temp.value(), gradient=self.gradient.value(),
+            temp_curve=self.temp_curve.currentData(), zones=self._zone_overrides(),
         )
 
+    def _check(self, p: petro.PetroParams) -> str | None:
+        """First problem found in the parameters, checked in every zone, or None."""
+        for zone in [None] + [z.name for z in self.zones]:
+            where = "" if zone is None else _(" (zone {zone})").format(zone=zone)
+            if p.gr_curve and p.value("gr_clean", zone) >= p.value("gr_shale", zone):
+                return _("Clean GR must be lower than shale GR.") + where
+            if abs(p.value("rho_ma", zone) - p.value("rho_fl", zone)) < 1e-6:
+                return _("ρ matrix and ρ fluid cannot be equal.") + where
+            if min(p.value(k, zone) for k in ("rw", "a", "m", "n", "rsh")) <= 0:
+                return _("Rw, a, m, n and Rsh must be greater than zero.") + where
+        if p.temp_mode == "curve" and not p.temp_curve:
+            return _("Select the temperature curve.")
+        return None
+
     def _run(self):
-        p = self.params()
-        if p.gr_clean >= p.gr_shale and p.gr_curve:
-            QMessageBox.warning(self, _("Petrophysics"), _("Clean GR must be lower than shale GR."))
+        try:
+            p = self.params()
+        except ValueError as e:
+            QMessageBox.warning(self, _("Petrophysics"), str(e))
             return
-        if abs(p.rho_ma - p.rho_fl) < 1e-6:
-            QMessageBox.warning(self, _("Petrophysics"), _("ρ matrix and ρ fluid cannot be equal."))
+        problem = self._check(p)
+        if problem:
+            QMessageBox.warning(self, _("Petrophysics"), problem)
             return
         try:
             curves = petro.compute(self.doc.well, p)
@@ -164,10 +431,11 @@ class PetroDialog(QDialog):
         if not curves:
             QMessageBox.information(self, _("Petrophysics"), _("Select at least the GR or the density curve."))
             return
-        self.doc.petro = p
-        self.doc.add_curves(curves)
-        if self.add_track.isChecked():
-            self._update_results_track([c.mnemonic for c in curves])
+        with self.doc.undo_step(_("Compute petrophysics")):
+            self.doc.petro = p
+            self.doc.add_curves(curves)
+            if self.add_track.isChecked():
+                self._update_results_track([c.mnemonic for c in curves])
         self.accept()
 
     def _update_results_track(self, names: list[str]):
@@ -247,6 +515,7 @@ class CalculatorDialog(QDialog):
             _("Operators: {operators}").format(operators="+ - * / ** < > <= >= == & |"),
             _("Functions: {functions}").format(functions=", ".join(sorted(FUNCTIONS))),
             _("Constants: pi, e, nan. Curves with special names: [K-3104]"),
+            _("DEPTH and TVD: depth of each sample (measured and true vertical, in the file's depth unit)."),
         ])
         hl = QLabel(help_text)
         hl.setWordWrap(True)
@@ -285,7 +554,7 @@ class CalculatorDialog(QDialog):
 
     def _evaluate(self) -> np.ndarray | None:
         try:
-            return evaluate(self.expr.toPlainText(), {m: c.values for m, c in self.doc.well.curves.items()})
+            return evaluate(self.expr.toPlainText(), self.doc.well.formula_env())
         except CalculatorError as e:
             self.preview.setText("<span style='color:#c0392b'>{}</span>".format(_("Error: {error}").format(error=e)))
             return None
@@ -313,8 +582,9 @@ class CalculatorDialog(QDialog):
                                 _("{name} is an original LAS curve; choose another name.").format(name=name))
             return
         formula = " ".join(self.expr.toPlainText().split())
-        self.doc.add_curves([Curve(name, self.unit.text().strip(), self.descr.text().strip() or _("Computed curve"),
-                                   v, formula=formula)])
+        with self.doc.undo_step(_("Create curve {name}").format(name=name)):
+            self.doc.add_curves([Curve(name, self.unit.text().strip(),
+                                       self.descr.text().strip() or _("Computed curve"), v, formula=formula)])
         self.accept()
 
 
@@ -383,11 +653,22 @@ class ZoneSummaryDialog(QDialog):
         return [Zone(_("Whole well"), w.start, w.stop)]
 
     def _calc(self):
+        cutoffs = {}
+        if self.doc.petro is not None:  # cutoffs set per zone in the petrophysics dialog
+            cutoffs = {z: {k: v for k, v in vals.items() if k in ("vsh_cut", "phi_cut", "sw_cut")}
+                       for z, vals in self.doc.petro.zones.items()}
+            cutoffs = {z: v for z, v in cutoffs.items() if v}
         rows = petro.zone_summary(self.doc.well, self._zones(), self.vsh.currentData(), self.phi.currentData(),
                                   self.sw.currentData(), self.vsh_cut.value(), self.phi_cut.value(),
-                                  self.sw_cut.value())
-        self.note.setText("" if self.doc.well.tops else
-                          _("No tops defined: the whole well is summarized (Well ▸ Formation tops…)."))
+                                  self.sw_cut.value(), cutoffs)
+        notes = []
+        if not self.doc.well.tops:
+            notes.append(_("No tops defined: the whole well is summarized (Well ▸ Formation tops…)."))
+        used = [r.zone for r in rows if r.zone in cutoffs]
+        if used:
+            notes.append(_("Zones with their own cutoffs (from Petrophysics ▸ Parameters by zone): {zones}").format(
+                zones=", ".join(used)))
+        self.note.setText("\n".join(notes))
         self._rows = []
         self.table.setRowCount(len(rows))
         for r, z in enumerate(rows):
@@ -420,3 +701,10 @@ def _num(v: float) -> str:
 
 def _pct(v: float) -> str:
     return "—" if not np.isfinite(v) else f"{v * 100:.0f} %"
+
+
+def _float(text: str, default: float) -> float:
+    try:
+        return float(text.strip().replace(",", "."))
+    except ValueError:
+        return default

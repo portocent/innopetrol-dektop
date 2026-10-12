@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 23:34-0500\n"
+"POT-Creation-Date: 2026-10-12 06:41-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -18,8 +18,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+#, python-brace-format
+msgid " (zone {zone})"
+msgstr " (zona {zone})"
+
 msgid "&Analysis"
 msgstr "&Análisis"
+
+msgid "&Edit"
+msgstr "&Edición"
 
 msgid "&File"
 msgstr "&Archivo"
@@ -58,12 +65,8 @@ msgid "<b>Pickett</b> (Sw lines)"
 msgstr "<b>Pickett</b> (líneas de Sw)"
 
 #, python-brace-format
-msgid ""
-"<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale ({out} / "
-"{in_})"
-msgstr ""
-"Botones <b>−</b> y <b>+</b> junto a «Escala»: alejar / acercar a la siguiente escala estándar "
-"({out} / {in_})"
+msgid "<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale ({out} / {in_})"
+msgstr "Botones <b>−</b> y <b>+</b> junto a «Escala»: alejar / acercar a la siguiente escala estándar ({out} / {in_})"
 
 msgid "About InnoPetrol"
 msgstr "Acerca de InnoPetrol"
@@ -74,12 +77,19 @@ msgstr "Agregar"
 msgid "Add curve track"
 msgstr "Agregar track de curvas"
 
+msgid "Add curves"
+msgstr "Agregar curvas"
+
 msgid "Add depth track"
 msgstr "Agregar track de profundidad"
 
 #, python-brace-format
 msgid "Add top at {depth}…"
 msgstr "Agregar tope en {depth}…"
+
+#, python-brace-format
+msgid "Add top {name}"
+msgstr "Agregar tope {name}"
 
 msgid "Add track"
 msgstr "Agregar track"
@@ -90,6 +100,9 @@ msgstr "Agregar/actualizar un track «Resultados petrofísicos»"
 msgid "All tracks"
 msgstr "Todos los tracks"
 
+msgid "Apply template"
+msgstr "Aplicar plantilla"
+
 msgid "Apply the active well's layout to all wells"
 msgstr "Aplicar el layout del pozo activo a todos los pozos"
 
@@ -98,6 +111,16 @@ msgstr "Aplicar a todos"
 
 msgid "Approximate lines (limestone neutron); marks every 10 p.u."
 msgstr "Líneas aproximadas (neutrón en caliza); marcas cada 10 p.u."
+
+msgid "Archie (clean sands)"
+msgstr "Archie (arenas limpias)"
+
+msgid ""
+"Archie is valid in clean rock. In shaly sands the clay conducts electricity and Archie overestimates Sw; Simandoux "
+"and Indonesia correct for it using Vsh and the shale resistivity Rsh."
+msgstr ""
+"Archie es válido en roca limpia. En arenas arcillosas la arcilla conduce electricidad y Archie sobreestima Sw; "
+"Simandoux e Indonesia lo corrigen usando Vsh y la resistividad de la arcilla Rsh."
 
 msgid "As in the file"
 msgstr "Como en el archivo"
@@ -122,13 +145,6 @@ msgstr "φ prom"
 msgid "Base ({unit})"
 msgstr "Base ({unit})"
 
-msgid "Basic petrophysics (Vsh, φ, Sw)…"
-msgstr "Petrofísica básica (Vsh, φ, Sw)…"
-
-#, python-brace-format
-msgid "Basic petrophysics — {well}"
-msgstr "Petrofísica básica — {well}"
-
 msgid "Bins:"
 msgstr "Clases:"
 
@@ -152,17 +168,29 @@ msgstr "Caliper"
 msgid "Cascade"
 msgstr "Cascada"
 
+msgid "Change layout"
+msgstr "Cambiar diseño"
+
+msgid "Change survey and elevation"
+msgstr "Cambiar survey y elevación"
+
 msgid "Check the data"
 msgstr "Revise los datos"
 
 msgid "Choose color"
 msgstr "Elegir color"
 
+msgid "Clean"
+msgstr "Limpio"
+
 msgid "Clean GR"
 msgstr "GR limpio"
 
 msgid "Clean GR must be lower than shale GR."
 msgstr "GR limpio debe ser menor que GR arcilla."
+
+msgid "Clear the selected zone"
+msgstr "Vaciar la zona seleccionada"
 
 #, python-brace-format
 msgid "Close the well “{name}”?"
@@ -179,17 +207,20 @@ msgstr "Color:"
 
 #, python-brace-format
 msgid ""
-"Columns: MD, inclination and azimuth in degrees, with MD in the same unit as the log ({unit}). "
-"Headers in English or Spanish are recognized."
+"Columns: MD, inclination and azimuth in degrees, with MD in the same unit as the log ({unit}). Headers in English or "
+"Spanish are recognized."
 msgstr ""
-"Columnas: MD, inclinación y azimut en grados, con MD en la misma unidad que el registro ({unit})."
-" Se reconocen encabezados en inglés o español."
+"Columnas: MD, inclinación y azimut en grados, con MD en la misma unidad que el registro ({unit}). Se reconocen "
+"encabezados en inglés o español."
 
 msgid "Company"
 msgstr "Compañía"
 
 msgid "Compute"
 msgstr "Calcular"
+
+msgid "Compute petrophysics"
+msgstr "Calcular petrofísica"
 
 msgid "Computed curve"
 msgstr "Curva calculada"
@@ -200,12 +231,10 @@ msgstr "Constantes: pi, e, nan. Curvas con nombres especiales: [K-3104]"
 msgid "Copy (for Excel)"
 msgstr "Copiar (para Excel)"
 
-msgid ""
-"Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; it "
-"comes with NO WARRANTY."
+msgid "Copyright © 2020-2026 Jacobo Porto. Free software under the GNU LGPL, version 3 or later; it comes with NO WARRANTY."
 msgstr ""
-"Copyright © 2020-2026 Jacobo Porto. Software libre bajo la GNU LGPL, versión 3 o posterior; se "
-"distribuye SIN NINGUNA GARANTÍA."
+"Copyright © 2020-2026 Jacobo Porto. Software libre bajo la GNU LGPL, versión 3 o posterior; se distribuye SIN NINGUNA"
+" GARANTÍA."
 
 #, python-brace-format
 msgid "Corrections on load ({count})"
@@ -231,6 +260,10 @@ msgstr "No se pudo guardar: {error}"
 
 msgid "Create curve"
 msgstr "Crear curva"
+
+#, python-brace-format
+msgid "Create curve {name}"
+msgstr "Crear curva {name}"
 
 msgid "Crossover (possible gas)"
 msgstr "Cruce (posible gas)"
@@ -278,6 +311,9 @@ msgstr "Curvas, fila {row}"
 msgid "Cutoffs (net reservoir / net pay)"
 msgstr "Cortes (net reservoir / net pay)"
 
+msgid "DEPTH and TVD: depth of each sample (measured and true vertical, in the file's depth unit)."
+msgstr "DEPTH y TVD: profundidad de cada muestra (medida y vertical verdadera, en la unidad de profundidad del archivo)."
+
 msgid "DLIS support is not available on this platform (the dlisio package is not installed)"
 msgstr "La lectura de DLIS no está disponible en esta plataforma (el paquete dlisio no está instalado)"
 
@@ -320,11 +356,18 @@ msgstr "Plantilla por defecto actualizada: se usará al abrir nuevos pozos."
 msgid "Default template: {name}"
 msgstr "Plantilla por defecto: {name}"
 
+msgid "Define formation tops first (Well ▸ Formation tops…)."
+msgstr "Primero defina topes de formación (Pozo ▸ Topes de formación…)."
+
 msgid "Delete computed curve"
 msgstr "Eliminar curva calculada"
 
 msgid "Delete curve"
 msgstr "Eliminar curva"
+
+#, python-brace-format
+msgid "Delete curve {name}"
+msgstr "Eliminar curva {name}"
 
 #, python-brace-format
 msgid "Delete the computed curve {name}?"
@@ -365,12 +408,10 @@ msgid "Depth unit"
 msgstr "Unidad de profundidad"
 
 #, python-brace-format
-msgid ""
-"Depths in {unit} (log range: {start} – {stop}). You can also add a top by right-clicking on the "
-"log."
+msgid "Depths in {unit} (log range: {start} – {stop}). You can also add a top by right-clicking on the log."
 msgstr ""
-"Profundidades en {unit} (rango del registro: {start} – {stop}). También puede agregar un tope con"
-" clic derecho sobre el registro."
+"Profundidades en {unit} (rango del registro: {start} – {stop}). También puede agregar un tope con clic derecho sobre "
+"el registro."
 
 msgid "Description:"
 msgstr "Descripción:"
@@ -400,14 +441,38 @@ msgstr "Bajar"
 msgid "Drag a track's border: change its width · Double-click a track: edit it"
 msgstr "Arrastrar el borde de un track: cambiar su ancho · Doble clic en un track: editarlo"
 
+msgid ""
+"Drag the blue water line (Sw = 1) onto the lowest-resistivity points, which are usually water-bearing. The slope "
+"depends on m. “Fit to the wettest points” places it automatically."
+msgstr ""
+"Arrastre la línea azul de agua (Sw = 1) sobre los puntos de menor resistividad, que suelen ser acuíferos. La "
+"pendiente depende de m. «Ajustar a los puntos más húmedos» la ubica automáticamente."
+
+msgid ""
+"Drag the green line to the clean sand and the brown line to the shale, or click near a line to move it there. P5/P95 "
+"places them at the 5th and 95th percentiles."
+msgstr ""
+"Arrastre la línea verde a la arena limpia y la marrón a la arcilla, o haga clic cerca de una línea para llevarla ahí."
+" P5/P95 las ubica en los percentiles 5 y 95."
+
 msgid "E.g.: (2.65 - RHOB) / (2.65 - 1.0)"
 msgstr "Ej.: (2.65 - RHOB) / (2.65 - 1.0)"
+
+msgid "Edit"
+msgstr "Edición"
+
+msgid "Edit formation tops"
+msgstr "Editar topes de formación"
 
 msgid "Edit selected track…"
 msgstr "Editar track seleccionado…"
 
 msgid "Edit tops…"
 msgstr "Editar topes…"
+
+#, python-brace-format
+msgid "Edit track “{title}”"
+msgstr "Editar track «{title}»"
 
 msgid "Edit track…"
 msgstr "Editar track…"
@@ -481,6 +546,9 @@ msgstr "Primeros 3 tracks (correlación, profundidad, resistividad)"
 msgid "Fit"
 msgstr "Ajustar"
 
+msgid "Fit to the wettest points"
+msgstr "Ajustar a los puntos más húmedos"
+
 msgid "Fit to window"
 msgstr "Ajustar a la ventana"
 
@@ -496,6 +564,12 @@ msgstr "Seguir el cursor del registro"
 
 msgid "Format:"
 msgstr "Formato:"
+
+msgid "Formation temperature from the geothermal gradient (TVD)"
+msgstr "Temperatura de formación por gradiente geotérmico (TVD)"
+
+msgid "Formation temperature:"
+msgstr "Temperatura de formación:"
 
 #, python-brace-format
 msgid "Formation tops — {well}"
@@ -527,6 +601,13 @@ msgstr "Curva GR:"
 msgid "Gamma ray"
 msgstr "Rayos gamma"
 
+msgid "Geothermal gradient"
+msgstr "Gradiente geotérmico"
+
+#, python-brace-format
+msgid "Gradient ({unit}/100 {depth_unit} TVD):"
+msgstr "Gradiente ({unit}/100 {depth_unit} TVD):"
+
 #, python-brace-format
 msgid "Gross ({unit})"
 msgstr "Bruto ({unit})"
@@ -545,6 +626,9 @@ msgstr "Importar survey (CSV/TXT)…"
 
 msgid "Import tops"
 msgstr "Importar topes"
+
+msgid "Indonesia (shaly sands, fresh water)"
+msgstr "Indonesia (arenas arcillosas, agua dulce)"
 
 #, python-brace-format
 msgid "InnoPetrol project (*{suffix})"
@@ -671,11 +755,17 @@ msgstr "Mín {min} · Máx {max} · Media {mean}"
 msgid "Minimum: {value}"
 msgstr "Mínimo: {value}"
 
+msgid "Model:"
+msgstr "Modelo:"
+
 msgid "Move left"
 msgstr "Mover a la izquierda"
 
 msgid "Move right"
 msgstr "Mover a la derecha"
+
+msgid "Move track"
+msgstr "Mover track"
 
 msgid "NEW"
 msgstr "NUEVA"
@@ -791,6 +881,9 @@ msgstr "Proyecto original 2020 · reescrito con Python {version} y PySide6."
 msgid "Other curves"
 msgstr "Otras curvas"
 
+msgid "P5 / P95"
+msgstr "P5 / P95"
+
 #, python-brace-format
 msgid "P50 (median): {value}"
 msgstr "P50 (mediana): {value}"
@@ -814,6 +907,16 @@ msgstr "Hoja {page}/{pages}"
 msgid "Paper (PDF):"
 msgstr "Papel (PDF):"
 
+msgid "Parameters by zone"
+msgstr "Parámetros por zona"
+
+msgid ""
+"Parameters that change by formation. An empty cell uses the value of the other tabs. Zones are the intervals between "
+"formation tops."
+msgstr ""
+"Parámetros que cambian por formación. Una celda vacía usa el valor de las otras pestañas. Las zonas son los "
+"intervalos entre topes de formación."
+
 msgid "Pattern"
 msgstr "Patrón"
 
@@ -829,8 +932,35 @@ msgstr "Resultados petrofísicos"
 msgid "Petrophysics"
 msgstr "Petrofísica"
 
+msgid "Petrophysics (Vsh, φ, Sw)…"
+msgstr "Petrofísica (Vsh, φ, Sw)…"
+
+#, python-brace-format
+msgid "Petrophysics — {well}"
+msgstr "Petrofísica — {well}"
+
 msgid "Photoelectric factor"
 msgstr "Factor fotoeléctrico"
+
+msgid "Pick GR for the selected zone…"
+msgstr "Elegir GR de la zona seleccionada…"
+
+msgid "Pick Rw for the selected zone…"
+msgstr "Elegir Rw de la zona seleccionada…"
+
+msgid "Pick Rw on Pickett plot…"
+msgstr "Elegir Rw en el gráfico de Pickett…"
+
+#, python-brace-format
+msgid "Pick Rw on the Pickett plot — {interval}"
+msgstr "Elegir Rw en el gráfico de Pickett — {interval}"
+
+#, python-brace-format
+msgid "Pick clean and shale GR — {interval}"
+msgstr "Elegir GR limpio y de arcilla — {interval}"
+
+msgid "Pick on histogram…"
+msgstr "Elegir en el histograma…"
 
 msgid "Pickett (φ vs Rt)"
 msgstr "Pickett (φ vs Rt)"
@@ -852,8 +982,14 @@ msgstr "Salir"
 msgid "Ready. Open a LAS file ({shortcut}) or drag it onto the window."
 msgstr "Listo. Abra un archivo LAS ({shortcut}) o arrástrelo a la ventana."
 
+msgid "Rebuild Triple Combo"
+msgstr "Reconstruir Triple Combo"
+
 msgid "Rebuild Triple Combo in the active well"
 msgstr "Reconstruir Triple Combo en el pozo activo"
+
+msgid "Redo"
+msgstr "Rehacer"
 
 #, python-brace-format
 msgid "Reference elevation: {value} {unit}"
@@ -875,6 +1011,10 @@ msgstr "¿Eliminar el track «{title}» y su configuración?"
 msgid "Remove track"
 msgstr "Eliminar track"
 
+#, python-brace-format
+msgid "Remove track “{title}”"
+msgstr "Quitar track «{title}»"
+
 msgid "Rename track"
 msgstr "Renombrar track"
 
@@ -892,6 +1032,9 @@ msgstr "Resistividad"
 
 msgid "Resistivity Rt:"
 msgstr "Resistividad Rt:"
+
+msgid "Resize track"
+msgstr "Cambiar ancho del track"
 
 msgid "Resolution (PNG, dpi):"
 msgstr "Resolución (PNG, dpi):"
@@ -911,6 +1054,18 @@ msgstr "Clic derecho: menú del track (agregar, mover, eliminar, agregar tope, e
 #, python-brace-format
 msgid "Row {row}: a name and a numeric depth are required"
 msgstr "Fila {row}: nombre y profundidad numérica son obligatorios"
+
+msgid "Rw at formation temperature (Arps)"
+msgstr "Rw a temperatura de formación (Arps)"
+
+msgid "Rw is the same at every depth"
+msgstr "Rw igual a toda profundidad"
+
+msgid "Rw measured at:"
+msgstr "Rw medida a:"
+
+msgid "Rw, a, m, n and Rsh must be greater than zero."
+msgstr "Rw, a, m, n y Rsh deben ser mayores que cero."
 
 msgid "Sand"
 msgstr "Arena"
@@ -963,6 +1118,15 @@ msgstr "Seleccione la ventana de un pozo."
 msgid "Select at least the GR or the density curve."
 msgstr "Seleccione al menos la curva GR o la de densidad."
 
+msgid "Select one zone in the table."
+msgstr "Seleccione una zona en la tabla."
+
+msgid "Select the GR curve first."
+msgstr "Primero seleccione la curva de GR."
+
+msgid "Select the temperature curve."
+msgstr "Seleccione la curva de temperatura."
+
 msgid "Separation (shale)"
 msgstr "Separación (arcilla)"
 
@@ -989,6 +1153,9 @@ msgstr "Ver como pestañas"
 
 msgid "Show well window"
 msgstr "Mostrar ventana del pozo"
+
+msgid "Simandoux (shaly sands, n = 2)"
+msgstr "Simandoux (arenas arcillosas, n = 2)"
 
 msgid "Solid"
 msgstr "Continua"
@@ -1022,6 +1189,9 @@ msgstr "Desv. estándar: {value}"
 msgid "Style"
 msgstr "Estilo"
 
+msgid "Surface temperature:"
+msgstr "Temperatura de superficie:"
+
 #, python-brace-format
 msgid "Survey and elevation — {well}"
 msgstr "Survey y elevación — {well}"
@@ -1029,10 +1199,24 @@ msgstr "Survey y elevación — {well}"
 msgid "Surveys (*.csv *.txt *.dev *.svy);;All files (*)"
 msgstr "Surveys (*.csv *.txt *.dev *.svy);;Todos los archivos (*)"
 
+#, python-brace-format
+msgid "Sw - {model}"
+msgstr "Sw - {model}"
+
 msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
-msgstr ""
-"TVDSS necesita la elevación de la referencia de profundidad (Pozo ▸ Survey de desviación y "
-"elevación…)."
+msgstr "TVDSS necesita la elevación de la referencia de profundidad (Pozo ▸ Survey de desviación y elevación…)."
+
+msgid "Temperature"
+msgstr "Temperatura"
+
+msgid "Temperature curve"
+msgstr "Curva de temperatura"
+
+msgid "Temperature curve:"
+msgstr "Curva de temperatura:"
+
+msgid "Temperature unit:"
+msgstr "Unidad de temperatura:"
 
 #, python-brace-format
 msgid "Template saved: {path}"
@@ -1040,6 +1224,9 @@ msgstr "Plantilla guardada: {path}"
 
 msgid "Test"
 msgstr "Probar"
+
+msgid "The Pickett plot needs the resistivity and density curves."
+msgstr "El gráfico de Pickett necesita las curvas de resistividad y densidad."
 
 msgid "Tile"
 msgstr "Mosaico"
@@ -1098,6 +1285,9 @@ msgstr "Escriba la escala como 1:500 o 500."
 msgid "Type:"
 msgstr "Tipo:"
 
+msgid "Undo"
+msgstr "Deshacer"
+
 msgid "Unit system"
 msgstr "Sistema de unidades"
 
@@ -1153,11 +1343,11 @@ msgstr "Visible"
 msgid "Vsh - {method}"
 msgstr "Vsh - {method}"
 
+msgid "Vsh and porosity"
+msgstr "Vsh y porosidad"
+
 msgid "Water saturation"
 msgstr "Saturación de agua"
-
-msgid "Water saturation — Archie"
-msgstr "Saturación de agua — Archie"
 
 msgid "Well correlation"
 msgstr "Correlación de pozos"
@@ -1169,18 +1359,15 @@ msgid "Well information"
 msgstr "Información del pozo"
 
 msgid ""
-"Well log visualization (LAS format) for petroleum engineers: configurable tracks, linear and "
-"logarithmic scales, fills, tops, basic petrophysics, crossplots, well correlation and export to "
-"PDF/PNG/LAS."
+"Well log visualization (LAS format) for petroleum engineers: configurable tracks, linear and logarithmic scales, "
+"fills, tops, basic petrophysics, crossplots, well correlation and export to PDF/PNG/LAS."
 msgstr ""
-"Visualización de registros de pozo en formato LAS para ingenieros de petróleo: tracks "
-"configurables, escalas lineales y logarítmicas, rellenos, topes, petrofísica básica, crossplots, "
-"correlación entre pozos y exportación a PDF/PNG/LAS."
+"Visualización de registros de pozo en formato LAS para ingenieros de petróleo: tracks configurables, escalas lineales"
+" y logarítmicas, rellenos, topes, petrofísica básica, crossplots, correlación entre pozos y exportación a "
+"PDF/PNG/LAS."
 
 msgid "Well logs (*.las *.LAS *.dlis *.DLIS);;LAS (*.las *.LAS);;DLIS (*.dlis *.DLIS);;All files (*)"
-msgstr ""
-"Registros de pozo (*.las *.LAS *.dlis *.DLIS);;LAS (*.las *.LAS);;DLIS (*.dlis *.DLIS);;Todos los"
-" archivos (*)"
+msgstr "Registros de pozo (*.las *.LAS *.dlis *.DLIS);;LAS (*.las *.LAS);;DLIS (*.dlis *.DLIS);;Todos los archivos (*)"
 
 msgid "Well tree"
 msgstr "Árbol de pozos"
@@ -1199,9 +1386,7 @@ msgid "What is visible on screen"
 msgstr "Lo visible en pantalla"
 
 msgid "Wheel: scroll in depth · Shift + wheel: scroll horizontally · PgUp/PgDn, Home/End, arrows"
-msgstr ""
-"Rueda: desplazar en profundidad · Shift + rueda: desplazar horizontal · RePág/AvPág, Inicio/Fin, "
-"flechas"
+msgstr "Rueda: desplazar en profundidad · Shift + rueda: desplazar horizontal · RePág/AvPág, Inicio/Fin, flechas"
 
 msgid "Whole well"
 msgstr "Pozo completo"
@@ -1239,11 +1424,19 @@ msgid "Zone {name}"
 msgstr "Zona {name}"
 
 #, python-brace-format
+msgid "Zone {zone}, {parameter}: “{text}” is not a number."
+msgstr "Zona {zone}, {parameter}: «{text}» no es un número."
+
+#, python-brace-format
 msgid "Zone: {name}"
 msgstr "Zona: {name}"
 
 msgid "Zones"
 msgstr "Zonas"
+
+#, python-brace-format
+msgid "Zones with their own cutoffs (from Petrophysics ▸ Parameters by zone): {zones}"
+msgstr "Zonas con cortes propios (de Petrofísica ▸ Parámetros por zona): {zones}"
 
 msgid "Zoom"
 msgstr "Zoom"
@@ -1326,6 +1519,10 @@ msgstr "plantilla con formato inválido: {error}"
 #, python-brace-format
 msgid "layout of {well}"
 msgstr "layout de {well}"
+
+#, python-brace-format
+msgid "light gray: shaly (Vsh > {cutoff}), not used by the automatic fit"
+msgstr "gris claro: arcilloso (Vsh > {cutoff}), no se usa en el ajuste automático"
 
 msgid "measured depth (MD)"
 msgstr "profundidad medida (MD)"
@@ -1412,9 +1609,16 @@ msgstr "curva desconocida: {name}"
 msgid "usage: curve(\"NAME\")"
 msgstr "uso: curve(\"NOMBRE\")"
 
+msgid "whole well"
+msgstr "pozo completo"
+
 #, python-brace-format
 msgid "{count} points"
 msgstr "{count} puntos"
+
+#, python-brace-format
+msgid "{count} points with φ and Rt"
+msgstr "{count} puntos con φ y Rt"
 
 #, python-brace-format
 msgid "{count} row with a null depth was removed"
@@ -1456,9 +1660,7 @@ msgstr "{name} es una curva original del LAS; elija otro nombre."
 
 #, python-brace-format
 msgid "{open} open LAS · {save} save project · {export} export · {tsave} / {tload} save / load template"
-msgstr ""
-"{open} abrir LAS · {save} guardar proyecto · {export} exportar · {tsave} / {tload} guardar / "
-"cargar plantilla"
+msgstr "{open} abrir LAS · {save} guardar proyecto · {export} exportar · {tsave} / {tload} guardar / cargar plantilla"
 
 #, python-brace-format
 msgid "{row}: a fixed value needs at least one curve in the track to be placed"

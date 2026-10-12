@@ -219,6 +219,71 @@ y el programa habría duplicado los tracks de resultados. Ahora los busca por la
 `{placeholder}`, si el `.mo` quedó desactualizado respecto del `.po`, o si `_` se usa como variable.
 También verifican el cambio de idioma en vivo y que la elección se recuerde al reiniciar.
 
+### 3.4 Interpretación corregible: deshacer, parámetros por zona y modelos de arenas arcillosas
+
+**Deshacer / rehacer (Edición ▸ Deshacer, Ctrl+Z).** Cada pozo tiene su propio historial y el menú dice
+qué se va a deshacer ("Deshacer: Quitar track «Resistividad»").
+
+*Cómo está hecho.* La forma clásica es escribir un "comando" por cada operación, con su `undo()` y
+`redo()`. Pero en este programa hay muchos lugares que modifican el diseño (editor de tracks, arrastrar el
+borde, renombrar, plantillas, petrofísica…), y bastaba con olvidar uno para que esa acción no se pudiera
+deshacer. Por eso se usa otra técnica: **instantáneas**. Cada vez que el documento avisa que cambió
+(`layoutChanged`, `curvesChanged`, `topsChanged`), se compara el contenido nuevo con el anterior y, si
+es distinto, se guarda el par antes/después en un `QUndoStack`. Así cualquier cambio queda registrado,
+incluso los que se hagan en código futuro.
+
+*¿No ocupa mucha memoria?* No: el diseño y los topes son unos pocos KB, y las curvas **no se copian**.
+Se guardan referencias a los mismos objetos `Curve`, que nunca se modifican después de crearse. Deshacer
+un cálculo petrofísico recupera exactamente los mismos arreglos de numpy, sin copiarlos.
+
+*Lo que no se deshace.* Cambiar MD/TVD o las unidades es una forma de *ver* los datos, no un cambio en
+ellos (igual que el zoom). Si se deshace algo después de pasar a unidades métricas, el diseño recuperado
+se convierte a las unidades actuales, porque cada escala guarda en qué unidad está escrita.
+
+*Una acción, un paso.* Calcular petrofísica agrega curvas y además crea o actualiza dos tracks. Con
+`with doc.undo_step(_("Compute petrophysics")):` todo eso queda en un solo paso de deshacer.
+
+**Parámetros por zona.** Los parámetros cambian de una formación a otra: el GR de la arcilla, la densidad
+de la matriz, Rw, el exponente m… En la pestaña *Parámetros por zona* hay una tabla con una fila por zona
+(entre topes). Una celda vacía usa el valor general. En la fórmula guardada, un parámetro con valores por
+zona se escribe en función de la profundidad, para que se pueda leer y recalcular:
+
+```
+where((DEPTH >= 8040), 0.02, 0.05)      # Rw = 0.02 desde el tope B, 0.05 en el resto
+```
+
+Por eso la calculadora ahora conoce `DEPTH` (profundidad medida) y `TVD` de cada muestra. El resumen de
+zonas también usa los cortes propios de cada zona si se definieron.
+
+**Modelos de arenas arcillosas.** Archie supone que sólo el agua conduce la electricidad. En arenas con
+arcilla, la arcilla también conduce: la resistividad baja y Archie "ve" más agua de la que hay, por lo que
+una arena con petróleo puede descartarse por error. Se agregaron:
+- **Simandoux** (forma modificada, n = 2): Sw = a·Rw/(2·φ^m) · [√((Vsh/Rsh)² + 4·φ^m/(a·Rw·Rt)) − Vsh/Rsh].
+- **Indonesia** (Poupon y Leveaux, 1971), pensado para agua de formación dulce:
+  1/√Rt = [Vsh^(1−Vsh/2)/√Rsh + √(φ^m/(a·Rw))] · Sw^(n/2).
+
+Las dos fórmulas dan exactamente Archie cuando Vsh = 0, y las pruebas lo verifican. Rsh, la resistividad
+de la arcilla, se propone la primera vez como la mediana de Rt donde el GR es más alto.
+
+**Rw a temperatura de formación (Arps).** Rw se mide en el laboratorio a una temperatura, pero en el
+pozo el agua está más caliente y conduce mejor: Rw₂ = Rw₁·(T₁ + 21,5)/(T₂ + 21,5) en °C (6,77 en °F). La
+temperatura sale de un gradiente geotérmico aplicado a la **TVD**, no a la MD (en un pozo desviado la
+diferencia es grande), o de una curva de temperatura convertida a la unidad elegida. Se generan las
+curvas `TFORM` (temperatura) y `RWT` (Rw corregida). No se llama `TEMP` para no pisar una curva de
+temperatura que venga en el archivo.
+
+**Elegir parámetros sobre los gráficos.** Escribir parámetros a mano es la principal fuente de errores:
+- *GR limpio y de arcilla*: en el histograma se arrastran dos líneas (verde y marrón). Un clic mueve la
+  línea más cercana; P5/P95 las pone en los percentiles 5 y 95.
+- *Rw en el gráfico de Pickett*: en escala log-log, cada Sw de Archie es una recta de pendiente −1/m. Se
+  arrastra la recta de agua (Sw = 1) sobre los puntos de menor resistividad. "Ajustar a los puntos más
+  húmedos" la ubica sola, con el percentil 5 de Rw aparente = Rt·φ^m/a. Los puntos arcillosos
+  (Vsh > 0,35) se ven en gris claro y no se usan en el ajuste, porque la arcilla también tiene
+  resistividad baja y tiraría la recta hacia abajo. Este error apareció al revisar el gráfico con datos
+  reales: el primer ajuste daba Rw = 0,012 en lugar de 0,044.
+- Desde la pestaña de zonas, las dos herramientas trabajan sólo con los datos de la zona seleccionada y
+  escriben el resultado en su fila.
+
 ## 4. Arquitectura
 
 ```
@@ -281,5 +346,7 @@ en modo offscreen (incluido el bug del árbol al cerrar pozos).
 
 - Las líneas de litología del crossplot neutrón-densidad son aproximaciones lineales, no las cartas
   de cada compañía de servicio.
-- No hay profundidad vertical verdadera (TVD) ni datos de desviación; todo es profundidad medida.
+- Simandoux está resuelto para n = 2 (la forma cerrada publicada); con otro n el programa usa n = 2 en ese modelo.
+- El gradiente geotérmico se aplica sobre la TVD medida desde la referencia del pozo (KB/DF), no desde el
+  terreno; la diferencia es de pocos grados en pozos con mesa rotaria alta.
 - Las plantillas `.temp` de la versión 2020 (pickle) no se importan.

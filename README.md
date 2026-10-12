@@ -29,7 +29,11 @@ Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python w
 
 **Interpretation**
 - Formation tops: add with right-click, edit in a table, import/export CSV (English or Spanish column names).
-- Basic petrophysics: Vsh (linear, Larionov), density and neutron-density porosity, effective porosity, Archie Sw, reservoir and pay flags.
+- Petrophysics: Vsh (linear, Larionov), density and neutron-density porosity, effective porosity, Sw by **Archie, Simandoux or Indonesia**, reservoir and pay flags.
+- **Parameters by zone** (between formation tops): clean/shale GR, matrix and fluid density, Rw, a, m, n, Rsh and cutoffs.
+- **Rw at formation temperature** (Arps) from a geothermal gradient on TVD or a temperature curve.
+- **Graphical parameter picking**: clean/shale GR dragging lines on the histogram, Rw dragging the water line on a Pickett plot (or fitted to the wettest clean points), for the whole well or one zone.
+- **Undo / redo** (Ctrl+Z / Ctrl+Shift+Z) for track, template, tops, survey, curve and petrophysics changes, one history per well.
 - Zone summary: gross, net reservoir and net pay thickness, N/G, average φ, Sw and Vsh (copy to Excel or CSV).
 - Curve calculator with expressions (`(2.65 - RHOB) / 1.65`, `where(GR > 75, 1, 0)`) evaluated safely (no `eval`).
 - Statistics and histogram per curve and zone (P10/P50/P90).

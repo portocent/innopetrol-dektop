@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt
-from PySide6.QtGui import QAction, QActionGroup, QKeySequence
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QUndoGroup
 from PySide6.QtWidgets import (QApplication, QComboBox, QDockWidget, QFileDialog, QLabel, QMainWindow, QMdiArea,
                                QMessageBox, QToolBar)
 
@@ -63,6 +63,8 @@ class MainWindow(QMainWindow):
         self.project_path: Path | None = None
         self.dirty = False
         self._windows = []  # open non-modal windows (keeps them from being garbage collected)
+        # One undo history per well; the group follows the active well window.
+        self.undo_group = QUndoGroup(self)
 
         self.mdi = QMdiArea()
         self.mdi.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -114,6 +116,16 @@ class MainWindow(QMainWindow):
         self.a_export_las = A(self.export_las)
         self.a_export_csv = A(self.export_csv)
         self.a_quit = A(self.close, QKeySequence.Quit, needs_doc=False)
+        self.a_undo = A(self.undo_group.undo, QKeySequence.Undo, needs_doc=False)
+        self.a_redo = A(self.undo_group.redo, QKeySequence.Redo, needs_doc=False)
+        # Ctrl+Y as well: the usual redo shortcut on Windows besides Ctrl+Shift+Z.
+        self.a_redo.setShortcuts([QKeySequence(QKeySequence.Redo), QKeySequence("Ctrl+Y")])
+        self.a_undo.setEnabled(False)
+        self.a_redo.setEnabled(False)
+        self.undo_group.canUndoChanged.connect(self.a_undo.setEnabled)
+        self.undo_group.canRedoChanged.connect(self.a_redo.setEnabled)
+        self.undo_group.undoTextChanged.connect(lambda _text: self._undo_texts())
+        self.undo_group.redoTextChanged.connect(lambda _text: self._undo_texts())
 
         self.a_tpl_save = A(self.save_template, "Ctrl+T")
         self.a_tpl_load = A(self.load_template, "Ctrl+L")
@@ -197,6 +209,10 @@ class MainWindow(QMainWindow):
         self.m_file.addSeparator()
         self.m_file.addAction(self.a_quit)
 
+        self.m_edit = mb.addMenu("")
+        self.m_edit.addAction(self.a_undo)
+        self.m_edit.addAction(self.a_redo)
+
         self.m_template = mb.addMenu("")
         for a in (self.a_tpl_save, self.a_tpl_load, None, self.a_tpl_all, self.a_tpl_default, self.a_tpl_reset,
                   None, self.a_tpl_triple):
@@ -247,6 +263,8 @@ class MainWindow(QMainWindow):
         self.addToolBar(tb)
         tb.addAction(self.a_open)
         tb.addAction(self.a_save_proj)
+        tb.addAction(self.a_undo)
+        tb.addAction(self.a_redo)
         tb.addSeparator()
         tb.addAction(self.a_zoom_out)
         self.scale_title = QLabel()
@@ -277,7 +295,7 @@ class MainWindow(QMainWindow):
         tb.addSeparator()
         for a in (self.a_xplot, self.a_corr, self.a_table, self.a_export):
             tb.addAction(a)
-        for a in (self.a_zoom_out, self.a_zoom_in):
+        for a in (self.a_zoom_out, self.a_zoom_in, self.a_undo, self.a_redo):
             button = tb.widgetForAction(a)
             font = button.font()
             font.setPointSizeF(font.pointSizeF() * 1.4)
@@ -314,7 +332,7 @@ class MainWindow(QMainWindow):
             self.unit_actions["file"]: (_("As in the file"), None, None),
             self.unit_actions["m"]: (_("Meters"), None, None),
             self.unit_actions["ft"]: (_("Feet"), None, None),
-            self.a_petro: (_("Basic petrophysics (Vsh, φ, Sw)…"), _("Petrophysics"), None),
+            self.a_petro: (_("Petrophysics (Vsh, φ, Sw)…"), _("Petrophysics"), None),
             self.a_calc: (_("Curve calculator…"), _("Calculator"), None),
             self.a_zones: (_("Zone summary (net pay)…"), _("Zones"), None),
             self.a_stats: (_("Statistics and histogram…"), None, None),
@@ -341,6 +359,8 @@ class MainWindow(QMainWindow):
             a.setToolTip(f"{a.text()} ({key_text(a.shortcut())})")
 
         self.m_file.setTitle(_("&File"))
+        self.m_edit.setTitle(_("&Edit"))
+        self._undo_texts()
         self.recent_menu.setTitle(_("Open recent"))
         self.m_template.setTitle(_("&Template"))
         self.m_well.setTitle(_("&Well"))
@@ -372,6 +392,14 @@ class MainWindow(QMainWindow):
         v = self.active_view()
         if v:
             self._show_scale(v)
+
+    def _undo_texts(self):
+        """“Undo Remove track” / “Redo Add track”: the menu says what will be undone."""
+        for action, label, text, icon in ((self.a_undo, _("Undo"), self.undo_group.undoText(), "↶"),
+                                          (self.a_redo, _("Redo"), self.undo_group.redoText(), "↷")):
+            action.setText(f"{label}: {text}" if text else label)
+            action.setIconText(icon)
+            action.setToolTip(f"{action.text()} ({key_text(action.shortcut())})")
 
     def set_language(self, code: str):
         """Switches the interface language at runtime and remembers it."""
@@ -422,6 +450,7 @@ class MainWindow(QMainWindow):
     def _active_changed(self, sub):
         v = sub.widget() if sub else None
         if isinstance(v, WellView):
+            self.undo_group.setActiveStack(v.doc.undo_stack)
             self.tree.select_doc(v.doc)
             self._show_scale(v)
             self._refresh_depth_controls()
@@ -606,6 +635,9 @@ class MainWindow(QMainWindow):
                 doc.apply_unit_system(system)
         else:
             doc.curve_units = dict(curve_units)
+        doc.reset_history()  # opening a well is not an undoable change
+        self.undo_group.addStack(doc.undo_stack)
+        self.undo_group.setActiveStack(doc.undo_stack)
         view = WellView(doc)
         sub = self.mdi.addSubWindow(view)
         sub.setWindowIcon(app_icon())
@@ -629,6 +661,7 @@ class MainWindow(QMainWindow):
         if doc in self.docs:
             self.docs.remove(doc)
             self.views.pop(doc, None)
+            self.undo_group.removeStack(doc.undo_stack)
             self.tree.remove_doc(doc)
             self._update_actions()
 
@@ -782,7 +815,8 @@ class MainWindow(QMainWindow):
 
     def _apply_layout(self, doc, layout) -> list[str]:
         result, missing = apply_template(layout, doc.well)
-        doc.set_layout(doc.adopt_layout(result))  # template scales -> this well's display units
+        # Template scales -> this well's display units.
+        doc.set_layout(doc.adopt_layout(result), _("Apply template"))
         if missing:
             self.statusBar().showMessage(_("{well}: curves not found: {curves}").format(
                 well=doc.title, curves=", ".join(missing)), 8000)
@@ -819,7 +853,7 @@ class MainWindow(QMainWindow):
     def rebuild_triple_combo(self):
         doc = self.active_doc()
         if doc:
-            doc.set_layout(build_triple_combo(doc.well))
+            doc.set_layout(doc.adopt_layout(build_triple_combo(doc.well)), _("Rebuild Triple Combo"))
 
     # ================================================================== tools
 

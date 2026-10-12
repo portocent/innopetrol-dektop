@@ -482,7 +482,8 @@ class LogCanvas(QWidget):
                 i, width = self._drag_pending
                 self._drag_pending = None
                 self.doc.layout.tracks[i].width = width
-            self.doc.layoutChanged.emit()
+            with self.doc.undo_step(_("Resize track")):
+                self.doc.layoutChanged.emit()
             return
         super().mouseReleaseEvent(e)
 

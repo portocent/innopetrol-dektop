@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 23:34-0500\n"
+"POT-Creation-Date: 2026-10-12 06:41-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,14 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+#, python-brace-format
+msgid " (zone {zone})"
+msgstr ""
+
 msgid "&Analysis"
+msgstr ""
+
+msgid "&Edit"
 msgstr ""
 
 msgid "&File"
@@ -71,11 +78,18 @@ msgstr ""
 msgid "Add curve track"
 msgstr ""
 
+msgid "Add curves"
+msgstr ""
+
 msgid "Add depth track"
 msgstr ""
 
 #, python-brace-format
 msgid "Add top at {depth}…"
+msgstr ""
+
+#, python-brace-format
+msgid "Add top {name}"
 msgstr ""
 
 msgid "Add track"
@@ -87,6 +101,9 @@ msgstr ""
 msgid "All tracks"
 msgstr ""
 
+msgid "Apply template"
+msgstr ""
+
 msgid "Apply the active well's layout to all wells"
 msgstr ""
 
@@ -94,6 +111,14 @@ msgid "Apply to all"
 msgstr ""
 
 msgid "Approximate lines (limestone neutron); marks every 10 p.u."
+msgstr ""
+
+msgid "Archie (clean sands)"
+msgstr ""
+
+msgid ""
+"Archie is valid in clean rock. In shaly sands the clay conducts electricity and Archie "
+"overestimates Sw; Simandoux and Indonesia correct for it using Vsh and the shale resistivity Rsh."
 msgstr ""
 
 msgid "As in the file"
@@ -119,13 +144,6 @@ msgstr ""
 msgid "Base ({unit})"
 msgstr ""
 
-msgid "Basic petrophysics (Vsh, φ, Sw)…"
-msgstr ""
-
-#, python-brace-format
-msgid "Basic petrophysics — {well}"
-msgstr ""
-
 msgid "Bins:"
 msgstr ""
 
@@ -149,16 +167,28 @@ msgstr ""
 msgid "Cascade"
 msgstr ""
 
+msgid "Change layout"
+msgstr ""
+
+msgid "Change survey and elevation"
+msgstr ""
+
 msgid "Check the data"
 msgstr ""
 
 msgid "Choose color"
 msgstr ""
 
+msgid "Clean"
+msgstr ""
+
 msgid "Clean GR"
 msgstr ""
 
 msgid "Clean GR must be lower than shale GR."
+msgstr ""
+
+msgid "Clear the selected zone"
 msgstr ""
 
 #, python-brace-format
@@ -184,6 +214,9 @@ msgid "Company"
 msgstr ""
 
 msgid "Compute"
+msgstr ""
+
+msgid "Compute petrophysics"
 msgstr ""
 
 msgid "Computed curve"
@@ -223,6 +256,10 @@ msgid "Could not save: {error}"
 msgstr ""
 
 msgid "Create curve"
+msgstr ""
+
+#, python-brace-format
+msgid "Create curve {name}"
 msgstr ""
 
 msgid "Crossover (possible gas)"
@@ -271,6 +308,9 @@ msgstr ""
 msgid "Cutoffs (net reservoir / net pay)"
 msgstr ""
 
+msgid "DEPTH and TVD: depth of each sample (measured and true vertical, in the file's depth unit)."
+msgstr ""
+
 msgid "DLIS support is not available on this platform (the dlisio package is not installed)"
 msgstr ""
 
@@ -313,10 +353,17 @@ msgstr ""
 msgid "Default template: {name}"
 msgstr ""
 
+msgid "Define formation tops first (Well ▸ Formation tops…)."
+msgstr ""
+
 msgid "Delete computed curve"
 msgstr ""
 
 msgid "Delete curve"
+msgstr ""
+
+#, python-brace-format
+msgid "Delete curve {name}"
 msgstr ""
 
 #, python-brace-format
@@ -391,13 +438,33 @@ msgstr ""
 msgid "Drag a track's border: change its width · Double-click a track: edit it"
 msgstr ""
 
+msgid ""
+"Drag the blue water line (Sw = 1) onto the lowest-resistivity points, which are usually water-"
+"bearing. The slope depends on m. “Fit to the wettest points” places it automatically."
+msgstr ""
+
+msgid ""
+"Drag the green line to the clean sand and the brown line to the shale, or click near a line to "
+"move it there. P5/P95 places them at the 5th and 95th percentiles."
+msgstr ""
+
 msgid "E.g.: (2.65 - RHOB) / (2.65 - 1.0)"
+msgstr ""
+
+msgid "Edit"
+msgstr ""
+
+msgid "Edit formation tops"
 msgstr ""
 
 msgid "Edit selected track…"
 msgstr ""
 
 msgid "Edit tops…"
+msgstr ""
+
+#, python-brace-format
+msgid "Edit track “{title}”"
 msgstr ""
 
 msgid "Edit track…"
@@ -472,6 +539,9 @@ msgstr ""
 msgid "Fit"
 msgstr ""
 
+msgid "Fit to the wettest points"
+msgstr ""
+
 msgid "Fit to window"
 msgstr ""
 
@@ -486,6 +556,12 @@ msgid "Follow the log cursor"
 msgstr ""
 
 msgid "Format:"
+msgstr ""
+
+msgid "Formation temperature from the geothermal gradient (TVD)"
+msgstr ""
+
+msgid "Formation temperature:"
 msgstr ""
 
 #, python-brace-format
@@ -518,6 +594,13 @@ msgstr ""
 msgid "Gamma ray"
 msgstr ""
 
+msgid "Geothermal gradient"
+msgstr ""
+
+#, python-brace-format
+msgid "Gradient ({unit}/100 {depth_unit} TVD):"
+msgstr ""
+
 #, python-brace-format
 msgid "Gross ({unit})"
 msgstr ""
@@ -535,6 +618,9 @@ msgid "Import survey (CSV/TXT)…"
 msgstr ""
 
 msgid "Import tops"
+msgstr ""
+
+msgid "Indonesia (shaly sands, fresh water)"
 msgstr ""
 
 #, python-brace-format
@@ -662,10 +748,16 @@ msgstr ""
 msgid "Minimum: {value}"
 msgstr ""
 
+msgid "Model:"
+msgstr ""
+
 msgid "Move left"
 msgstr ""
 
 msgid "Move right"
+msgstr ""
+
+msgid "Move track"
 msgstr ""
 
 msgid "NEW"
@@ -780,6 +872,9 @@ msgstr ""
 msgid "Other curves"
 msgstr ""
 
+msgid "P5 / P95"
+msgstr ""
+
 #, python-brace-format
 msgid "P50 (median): {value}"
 msgstr ""
@@ -803,6 +898,14 @@ msgstr ""
 msgid "Paper (PDF):"
 msgstr ""
 
+msgid "Parameters by zone"
+msgstr ""
+
+msgid ""
+"Parameters that change by formation. An empty cell uses the value of the other tabs. Zones are "
+"the intervals between formation tops."
+msgstr ""
+
 msgid "Pattern"
 msgstr ""
 
@@ -818,7 +921,34 @@ msgstr ""
 msgid "Petrophysics"
 msgstr ""
 
+msgid "Petrophysics (Vsh, φ, Sw)…"
+msgstr ""
+
+#, python-brace-format
+msgid "Petrophysics — {well}"
+msgstr ""
+
 msgid "Photoelectric factor"
+msgstr ""
+
+msgid "Pick GR for the selected zone…"
+msgstr ""
+
+msgid "Pick Rw for the selected zone…"
+msgstr ""
+
+msgid "Pick Rw on Pickett plot…"
+msgstr ""
+
+#, python-brace-format
+msgid "Pick Rw on the Pickett plot — {interval}"
+msgstr ""
+
+#, python-brace-format
+msgid "Pick clean and shale GR — {interval}"
+msgstr ""
+
+msgid "Pick on histogram…"
 msgstr ""
 
 msgid "Pickett (φ vs Rt)"
@@ -841,7 +971,13 @@ msgstr ""
 msgid "Ready. Open a LAS file ({shortcut}) or drag it onto the window."
 msgstr ""
 
+msgid "Rebuild Triple Combo"
+msgstr ""
+
 msgid "Rebuild Triple Combo in the active well"
+msgstr ""
+
+msgid "Redo"
 msgstr ""
 
 #, python-brace-format
@@ -864,6 +1000,10 @@ msgstr ""
 msgid "Remove track"
 msgstr ""
 
+#, python-brace-format
+msgid "Remove track “{title}”"
+msgstr ""
+
 msgid "Rename track"
 msgstr ""
 
@@ -880,6 +1020,9 @@ msgid "Resistivity"
 msgstr ""
 
 msgid "Resistivity Rt:"
+msgstr ""
+
+msgid "Resize track"
 msgstr ""
 
 msgid "Resolution (PNG, dpi):"
@@ -899,6 +1042,18 @@ msgstr ""
 
 #, python-brace-format
 msgid "Row {row}: a name and a numeric depth are required"
+msgstr ""
+
+msgid "Rw at formation temperature (Arps)"
+msgstr ""
+
+msgid "Rw is the same at every depth"
+msgstr ""
+
+msgid "Rw measured at:"
+msgstr ""
+
+msgid "Rw, a, m, n and Rsh must be greater than zero."
 msgstr ""
 
 msgid "Sand"
@@ -952,6 +1107,15 @@ msgstr ""
 msgid "Select at least the GR or the density curve."
 msgstr ""
 
+msgid "Select one zone in the table."
+msgstr ""
+
+msgid "Select the GR curve first."
+msgstr ""
+
+msgid "Select the temperature curve."
+msgstr ""
+
 msgid "Separation (shale)"
 msgstr ""
 
@@ -977,6 +1141,9 @@ msgid "Show as tabs"
 msgstr ""
 
 msgid "Show well window"
+msgstr ""
+
+msgid "Simandoux (shaly sands, n = 2)"
 msgstr ""
 
 msgid "Solid"
@@ -1011,6 +1178,9 @@ msgstr ""
 msgid "Style"
 msgstr ""
 
+msgid "Surface temperature:"
+msgstr ""
+
 #, python-brace-format
 msgid "Survey and elevation — {well}"
 msgstr ""
@@ -1018,7 +1188,23 @@ msgstr ""
 msgid "Surveys (*.csv *.txt *.dev *.svy);;All files (*)"
 msgstr ""
 
+#, python-brace-format
+msgid "Sw - {model}"
+msgstr ""
+
 msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
+msgstr ""
+
+msgid "Temperature"
+msgstr ""
+
+msgid "Temperature curve"
+msgstr ""
+
+msgid "Temperature curve:"
+msgstr ""
+
+msgid "Temperature unit:"
 msgstr ""
 
 #, python-brace-format
@@ -1026,6 +1212,9 @@ msgid "Template saved: {path}"
 msgstr ""
 
 msgid "Test"
+msgstr ""
+
+msgid "The Pickett plot needs the resistivity and density curves."
 msgstr ""
 
 msgid "Tile"
@@ -1085,6 +1274,9 @@ msgstr ""
 msgid "Type:"
 msgstr ""
 
+msgid "Undo"
+msgstr ""
+
 msgid "Unit system"
 msgstr ""
 
@@ -1140,10 +1332,10 @@ msgstr ""
 msgid "Vsh - {method}"
 msgstr ""
 
-msgid "Water saturation"
+msgid "Vsh and porosity"
 msgstr ""
 
-msgid "Water saturation — Archie"
+msgid "Water saturation"
 msgstr ""
 
 msgid "Well correlation"
@@ -1219,10 +1411,18 @@ msgid "Zone {name}"
 msgstr ""
 
 #, python-brace-format
+msgid "Zone {zone}, {parameter}: “{text}” is not a number."
+msgstr ""
+
+#, python-brace-format
 msgid "Zone: {name}"
 msgstr ""
 
 msgid "Zones"
+msgstr ""
+
+#, python-brace-format
+msgid "Zones with their own cutoffs (from Petrophysics ▸ Parameters by zone): {zones}"
 msgstr ""
 
 msgid "Zoom"
@@ -1305,6 +1505,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "layout of {well}"
+msgstr ""
+
+#, python-brace-format
+msgid "light gray: shaly (Vsh > {cutoff}), not used by the automatic fit"
 msgstr ""
 
 msgid "measured depth (MD)"
@@ -1392,8 +1596,15 @@ msgstr ""
 msgid "usage: curve(\"NAME\")"
 msgstr ""
 
+msgid "whole well"
+msgstr ""
+
 #, python-brace-format
 msgid "{count} points"
+msgstr ""
+
+#, python-brace-format
+msgid "{count} points with φ and Rt"
 msgstr ""
 
 #, python-brace-format

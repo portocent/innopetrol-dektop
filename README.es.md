@@ -29,7 +29,11 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 
 **Interpretación**
 - Topes de formación: agregar con clic derecho, editar en tabla, importar/exportar CSV (columnas en español o inglés).
-- Petrofísica básica: Vsh (lineal, Larionov), porosidad densidad y neutrón-densidad, porosidad efectiva, Sw Archie, banderas de reservorio y pago.
+- Petrofísica: Vsh (lineal, Larionov), porosidad densidad y neutrón-densidad, porosidad efectiva, Sw por **Archie, Simandoux o Indonesia**, banderas de reservorio y pago.
+- **Parámetros por zona** (entre topes): GR limpio/arcilla, densidad de matriz y fluido, Rw, a, m, n, Rsh y cortes.
+- **Rw a temperatura de formación** (Arps) con gradiente geotérmico sobre TVD o con una curva de temperatura.
+- **Elección gráfica de parámetros**: GR limpio/arcilla arrastrando líneas sobre el histograma y Rw arrastrando la línea de agua en el gráfico de Pickett (o ajustándola a los puntos limpios más húmedos), para todo el pozo o una zona.
+- **Deshacer / rehacer** (Ctrl+Z / Ctrl+Shift+Z) en cambios de tracks, plantillas, topes, survey, curvas y petrofísica, con un historial por pozo.
 - Resumen por zonas: espesor bruto, neto de reservorio, neto de pago, N/G, φ, Sw y Vsh promedio (copiar a Excel o CSV).
 - Calculadora de curvas con expresiones (`(2.65 - RHOB) / 1.65`, `where(GR > 75, 1, 0)`) evaluadas de forma segura.
 - Estadísticas e histograma por curva y zona (P10/P50/P90).

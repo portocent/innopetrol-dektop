@@ -47,6 +47,14 @@ class Axis:
     def map(self, values, length: float) -> np.ndarray:
         return map_values(values, self.lo, self.hi, self.log, length)
 
+    def value_at(self, pos: float, length: float) -> float:
+        """Inverse of map(): the value at a position along the axis (0 = lo, length = hi)."""
+        t = pos / length if length else 0.0
+        if self.log:
+            lo, hi = math.log10(self.lo), math.log10(self.hi)
+            return 10 ** (lo + t * (hi - lo))
+        return self.lo + t * (self.hi - self.lo)
+
     def ticks(self) -> list[tuple[float, bool]]:
         if self.log:
             return [(v, d) for v, d in log_grid_positions(self.lo, self.hi)]
