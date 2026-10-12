@@ -17,10 +17,13 @@ from innopetrol.model.calculator import curve_ref
 from innopetrol.model.tops import zones_from_tops
 
 
-def zone_mask(well, zone: str | None) -> np.ndarray:
-    """Samples inside the zone of that name, using the well's own tops (None = the whole well)."""
+def zone_mask(well, zone: str | tuple[float, float] | None) -> np.ndarray:
+    """Samples inside the zone of that name, using the well's own tops (None = the whole well, a
+    (top, base) pair = that measured-depth interval)."""
     if zone is None:
         return np.ones(well.depth.shape, bool)
+    if isinstance(zone, tuple):
+        return well.interval_mask(*zone)
     mask = np.zeros(well.depth.shape, bool)
     for z in zones_from_tops(well.tops, well.stop):
         if z.name == zone:

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QMenu, QTreeWidget, QTreeWidgetItem
 from innopetrol.i18n import _
 from innopetrol.model import units
 from innopetrol.model.equations import EQUATIONS, curve_equations
+from innopetrol.model.intervals import KINDS as INTERVAL_KINDS
 from innopetrol.model.mnemonics import FAMILIES, family_of
 from innopetrol.ui.document import WellDocument
 
@@ -29,6 +30,7 @@ class WellTree(QTreeWidget):
     curveDeleteRequested = Signal(object, str)
     curveUnitRequested = Signal(object, str, object)  # doc, mnemonic, unit (None = file unit)
     topsRequested = Signal(object)
+    intervalsRequested = Signal(object)
     topActivated = Signal(object, float)
 
     def __init__(self, parent=None):
@@ -154,6 +156,16 @@ class WellTree(QTreeWidget):
             ti.setData(0, ROLE_DOC, doc)
             ti.setData(0, ROLE_KIND, "top")
             ti.setData(0, ROLE_NAME, t.depth)
+        intervals = QTreeWidgetItem(parent, [_("Intervals ({count})").format(count=len(w.intervals))])
+        intervals.setData(0, ROLE_DOC, doc)
+        intervals.setData(0, ROLE_KIND, "intervals")
+        for i in w.intervals:
+            text = f"{i.top:g}–{i.base:g} {w.depth_unit}  {i.label or _(INTERVAL_KINDS[i.kind][0])}"
+            item = QTreeWidgetItem(intervals, [text])
+            item.setForeground(0, QBrush(QColor(i.shown_color)))
+            item.setData(0, ROLE_DOC, doc)
+            item.setData(0, ROLE_KIND, "top")  # double-click goes to that depth, like a top
+            item.setData(0, ROLE_NAME, i.top)
 
     def _doc_of(self, item) -> WellDocument | None:
         while item is not None:
@@ -174,6 +186,8 @@ class WellTree(QTreeWidget):
             self.topActivated.emit(doc, float(item.data(0, ROLE_NAME)))
         elif kind == "tops":
             self.topsRequested.emit(doc)
+        elif kind == "intervals":
+            self.intervalsRequested.emit(doc)
         else:
             self.docActivated.emit(doc)
 

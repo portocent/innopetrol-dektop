@@ -64,6 +64,7 @@ class FillSpec:
 @dataclass
 class TrackSpec:
     # "curves" | "depth" | "volumes" (the curves are fractions stacked left to right: Vsh, matrix…)
+    # | "intervals" (the well's perforations, tests, comments…; `curves` is not used)
     kind: str = "curves"
     title: str = ""
     width: int = 180
@@ -79,6 +80,10 @@ class TrackSpec:
     @property
     def is_volumes(self) -> bool:
         return self.kind == "volumes"
+
+    @property
+    def is_intervals(self) -> bool:
+        return self.kind == "intervals"
 
 
 @dataclass

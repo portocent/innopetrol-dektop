@@ -26,6 +26,7 @@ from PySide6.QtGui import (
 
 from innopetrol.i18n import _, pgettext
 from innopetrol.model import units
+from innopetrol.model.intervals import KINDS as INTERVAL_KINDS
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
 from innopetrol.model.mnemonics import VOLUME_LABELS
 from innopetrol.model.scales import depth_ticks, log_grid_positions, map_value, map_values
@@ -137,7 +138,9 @@ def draw_track_body(
     _draw_vertical_grid(p, track, w, h, opts)
     _draw_depth_lines(p, tf, w, h, opts)
     sl = visible_slice(well.depth, tf, h)
-    if sl.stop > sl.start and track.is_volumes:
+    if track.is_intervals:
+        _draw_intervals(p, well, tf, w, h, opts)
+    elif sl.stop > sl.start and track.is_volumes:
         _draw_volumes(p, track, well, sl, tf.y(well.depth[sl]), w, opts)
     elif sl.stop > sl.start:
         y = tf.y(well.depth[sl])
@@ -431,6 +434,36 @@ def _draw_colormap_fill(p, name: str, xl, xr, t, y, opts):
     p.restore()
 
 
+def _draw_intervals(p, well, tf: DepthTransform, w, h, opts: RenderOptions):
+    """Intervals as boxes the width of the track, with their label when it fits."""
+    fm = QFontMetricsF(p.font())
+    pad = 3 * opts.k
+    for interval in getattr(well, "intervals", []):
+        y0, y1 = float(tf.y(interval.top)), float(tf.y(interval.base))
+        if y1 < 0 or y0 > h:
+            continue
+        box = QRectF(pad, y0, w - 2 * pad, max(y1 - y0, 1.0))
+        color = QColor(interval.shown_color)
+        fill = QColor(color)
+        fill.setAlpha(70)
+        p.fillRect(box, fill)
+        pattern = INTERVAL_KINDS[interval.kind][2]
+        if pattern != "solid":
+            p.fillRect(box, pattern_brush(FillSpec(color=interval.shown_color, pattern=pattern), opts.k))
+        p.setPen(QPen(color, 1.0 * opts.k))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawRect(box)
+        text = interval.label or _(INTERVAL_KINDS[interval.kind][0])
+        if box.height() >= fm.height() * 0.9:
+            label_box = QRectF(box.left() + 2, box.top(), box.width() - 4, box.height())
+            elided = fm.elidedText(text, Qt.TextElideMode.ElideRight, label_box.width())
+            back = QRectF(0, 0, fm.horizontalAdvance(elided) + 6 * opts.k, fm.height())
+            back.moveCenter(label_box.center())
+            p.fillRect(back, QColor(255, 255, 255, 210))
+            p.setPen(BORDER)
+            p.drawText(label_box, Qt.AlignmentFlag.AlignCenter, elided)
+
+
 def volume_fractions(track: TrackSpec, well, sl) -> list[tuple[CurveStyle, np.ndarray]]:
     """Visible components of a volumes track as fractions (curves shown in % are converted)."""
     out = []
@@ -530,6 +563,8 @@ def header_height(track: TrackSpec, fm: QFontMetricsF, k: float = 1.0) -> float:
     line = fm.height()
     if track.is_depth:
         return line * 3 + 8 * k
+    if track.is_intervals:
+        return line * 2 + 8 * k
     n_curves = sum(1 for c in track.curves if c.visible)
     if track.is_volumes:
         return line * (2 + n_curves) + (8 + 2 * n_curves) * k
@@ -583,6 +618,11 @@ def draw_track_header(
         _header_depth(hd, well, y)
     elif track.is_volumes:
         _header_volumes(hd, track, well, y)
+    elif track.is_intervals:
+        count = len(getattr(well, "intervals", []))
+        hd.p.setPen(QColor("#566573"))
+        text = _("{count} intervals").format(count=count) if count else _("no intervals (Well ▸ Intervals…)")
+        hd.text(QRectF(hd.pad, y, w - 2 * hd.pad, hd.line), Qt.AlignmentFlag.AlignCenter, text)
     else:
         for style in track.curves:
             if style.visible:

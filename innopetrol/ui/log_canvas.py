@@ -38,6 +38,8 @@ class LogCanvas(QWidget):
     trackActivated = Signal(int)
     contextRequested = Signal(int, float, object)  # track index (-1 = none), depth, global position
     selectionChanged = Signal(int)
+    intervalChanged = Signal(object)  # (top, base) in display depth, or None
+    cursorY = Signal(object)  # y of the cursor line in the widget, or None (for synchronized views)
 
     def __init__(self, doc: WellDocument, parent=None, show_top_labels: bool = True):
         super().__init__(parent)
@@ -67,6 +69,9 @@ class LogCanvas(QWidget):
         self._settle.setSingleShot(True)
         self._settle.timeout.connect(self._end_preview)
         self._drag_pending: tuple[int, int] | None = None  # (track, width) while dragging in guide mode
+        self.interval: tuple[float, float] | None = None  # selected interval (display depth, top < base)
+        self._press: tuple[float, float] | None = None  # (x, y) of a left press in the body
+        self._selecting = False
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)  # we paint the whole background: Qt need not clear it
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
@@ -269,6 +274,8 @@ class LogCanvas(QWidget):
             self._paint_cursor(p, self._cursor_y)
         if self._drag_pending:
             self._paint_drag_guide(p)
+        if self.interval is not None:
+            self._paint_interval(p)
         p.end()
         if not self._previewing:
             self._prefetch.start(0)
@@ -393,6 +400,52 @@ class LogCanvas(QWidget):
         p.setPen(BORDER)
         p.drawText(box, Qt.AlignmentFlag.AlignCenter, text)
 
+    def _paint_interval(self, p: QPainter):
+        """The selected interval: a translucent band with its top, base and thickness."""
+        assert self.interval is not None
+        top, base = self.interval
+        y0, y1 = max(self.y_of(top), self._header_h), min(self.y_of(base), self.height())
+        if y1 <= self._header_h or y0 >= self.height():
+            return
+        w = min(total_width(self.doc.layout) - self.x_offset, self.width())
+        p.fillRect(QRectF(0, y0, w, y1 - y0), QColor(46, 134, 193, 45))
+        p.setPen(QPen(QColor("#2e86c1"), 1.2))
+        for y in (self.y_of(top), self.y_of(base)):
+            if self._header_h <= y <= self.height():
+                p.drawLine(QPointF(0, y), QPointF(w, y))
+        unit = self.well.depth_unit
+        text = _("{top} – {base} {unit} · thickness {thickness} {unit}").format(
+            top=f"{top:.2f}", base=f"{base:.2f}", unit=unit, thickness=f"{base - top:.2f}"
+        )
+        fm = QFontMetricsF(self.font())
+        box = QRectF(
+            w - fm.horizontalAdvance(text) - 14,
+            max(y0, self._header_h) + 2,
+            fm.horizontalAdvance(text) + 8,
+            fm.height(),
+        )
+        p.fillRect(box, QColor(255, 255, 255, 230))
+        p.setPen(QColor("#1b4f72"))
+        p.drawText(box, Qt.AlignmentFlag.AlignCenter, text)
+
+    def set_interval(self, interval: tuple[float, float] | None) -> None:
+        """Selects an interval (display depths, any order); None clears the selection."""
+        if interval is not None:
+            top, base = sorted(interval)
+            interval = (top, base) if base > top else None
+        if interval != self.interval:
+            self.interval = interval
+            self.update()
+            self.intervalChanged.emit(interval)
+
+    def zoom_to_interval(self) -> None:
+        if self.interval is None:
+            return
+        top, base = self.interval
+        margin = (base - top) * 0.05
+        self.fit_mode = False
+        self.set_view(top - margin + self.depth_shift, self.body_h / max(base - top + 2 * margin, 1e-6))
+
     def wheelEvent(self, e):
         delta = e.angleDelta()
         steps = delta.y() / 120 if delta.y() else 0
@@ -430,6 +483,8 @@ class LogCanvas(QWidget):
             self.zoom_step(1)
         elif key == Qt.Key.Key_Minus:
             self.zoom_step(-1)
+        elif key == Qt.Key.Key_Escape and self.interval is not None:
+            self.set_interval(None)
         else:
             super().keyPressEvent(e)
 
@@ -445,6 +500,8 @@ class LogCanvas(QWidget):
                 self.selected = idx
                 self.selectionChanged.emit(idx)
                 self.update()
+            if e.position().y() > self._header_h and idx >= 0:
+                self._press = (x, e.position().y())  # a drag from here selects an interval
         super().mousePressEvent(e)
 
     def mouseMoveEvent(self, e):
@@ -460,6 +517,11 @@ class LogCanvas(QWidget):
                 self.doc.layout.tracks[i].width = width
                 self.invalidate()
             return
+        if self._press is not None and (self._selecting or abs(y - self._press[1]) > 4):
+            self._selecting = True  # a drag, not a click
+            y0 = self._press[1]
+            ys = min(max(y, self._header_h), self.height())
+            self.set_interval((self.depth_at(y0), self.depth_at(ys)))
         self.setCursor(Qt.CursorShape.SplitHCursor if self._edge_at(x) >= 0 else Qt.CursorShape.ArrowCursor)
         if y > self._header_h and self.track_at(x) >= 0:
             self._set_cursor_y(y)
@@ -474,7 +536,7 @@ class LogCanvas(QWidget):
         fm_h = QFontMetricsF(self.font()).height()
         return QRect(0, int(y - fm_h - 4), self.width(), int(fm_h + 8))
 
-    def _set_cursor_y(self, y: float | None):
+    def _set_cursor_y(self, y: float | None, notify: bool = True):
         """Moves the cursor line repainting only the affected strips, not the whole widget."""
         if y == self._cursor_y:
             return
@@ -482,8 +544,18 @@ class LogCanvas(QWidget):
             if rect is not None:
                 self.update(rect)
         self._cursor_y = y
+        if notify:
+            self.cursorY.emit(y)
+
+    def show_cursor_at(self, y: float | None) -> None:
+        """Cursor line placed from another view (synchronized wells): does not notify back."""
+        self._set_cursor_y(y if y is None or y > self._header_h else None, notify=False)
 
     def mouseReleaseEvent(self, e):
+        if self._press is not None:
+            if not self._selecting and self.interval is not None:
+                self.set_interval(None)  # a plain click clears the selection
+            self._press, self._selecting = None, False
         if self._drag:
             self._drag = None
             if self._drag_pending:

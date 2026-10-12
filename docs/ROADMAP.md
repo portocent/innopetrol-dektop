@@ -122,9 +122,10 @@ Items marked **[checked]** were verified in the code.
 Pending items, grouped. Each one keeps the rules in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 **Interaction and display**
-- Core track (points with error bars), interval track (perforations, DST, losses, runs) and comments.
-- Select an interval with the mouse for statistics, zone creation or export.
-- Cursor synchronized across wells and a thickness ruler; horizontal zoom.
+- Done: interval selection with the mouse (statistics, zoom, export, new zone or interval, thickness);
+  cursor synchronized across wells in the correlation; intervals track (perforations, DST, losses,
+  cored intervals, runs, comments) with CSV import; core data from CSV drawn as points.
+- Error bars for core points; horizontal zoom; picking tops by clicking in a single-well window.
 
 **Data and scale**
 - Projects with hundreds of wells: filterable well list, lazy loading, curve search.

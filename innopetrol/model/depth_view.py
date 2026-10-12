@@ -13,6 +13,7 @@ import numpy as np
 
 from innopetrol.i18n import _
 from innopetrol.model import units
+from innopetrol.model.intervals import Interval
 from innopetrol.model.scales import MM_PER_UNIT
 from innopetrol.model.tops import Top
 
@@ -86,6 +87,13 @@ class DepthView:
     @property
     def tops(self) -> list[Top]:
         return [Top(t.name, float(self.to_display(t.depth)), t.color) for t in self.well.tops]
+
+    @property
+    def intervals(self) -> list[Interval]:
+        return [
+            Interval(float(self.to_display(i.top)), float(self.to_display(i.base)), i.kind, i.label, i.color)
+            for i in self.well.intervals
+        ]
 
     @property
     def description(self) -> str:

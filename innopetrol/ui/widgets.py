@@ -59,14 +59,17 @@ def row_of(*widgets: QWidget) -> QHBoxLayout:
     return row
 
 
-def fill_zone_combo(combo: QComboBox, zone_names: list[str]) -> None:
-    """Fills an interval selector with "Whole well" (data None) and zones by name, keeping the choice."""
+def fill_zone_combo(combo: QComboBox, zone_names: list[str], extra: tuple[str, object] | None = None) -> None:
+    """Fills an interval selector with "Whole well" (data None), zones by name and an optional extra entry
+    (e.g. the interval selected on the log), keeping the choice."""
     current = combo.currentData()
     combo.blockSignals(True)
     combo.clear()
     combo.addItem(_("Whole well"), None)
     for name in zone_names:
         combo.addItem(name, name)
+    if extra is not None:
+        combo.addItem(*extra)
     combo.setCurrentIndex(max(combo.findData(current), 0))
     combo.blockSignals(False)
 

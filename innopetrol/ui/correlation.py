@@ -234,9 +234,17 @@ class CorrelationWindow(QDialog):
         for i, c in enumerate(self.canvases):
             c.min_header_h = header  # same header height, so the bodies line up
             c.viewChanged.connect(lambda c=c: self._propagate(c))
+            # Every column is drawn at the same scale and aligned, so the same height on screen is the same
+            # correlated level: the cursor of one well is shown in all of them, each with its own depth.
+            c.cursorY.connect(lambda y, c=c: self._mirror_cursor(c, y))
             c.installEventFilter(self)
             c.contextRequested.connect(lambda _track, depth, pos, i=i: self._context_menu(i, depth, pos))
             self.sources[i].topsChanged.connect(lambda i=i: self._tops_changed(i))
+
+    def _mirror_cursor(self, source: LogCanvas, y: float | None) -> None:
+        for c in self.canvases:
+            if c is not source:
+                c.show_cursor_at(y)
 
     def _shift(self, d: WellDocument) -> float:
         if self.datum == DEPTH_DATUM:

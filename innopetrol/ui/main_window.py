@@ -98,6 +98,7 @@ class MainWindow(QMainWindow):
         self.tree.curveDeleteRequested.connect(self._delete_curve)
         self.tree.curveUnitRequested.connect(self.set_curve_unit)
         self.tree.topsRequested.connect(self.edit_tops)
+        self.tree.intervalsRequested.connect(self.edit_intervals)
         self.tree.topActivated.connect(self._go_to_top)
         self.tree.set_template_name(self.settings.value("default_template_name"))
 
@@ -147,6 +148,8 @@ class MainWindow(QMainWindow):
         self.a_del_track = A(lambda: self._view_call("remove_track"))
         self.a_tops = A(lambda: self.edit_tops(self.active_doc()), "Ctrl+Shift+F")
         self.a_survey = A(self.edit_survey)
+        self.a_intervals = A(lambda: self.edit_intervals(self.active_doc()))
+        self.a_core = A(self.import_core)
         # Depth reference (MD/TVD/TVDSS) and display unit of the active well; unit system of all wells.
         self.reference_actions = self._choice_actions(("md", "tvd", "tvdss"), self.set_depth_reference, needs_doc=True)
         self.unit_actions = self._choice_actions(
@@ -251,6 +254,8 @@ class MainWindow(QMainWindow):
             None,
             self.a_tops,
             self.a_survey,
+            self.a_intervals,
+            self.a_core,
             None,
             self.a_petro,
             self.a_calc,
@@ -371,6 +376,8 @@ class MainWindow(QMainWindow):
             self.a_del_track: (_("Remove selected track"), None, None),
             self.a_tops: (_("Formation tops…"), _("Tops"), None),
             self.a_survey: (_("Deviation survey, elevation and location…"), None, None),
+            self.a_intervals: (_("Intervals (perforations, tests, comments)…"), None, None),
+            self.a_core: (_("Import core data (CSV)…"), None, None),
             self.reference_actions["md"]: (_("Measured depth (MD)"), None, None),
             self.reference_actions["tvd"]: (_("True vertical depth (TVD)"), None, None),
             self.reference_actions["tvdss"]: (_("True vertical depth subsea (TVDSS)"), None, None),
@@ -727,6 +734,7 @@ class MainWindow(QMainWindow):
         )
         view.statusMessage.connect(lambda msg: self.statusBar().showMessage(msg))
         view.exportRequested.connect(self.export_log)
+        view.statsRequested.connect(lambda d, interval: self.show_stats(d, None, interval))
         view.closed.connect(self._doc_closed)
         view.canvas.viewChanged.connect(lambda v=view: self._show_scale(v))
         for sig in (doc.layoutChanged, doc.curvesChanged, doc.topsChanged):
@@ -1075,11 +1083,43 @@ class MainWindow(QMainWindow):
 
             ZoneSummaryDialog(doc, self).exec()
 
-    def show_stats(self, doc, curve: str | None = None):
+    def show_stats(self, doc, curve: str | None = None, interval: tuple[float, float] | None = None):
         if doc:
             from innopetrol.ui.analysis import StatsDialog
 
-            self._modeless(StatsDialog(doc, curve, self, self.docs))
+            self._modeless(StatsDialog(doc, curve, self, self.docs, interval))
+
+    def import_core(self):
+        doc = self.active_doc()
+        if not doc:
+            return
+        from innopetrol.model.core import load_core_csv
+        from innopetrol.ui.core_dialog import CoreDialog
+
+        path, _filter = QFileDialog.getOpenFileName(
+            self,
+            _("Import core data"),
+            self.settings.value("last_dir", ""),
+            _("Core data (*.csv *.txt);;All files (*)"),
+        )
+        if not path:
+            return
+        try:
+            table = load_core_csv(path)
+        except (OSError, ValueError) as e:
+            QMessageBox.warning(
+                self,
+                _("Import core data"),
+                _("The file needs a header row with a depth column and numeric columns ({error}).").format(error=e),
+            )
+            return
+        CoreDialog(doc, table, path, self).exec()
+
+    def edit_intervals(self, doc):
+        if doc:
+            from innopetrol.ui.intervals_dialog import IntervalsDialog
+
+            IntervalsDialog(doc, self).exec()
 
     def data_table(self):
         doc = self.active_doc()

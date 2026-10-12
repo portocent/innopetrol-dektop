@@ -141,8 +141,17 @@ class Histogram(QWidget):
 
 
 class StatsDialog(QDialog):
-    def __init__(self, doc: WellDocument, curve: str | None = None, parent=None, docs: list | None = None):
+    def __init__(
+        self,
+        doc: WellDocument,
+        curve: str | None = None,
+        parent=None,
+        docs: list | None = None,
+        interval: tuple[float, float] | None = None,
+    ):
+        """`interval` (top, base in MD) is offered, and chosen, as "Selection" (the interval selected on the log)."""
         super().__init__(parent)
+        self.interval = interval
         self.doc = doc
         self.docs = list(docs or [doc])
         if doc not in self.docs:
@@ -160,6 +169,8 @@ class StatsDialog(QDialog):
         self.wells = well_list(self.docs, doc) if len(self.docs) > 1 else None
         self.zone = QComboBox()
         self._fill_zones()
+        if self.interval is not None:
+            self.zone.setCurrentIndex(self.zone.count() - 1)
         self.log = QCheckBox(_("Logarithmic scale"))
         self.bins = QSpinBox()
         self.bins.setRange(5, 200)
@@ -193,7 +204,11 @@ class StatsDialog(QDialog):
 
     def _fill_zones(self):
         """Whole well plus the zones by name: with several wells, each well uses its own tops."""
-        fill_zone_combo(self.zone, zone_names(self._included()))
+        extra = None
+        if self.interval is not None:
+            top, base = self.interval
+            extra = (_("Selection ({top} – {base})").format(top=f"{top:g}", base=f"{base:g}"), self.interval)
+        fill_zone_combo(self.zone, zone_names(self._included()), extra)
 
     def _wells_changed(self):
         self._fill_zones()

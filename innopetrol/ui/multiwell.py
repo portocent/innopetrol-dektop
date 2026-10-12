@@ -64,7 +64,7 @@ def zone_names(docs) -> list[str]:
     return names
 
 
-def zone_mask(doc, zone: str | None) -> np.ndarray:
+def zone_mask(doc, zone: str | tuple[float, float] | None) -> np.ndarray:
     """Samples of a well inside the zone of that name (each well uses its own tops); None = whole well."""
     return model_zone_mask(doc.well, zone)
 

@@ -22,6 +22,7 @@ class WellView(QWidget):
     statusMessage = Signal(str)
     exportRequested = Signal()
     closed = Signal(object)
+    statsRequested = Signal(object, object)  # (document, (top, base) in MD): statistics of an interval
 
     def __init__(self, doc: WellDocument, parent=None):
         super().__init__(parent)
@@ -101,6 +102,8 @@ class WellView(QWidget):
         track: TrackSpec | None
         if kind == "depth":
             track = TrackSpec(kind="depth", title=pgettext("track title", "Depth"), width=72)
+        elif kind == "intervals":
+            track = TrackSpec(kind="intervals", title=_("Intervals"), width=110, grid="none")
         elif kind == "volumes":
             track = build_volumes_track(self.doc.well)
             if track is None:
@@ -197,6 +200,11 @@ class WellView(QWidget):
         menu.addAction(_("Add volumes track (lithology / fluids)")).triggered.connect(
             lambda: self.add_track("volumes", index)
         )
+        menu.addAction(_("Add intervals track (perforations, tests, comments)")).triggered.connect(
+            lambda: self.add_track("intervals", index)
+        )
+        if self.canvas.interval is not None:
+            self._selection_menu(menu)
         if not math.isnan(depth):
             menu.addSeparator()
             add_top = QAction(_("Add top at {depth}…").format(depth=f"{depth:.2f}"), menu)
@@ -206,6 +214,76 @@ class WellView(QWidget):
         menu.addMenu(self.scale_menu(menu))
         menu.addAction(_("Export image / PDF…")).triggered.connect(self.exportRequested.emit)
         menu.exec(global_pos)
+
+    # ------------------------------------------------------------------ selected interval
+
+    def selection_md(self) -> tuple[float, float] | None:
+        """The interval selected on the log, in measured depth (how the data is stored)."""
+        if self.canvas.interval is None:
+            return None
+        view = self.doc.view
+        top, base = (float(view.to_md(d)) for d in self.canvas.interval)
+        return (min(top, base), max(top, base))
+
+    def _selection_menu(self, menu: QMenu) -> None:
+        sel = menu.addMenu(_("Selected interval"))
+        sel.addAction(_("Statistics and histogram…")).triggered.connect(
+            lambda: self.statsRequested.emit(self.doc, self.selection_md())
+        )
+        sel.addAction(_("Zoom to the selection")).triggered.connect(self.canvas.zoom_to_interval)
+        sel.addAction(_("Add as an interval (perforation, test, comment…)…")).triggered.connect(
+            self.add_interval_from_selection
+        )
+        sel.addAction(_("Create a zone (tops at its top and base)…")).triggered.connect(self.zone_from_selection)
+        sel.addAction(_("Export the selection (LAS / CSV)…")).triggered.connect(self.export_selection)
+        sel.addSeparator()
+        sel.addAction(_("Clear the selection (Esc)")).triggered.connect(lambda: self.canvas.set_interval(None))
+
+    def add_interval_from_selection(self) -> None:
+        from innopetrol.model.intervals import Interval
+        from innopetrol.ui.intervals_dialog import IntervalsDialog
+
+        md = self.selection_md()
+        if md is not None:
+            IntervalsDialog(self.doc, self, new=Interval(round(md[0], 2), round(md[1], 2), "perforation")).exec()
+
+    def zone_from_selection(self) -> None:
+        md = self.selection_md()
+        if md is None:
+            return
+        name, ok = QInputDialog.getText(self, _("New zone"), _("Name of the zone:"))
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+        tops = [t for t in self.doc.well.tops if t.name not in (name, _("Base of {zone}").format(zone=name))]
+        color = PALETTE[len(tops) % len(PALETTE)]
+        tops.append(Top(name, round(md[0], 2), color))
+        # The zone ends at the next top; a "base" top is added only if none closes it already.
+        if not any(md[0] < t.depth <= md[1] + 1e-9 for t in tops if t.name != name):
+            tops.append(Top(_("Base of {zone}").format(zone=name), round(md[1], 2), color))
+        self.doc.set_tops(tops, _("Create zone {name}").format(name=name))
+
+    def export_selection(self) -> None:
+        from PySide6.QtWidgets import QFileDialog
+
+        md = self.selection_md()
+        if md is None:
+            return
+        path, chosen = QFileDialog.getSaveFileName(
+            self, _("Export the selection"), f"{self.doc.title}_{md[0]:g}-{md[1]:g}.las", "LAS (*.las);;CSV (*.csv)"
+        )
+        if not path:
+            return
+        mask = self.doc.well.interval_mask(*md)
+        try:
+            if path.lower().endswith(".csv") or chosen.startswith("CSV"):
+                self.doc.well.to_csv(path, mask)
+            else:
+                self.doc.well.to_las(path, mask)
+        except OSError as e:
+            QMessageBox.warning(self, _("Export the selection"), _("Could not export: {error}").format(error=e))
+            return
+        self.statusMessage.emit(_("Exported {count} samples to {path}").format(count=int(mask.sum()), path=path))
 
     def closeEvent(self, e):
         if self.confirm_close:

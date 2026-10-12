@@ -10,7 +10,7 @@ display units through `adopt_layout`.
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QUndoCommand, QUndoStack
@@ -18,6 +18,7 @@ from PySide6.QtGui import QUndoCommand, QUndoStack
 from innopetrol.i18n import _
 from innopetrol.model import units
 from innopetrol.model.depth_view import DepthView, display_source_unit
+from innopetrol.model.intervals import Interval
 from innopetrol.model.layout import LogLayout, TrackSpec
 from innopetrol.model.location import Location
 from innopetrol.model.petro import PetroParams
@@ -38,6 +39,7 @@ class _State:
     survey: Survey | None
     elevation: float | None
     location: Location | None = None
+    intervals: list = field(default_factory=list)  # as dicts
 
     def same_as(self, other: _State) -> bool:
         return (
@@ -47,6 +49,7 @@ class _State:
             and self.survey is other.survey
             and self.elevation == other.elevation
             and self.location == other.location
+            and self.intervals == other.intervals
             and list(self.curves) == list(other.curves)
             and all(c is other.curves[m] for m, c in self.curves.items())
         )
@@ -101,6 +104,7 @@ class WellDocument(QObject):
             self.well.survey,
             self.well.elevation,
             self.well.location,
+            [i.to_dict() for i in self.well.intervals],
         )
 
     def _record(self) -> None:
@@ -150,6 +154,7 @@ class WellDocument(QObject):
             self.petro = PetroParams.from_dict(state.petro) if state.petro else None
             self.well.survey, self.well.elevation = state.survey, state.elevation
             self.well.location = state.location
+            self.well.intervals = [Interval.from_dict(i) for i in state.intervals]
             if self.depth_reference == "tvdss" and self.well.elevation is None:
                 self.depth_reference = "tvd"
             for mnem in [m for m in self.curve_units if m not in self.well.curves]:
@@ -347,6 +352,12 @@ class WellDocument(QObject):
                 t.fills = [f for f in t.fills if mnemonic not in (f.left_curve, f.right_curve)]
             self._view = None
             self.curvesChanged.emit()
+            self.layoutChanged.emit()
+
+    def set_intervals(self, intervals: list[Interval], text: str | None = None) -> None:
+        with self.undo_step(text or _("Edit intervals")):
+            self.well.intervals = sorted(intervals, key=lambda i: i.top)
+            self.topsChanged.emit()  # the tree and the views treat intervals like tops
             self.layoutChanged.emit()
 
     def set_tops(self, tops, text: str | None = None) -> None:

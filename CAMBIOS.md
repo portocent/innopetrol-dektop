@@ -534,6 +534,45 @@ con una transformación lineal. Se crea `GRN` en cada pozo, cada una con su prop
 histograma multipozo permite ver antes y después. La referencia es Shier (2004), que figura con las
 demás en Ayuda ▸ Ecuaciones y referencias.
 
+### 3.10 Interacción: selección de intervalos, intervalos y núcleos
+
+**Seleccionar un intervalo con el mouse.** Arrastrando sobre el registro se marca una banda celeste con
+su techo, su base y el **espesor**, que hace las veces de regla. Un clic o Esc la borra. Con clic
+derecho sobre el registro aparece el menú "Intervalo seleccionado":
+- estadísticas e histograma de ese tramo;
+- acercar el zoom a la selección;
+- exportarla a LAS o CSV;
+- crear una zona, que agrega los topes de techo y base;
+- agregarla como intervalo (punzado, ensayo, comentario…).
+
+La selección se dibuja en pantalla en profundidad de visualización (MD, TVD…), pero todo lo que se
+guarda se convierte antes a MD, como el resto de los datos.
+
+*Decisión de diseño:* el arrastre normal selecciona y el clic simple sigue eligiendo el track. Los
+dos gestos se distinguen por un umbral de 4 píxeles de movimiento, así no hace falta ninguna tecla.
+
+**Cursor sincronizado en la correlación.** Todas las columnas comparten escala y alineación, así que
+la misma altura en pantalla es el mismo nivel correlacionado. Al mover el mouse sobre un pozo, la línea
+del cursor aparece en todos, y cada uno muestra su propia profundidad. La implementación es simple: el
+lienzo avisa la altura y los demás dibujan la línea ahí, sin recalcular profundidades.
+
+**Track de intervalos.** Punzados, ensayos (DST), pérdidas, intervalos coroneados, corridas y
+comentarios:
+- se guardan en el pozo en MD, con deshacer y en el proyecto;
+- se editan en una tabla (Pozo ▸ Intervalos…) o se importan de CSV, con encabezados en inglés o en
+  español; el tipo se reconoce por palabras como "punzado", "DST" o "pérdida";
+- se dibujan en un track propio con el color y el patrón de su tipo.
+
+**Datos de núcleo** (Pozo ▸ Importar datos de núcleo):
+- *Lectura:* un CSV con una columna de profundidad y columnas numéricas, con las unidades entre
+  paréntesis.
+- *Ubicación:* cada muestra se coloca en la muestra del registro más cercana; si dos caen en la misma,
+  se promedian. Así se dibujan como puntos sobre las curvas del registro.
+- *Ajustes:* se puede indicar si las profundidades del núcleo están en m o ft y un corrimiento
+  núcleo–registro.
+- *En el proyecto:* se guardan las profundidades y los valores originales, no la grilla, así se pueden
+  volver a ubicar al reabrirlo aunque cambie el archivo LAS.
+
 ## 4. Arquitectura
 
 ```

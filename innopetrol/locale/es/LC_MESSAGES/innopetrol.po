@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 13:08-0500\n"
+"POT-Creation-Date: 2026-10-12 13:21-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -81,11 +81,17 @@ msgstr "<b>Pickett</b> (líneas de Sw)"
 msgid "<b>−</b> and <b>+</b> buttons next to “Scale”: zoom out / in to the next standard scale ({out} / {in_})"
 msgstr "Botones <b>−</b> y <b>+</b> junto a «Escala»: alejar / acercar a la siguiente escala estándar ({out} / {in_})"
 
+msgid "A new “Core” track"
+msgstr "Un track nuevo «Núcleo»"
+
 msgid "About InnoPetrol"
 msgstr "Acerca de InnoPetrol"
 
 msgid "Add"
 msgstr "Agregar"
+
+msgid "Add as an interval (perforation, test, comment…)…"
+msgstr "Agregar como intervalo (punzado, ensayo, comentario…)…"
 
 msgid "Add curve track"
 msgstr "Agregar track de curvas"
@@ -95,6 +101,9 @@ msgstr "Agregar curvas"
 
 msgid "Add depth track"
 msgstr "Agregar track de profundidad"
+
+msgid "Add intervals track (perforations, tests, comments)"
+msgstr "Agregar track de intervalos (punzados, ensayos, comentarios)"
 
 msgid ""
 "Add the curve names your company or service providers use, separated by commas. They are recognized when opening "
@@ -188,6 +197,9 @@ msgstr "Bandera de pozo malo (derrumbe o corrección de densidad grande)"
 msgid "Bad hole: do not use density and neutron where…"
 msgstr "Pozo malo: no usar densidad ni neutrón donde…"
 
+msgid "Base"
+msgstr "Base"
+
 #, python-brace-format
 msgid "Base ({unit})"
 msgstr "Base ({unit})"
@@ -197,6 +209,10 @@ msgstr "Mapa base"
 
 msgid "Base map…"
 msgstr "Mapa base…"
+
+#, python-brace-format
+msgid "Base of {zone}"
+msgstr "Base de {zone}"
 
 msgid "Bins:"
 msgstr "Clases:"
@@ -272,6 +288,9 @@ msgstr "Quitar selección"
 msgid "Clear the selected zone"
 msgstr "Vaciar la zona seleccionada"
 
+msgid "Clear the selection (Esc)"
+msgstr "Quitar la selección (Esc)"
+
 msgid "Click on a well to place the top there; clicking again moves it. Right-click: more options."
 msgstr "Haga clic en un pozo para poner el tope ahí; otro clic lo mueve. Clic derecho: más opciones."
 
@@ -296,6 +315,9 @@ msgstr "Color por valor"
 msgid "Color:"
 msgstr "Color:"
 
+msgid "Column"
+msgstr "Columna"
+
 #, python-brace-format
 msgid ""
 "Columns: MD, inclination and azimuth in degrees, with MD in the same unit as the log ({unit}). Headers in English or "
@@ -303,6 +325,9 @@ msgid ""
 msgstr ""
 "Columnas: MD, inclinación y azimut en grados, con MD en la misma unidad que el registro ({unit}). Se reconocen "
 "encabezados en inglés o español."
+
+msgid "Comment"
+msgstr "Comentario"
 
 msgid "Company"
 msgstr "Compañía"
@@ -330,6 +355,25 @@ msgstr ""
 "Copyright © 2020-2026 Jacobo Porto. Software libre bajo la GNU LGPL, versión 3 o posterior; se distribuye SIN NINGUNA"
 " GARANTÍA."
 
+msgid "Core"
+msgstr "Núcleo"
+
+msgid "Core data (*.csv *.txt);;All files (*)"
+msgstr "Datos de núcleo (*.csv *.txt);;Todos los archivos (*)"
+
+msgid "Core depths in:"
+msgstr "Profundidades del núcleo en:"
+
+msgid "Core-to-log depth shift (added):"
+msgstr "Corrimiento núcleo–registro (se suma):"
+
+#, python-brace-format
+msgid "Core: {column}"
+msgstr "Núcleo: {column}"
+
+msgid "Cored interval"
+msgstr "Intervalo coroneado"
+
 #, python-brace-format
 msgid "Corrections on load ({count})"
 msgstr "Correcciones al cargar ({count})"
@@ -352,6 +396,10 @@ msgstr "Correlación — {wells}"
 msgid "Could not export: {error}"
 msgstr "No se pudo exportar: {error}"
 
+#, python-brace-format
+msgid "Could not find top and base columns in: {header}"
+msgstr "No se encontraron columnas de tope y base en: {header}"
+
 msgid "Could not open:"
 msgstr "No se pudieron abrir:"
 
@@ -369,12 +417,19 @@ msgstr "País"
 msgid "County"
 msgstr "Condado"
 
+msgid "Create a zone (tops at its top and base)…"
+msgstr "Crear una zona (topes en su techo y su base)…"
+
 msgid "Create curve"
 msgstr "Crear curva"
 
 #, python-brace-format
 msgid "Create curve {name}"
 msgstr "Crear curva {name}"
+
+#, python-brace-format
+msgid "Create zone {name}"
+msgstr "Crear zona {name}"
 
 #, python-brace-format
 msgid "Created by InnoPetrol {version}"
@@ -617,6 +672,9 @@ msgstr "Editar curva — {well}"
 msgid "Edit formation tops"
 msgstr "Editar topes de formación"
 
+msgid "Edit intervals"
+msgstr "Editar intervalos"
+
 msgid "Edit selected track…"
 msgstr "Editar track seleccionado…"
 
@@ -688,8 +746,18 @@ msgstr "Exportar registro (PDF / PNG)…"
 msgid "Export log — {well}"
 msgstr "Exportar registro — {well}"
 
+msgid "Export the selection"
+msgstr "Exportar la selección"
+
+msgid "Export the selection (LAS / CSV)…"
+msgstr "Exportar la selección (LAS / CSV)…"
+
 msgid "Export tops"
 msgstr "Exportar topes"
+
+#, python-brace-format
+msgid "Exported {count} samples to {path}"
+msgstr "Se exportaron {count} muestras a {path}"
 
 msgid "Export…"
 msgstr "Exportar…"
@@ -822,11 +890,27 @@ msgstr "Si elige No, la copia guardada se elimina."
 msgid "Image saved."
 msgstr "Imagen guardada."
 
+msgid "Import"
+msgstr "Importar"
+
 msgid "Import CSV…"
 msgstr "Importar CSV…"
 
 msgid "Import aliases"
 msgstr "Importar alias"
+
+msgid "Import core data"
+msgstr "Importar datos de núcleo"
+
+msgid "Import core data (CSV)…"
+msgstr "Importar datos de núcleo (CSV)…"
+
+#, python-brace-format
+msgid "Import core data — {well}"
+msgstr "Importar datos de núcleo — {well}"
+
+msgid "Import intervals"
+msgstr "Importar intervalos"
 
 msgid "Import survey"
 msgstr "Importar survey"
@@ -886,6 +970,23 @@ msgstr "Intervalo: {start} – {stop} {unit} (paso {step})"
 #, python-brace-format
 msgid "Interval: {top} – {base} {unit} (MD)"
 msgstr "Intervalo: {top} – {base} {unit} (MD)"
+
+msgid "Intervals"
+msgstr "Intervalos"
+
+msgid "Intervals (*.csv *.txt);;All files (*)"
+msgstr "Intervalos (*.csv *.txt);;Todos los archivos (*)"
+
+msgid "Intervals (perforations, tests, comments)…"
+msgstr "Intervalos (punzados, ensayos, comentarios)…"
+
+#, python-brace-format
+msgid "Intervals ({count})"
+msgstr "Intervalos ({count})"
+
+#, python-brace-format
+msgid "Intervals — {well}"
+msgstr "Intervalos — {well}"
 
 msgid "Known elevation of the depth reference (KB/DF) above sea level"
 msgstr "Elevación conocida de la referencia de profundidad (KB/DF) sobre el nivel del mar"
@@ -974,8 +1075,14 @@ msgstr "Y logarítmica"
 msgid "Logarithmic scale"
 msgstr "Escala logarítmica"
 
+msgid "Logging run"
+msgstr "Corrida de perfilaje"
+
 msgid "Longitude:"
 msgstr "Longitud:"
+
+msgid "Losses"
+msgstr "Pérdidas"
 
 msgid "Low percentile"
 msgstr "Percentil bajo"
@@ -1002,6 +1109,14 @@ msgstr "Media: {value}"
 
 msgid "Measured depth (MD)"
 msgstr "Profundidad medida (MD)"
+
+#, python-brace-format
+msgid ""
+"Measured depths in {unit}. Intervals are drawn in an intervals track (right-click on the log ▸ Add intervals track); "
+"you can also select an interval on the log by dragging."
+msgstr ""
+"Profundidades medidas en {unit}. Los intervalos se dibujan en un track de intervalos (clic derecho sobre el registro "
+"▸ Agregar track de intervalos); también puede seleccionar un intervalo en el registro arrastrando."
 
 msgid "Medium resistivity"
 msgstr "Resistividad media"
@@ -1068,6 +1183,9 @@ msgstr "Nombre del tope a {depth}:"
 msgid "Name of the top:"
 msgstr "Nombre del tope:"
 
+msgid "Name of the zone:"
+msgstr "Nombre de la zona:"
+
 msgid "Name:"
 msgstr "Nombre:"
 
@@ -1128,8 +1246,14 @@ msgstr "Nuevo tope"
 msgid "New top here…"
 msgstr "Nuevo tope aquí…"
 
+msgid "New zone"
+msgstr "Zona nueva"
+
 msgid "No (solid color)"
 msgstr "No (color sólido)"
+
+msgid "No core sample falls inside the logged interval."
+msgstr "Ninguna muestra de núcleo cae dentro del intervalo registrado."
 
 msgid "No data in the interval"
 msgstr "Sin datos en el intervalo"
@@ -1270,6 +1394,9 @@ msgstr "Pago"
 
 msgid "Percentiles (low / high):"
 msgstr "Percentiles (bajo / alto):"
+
+msgid "Perforation"
+msgstr "Punzado"
 
 msgid "Permeability"
 msgstr "Permeabilidad"
@@ -1460,6 +1587,10 @@ msgstr "Clic derecho: menú del track (agregar, mover, eliminar, agregar tope, e
 msgid "Row {row}: a name and a numeric depth are required"
 msgstr "Fila {row}: nombre y profundidad numérica son obligatorios"
 
+#, python-brace-format
+msgid "Row {row}: top and base must be different numbers"
+msgstr "Fila {row}: tope y base deben ser números distintos"
+
 msgid "Running median"
 msgstr "Mediana móvil"
 
@@ -1559,6 +1690,13 @@ msgstr "Seleccione el caliper o la curva de corrección de densidad para detecta
 msgid "Select the temperature curve."
 msgstr "Seleccione la curva de temperatura."
 
+msgid "Selected interval"
+msgstr "Intervalo seleccionado"
+
+#, python-brace-format
+msgid "Selection ({top} – {base})"
+msgstr "Selección ({top} – {base})"
+
 msgid "Separation (shale)"
 msgstr "Separación (arcilla)"
 
@@ -1611,6 +1749,9 @@ msgstr "Atajos"
 
 msgid "Show as tabs"
 msgstr "Ver como pestañas"
+
+msgid "Show in:"
+msgstr "Mostrar en:"
 
 msgid "Show it, dashed, in the tracks of the original curve"
 msgstr "Mostrarla, a trazos, en los tracks de la curva original"
@@ -1737,11 +1878,18 @@ msgstr "Plantilla guardada: {path}"
 msgid "Test"
 msgstr "Probar"
 
+msgid "Test (DST)"
+msgstr "Ensayo (DST)"
+
 msgid "The Pickett plot needs the resistivity and density curves."
 msgstr "El gráfico de Pickett necesita las curvas de resistividad y densidad."
 
 msgid "The curves were computed. Points to review:"
 msgstr "Las curvas se calcularon. Puntos a revisar:"
+
+#, python-brace-format
+msgid "The file needs a header row with a depth column and numeric columns ({error})."
+msgstr "El archivo necesita una fila de encabezado con una columna de profundidad y columnas numéricas ({error})."
 
 msgid "The fill takes the color of its curve's value at each depth, along the curve's scale."
 msgstr "El relleno toma, en cada profundidad, el color del valor de su curva según la escala de la curva."
@@ -1784,6 +1932,9 @@ msgstr "Hasta ({unit}):"
 
 msgid "To flatten, define tops with the same name in every well (Well ▸ Tops)."
 msgstr "Para aplanar, defina topes con el mismo nombre en cada pozo (Pozo ▸ Topes)."
+
+msgid "Top"
+msgstr "Tope"
 
 #, python-brace-format
 msgid "Top ({unit})"
@@ -1829,6 +1980,9 @@ msgstr "Profundidad vertical verdadera (TVD)"
 msgid "True vertical depth subsea (TVDSS)"
 msgstr "Profundidad vertical bajo el nivel del mar (TVDSS)"
 
+msgid "Type"
+msgstr "Tipo"
+
 msgid "Type the scale as 1:500 or 500."
 msgstr "Escriba la escala como 1:500 o 500."
 
@@ -1840,6 +1994,9 @@ msgstr "Deshacer"
 
 msgid "Unexpected error"
 msgstr "Error inesperado"
+
+msgid "Unit"
+msgstr "Unidad"
 
 msgid "Unit system"
 msgstr "Sistema de unidades"
@@ -2095,6 +2252,9 @@ msgstr "Alejar"
 msgid "Zoom out to the next standard scale"
 msgstr "Alejar a la siguiente escala estándar"
 
+msgid "Zoom to the selection"
+msgstr "Acercar a la selección"
+
 #, python-brace-format
 msgid "a curve named {name} already exists"
 msgstr "ya existe una curva llamada {name}"
@@ -2236,6 +2396,9 @@ msgstr "sin datos en el intervalo"
 msgid "no equivalent curve"
 msgstr "sin curva equivalente"
 
+msgid "no intervals (Well ▸ Intervals…)"
+msgstr "sin intervalos (Pozo ▸ Intervalos…)"
+
 msgid "no numeric survey stations were found"
 msgstr "no se encontraron estaciones numéricas en el survey"
 
@@ -2376,6 +2539,10 @@ msgid "{changed} of {total} samples change."
 msgstr "Cambian {changed} de {total} muestras."
 
 #, python-brace-format
+msgid "{count} intervals"
+msgstr "{count} intervalos"
+
+#, python-brace-format
 msgid "{count} points"
 msgstr "{count} puntos"
 
@@ -2434,8 +2601,16 @@ msgid "{curve} — not available"
 msgstr "{curve} — no disponible"
 
 #, python-brace-format
+msgid "{file}: {count} samples between {top} and {base}. Check the columns to import."
+msgstr "{file}: {count} muestras entre {top} y {base}. Marque las columnas a importar."
+
+#, python-brace-format
 msgid "{modifier} + wheel or trackpad pinch: continuous zoom at the cursor"
 msgstr "{modifier} + rueda o pellizco en el trackpad: zoom continuo en el cursor"
+
+#, python-brace-format
+msgid "{name} already exists in the well; choose another name."
+msgstr "{name} ya existe en el pozo; elija otro nombre."
 
 #, python-brace-format
 msgid "{name} is an original LAS curve; choose another name."
@@ -2480,6 +2655,10 @@ msgstr "{row}: los valores de escala deben ser numéricos"
 #, python-brace-format
 msgid "{row}: the left and right scale values cannot be equal"
 msgstr "{row}: la escala izquierda y derecha no pueden ser iguales"
+
+#, python-brace-format
+msgid "{top} – {base} {unit} · thickness {thickness} {unit}"
+msgstr "{top} – {base} {unit} · espesor {thickness} {unit}"
 
 #, python-brace-format
 msgid "{track} add track · {tops} tops · {petro} petrophysics · {calc} calculator"
