@@ -8,8 +8,15 @@ from PySide6.QtCore import QRectF
 from PySide6.QtGui import QFontMetricsF, QPainter
 
 from innopetrol.model.layout import LogLayout
-from innopetrol.render.painter import (DepthTransform, RenderOptions, draw_depth_body, draw_tops, draw_track_body,
-                                       draw_track_header, header_height)
+from innopetrol.render.painter import (
+    DepthTransform,
+    RenderOptions,
+    draw_depth_body,
+    draw_tops,
+    draw_track_body,
+    draw_track_header,
+    header_height,
+)
 
 
 def track_edges(layout: LogLayout, k: float = 1.0) -> list[tuple[float, float]]:

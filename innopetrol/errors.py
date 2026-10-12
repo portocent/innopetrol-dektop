@@ -52,7 +52,7 @@ class ErrorReporter:
             if self.before_report is not None:
                 try:
                     saved = bool(self.before_report())
-                except Exception:  # noqa: BLE001 - the report must go on
+                except Exception:
                     log.exception("Autosave after an error failed")
             details = "".join(traceback.format_exception(exc_type, exc, tb))
             self.show(f"{exc_type.__name__}: {exc}", details, self.log_path, saved)

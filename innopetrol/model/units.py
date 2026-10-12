@@ -101,7 +101,7 @@ def convert(values, from_unit: str | None, to_unit: str | None) -> np.ndarray:
     """Converts values between units of the same dimension. Raises ValueError otherwise."""
     values = np.asarray(values, dtype=float)
     a, b = normalize(from_unit), normalize(to_unit)
-    if a == b and a is not None or (from_unit or "") == (to_unit or ""):
+    if (a == b and a is not None) or (from_unit or "") == (to_unit or ""):
         return values
     if a is None or b is None or UNITS[a].dimension != UNITS[b].dimension:
         raise ValueError(f"cannot convert {from_unit!r} to {to_unit!r}")

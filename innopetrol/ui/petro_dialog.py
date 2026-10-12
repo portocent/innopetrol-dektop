@@ -8,14 +8,35 @@ from dataclasses import replace
 import numpy as np
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog,
-                               QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
-                               QListWidget, QListWidgetItem, QMessageBox, QPlainTextEdit, QPushButton, QTableWidget, QTableWidgetItem,
-                               QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QFormLayout,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from innopetrol.i18n import _
 from innopetrol.model import petro, units
-from innopetrol.model.calculator import CalculatorError, FUNCTIONS, curve_ref, evaluate
+from innopetrol.model.calculator import FUNCTIONS, CalculatorError, curve_ref, evaluate
 from innopetrol.model.layout import CurveStyle, FillSpec, LogLayout, TrackSpec
 from innopetrol.model.mnemonics import build_volumes_track, find_curve, make_curve_style
 from innopetrol.model.tops import Zone, zones_from_tops

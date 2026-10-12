@@ -12,8 +12,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from innopetrol.i18n import N_, _, pgettext
-from innopetrol.model.layout import CurveStyle, FillSpec, LogLayout, TrackSpec
 from innopetrol.model import units
+from innopetrol.model.layout import CurveStyle, FillSpec, LogLayout, TrackSpec
 from innopetrol.model.scales import log_decades, nice_linear_range
 
 

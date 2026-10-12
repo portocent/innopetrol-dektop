@@ -161,7 +161,7 @@ class WellDocument(QObject):
             self._view = DepthView(self.well, self.depth_reference, self.display_unit, self.curve_units)
         return self._view
 
-    def set_depth_display(self, reference: str | None = None, unit: str | None | bool = False) -> None:
+    def set_depth_display(self, reference: str | None = None, unit: str | bool | None = False) -> None:
         """Changes the drawing reference (MD/TVD/TVDSS) and/or unit (None = file unit)."""
         if reference is not None:
             self.depth_reference = reference
@@ -259,7 +259,8 @@ class WellDocument(QObject):
 
     def style_for(self, mnemonic: str):
         """Default style for a curve, with its scale in the curve's display unit."""
-        from innopetrol.model.layout import LogLayout as _Layout, TrackSpec as _Track
+        from innopetrol.model.layout import LogLayout as _Layout
+        from innopetrol.model.layout import TrackSpec as _Track
         from innopetrol.model.mnemonics import make_curve_style
 
         style = make_curve_style(self.well, mnemonic)

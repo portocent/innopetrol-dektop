@@ -11,21 +11,36 @@ from pathlib import Path
 
 from PySide6.QtCore import QSettings, QStandardPaths, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QUndoGroup
-from PySide6.QtWidgets import (QApplication, QComboBox, QDockWidget, QFileDialog, QLabel, QMainWindow, QMdiArea,
-                               QMessageBox, QToolBar)
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDockWidget,
+    QFileDialog,
+    QLabel,
+    QMainWindow,
+    QMdiArea,
+    QMessageBox,
+    QToolBar,
+)
 
 from innopetrol import __version__, i18n
 from innopetrol.i18n import _
+from innopetrol.model import units
+from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.mnemonics import build_triple_combo
 from innopetrol.model.project import SUFFIX as PROJECT_SUFFIX
 from innopetrol.model.project import ProjectError, WellEntry, load_project, save_project
 from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.model.template import SUFFIX as TEMPLATE_SUFFIX
-from innopetrol.model.template import (TemplateError, apply_template, load_template, save_template,
-                                       template_from_json, template_to_json)
-from innopetrol.model import units
-from innopetrol.model.io import is_well_file, load_wells
+from innopetrol.model.template import (
+    TemplateError,
+    apply_template,
+    load_template,
+    save_template,
+    template_from_json,
+    template_to_json,
+)
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.recovery import Recovery
@@ -601,7 +616,7 @@ class MainWindow(QMainWindow):
             for path in paths:
                 try:
                     wells = load_wells(path)  # LAS: one well; DLIS: one per depth frame
-                except Exception as e:  # noqa: BLE001 - any invalid file is reported
+                except Exception as e:
                     errors.append(f"{Path(path).name}: {e}")
                     continue
                 self._add_recent(path)
@@ -765,7 +780,7 @@ class MainWindow(QMainWindow):
         elif r == QMessageBox.No:
             self.recovery.discard()
 
-    def open_project(self, path, recovered_from: Path | None | bool = False):
+    def open_project(self, path, recovered_from: Path | bool | None = False):
         """Opens a project. `recovered_from` (when restoring an autosave) is the project the autosave
         belonged to: it becomes the current project, with its changes still unsaved."""
         if self.docs and not self._confirm_discard():
@@ -1051,7 +1066,7 @@ class MainWindow(QMainWindow):
             try:
                 doc.well.to_las(path)
                 self.statusBar().showMessage(_("LAS exported: {path}").format(path=path), 5000)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 QMessageBox.warning(self, _("Export LAS"), _("Could not export: {error}").format(error=e))
 
     def export_csv(self):

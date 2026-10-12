@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
+from functools import cache
 
 from PySide6.QtGui import QColor
 
@@ -19,7 +19,7 @@ COLORMAPS = {
 LEVELS = 48
 
 
-@lru_cache(maxsize=None)
+@cache
 def palette(name: str, n: int = LEVELS) -> tuple[QColor, ...]:
     """n colors evenly spread over the color map (the first is the left of the scale)."""
     stops = [QColor(c) for c in COLORMAPS.get(name, COLORMAPS["viridis"])[1]]

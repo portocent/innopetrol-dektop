@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 from innopetrol.i18n import _
 from innopetrol.model.scales import next_preset, px_per_unit, scale_ratio
 from innopetrol.render.painter import BORDER, DepthTransform, RenderOptions, header_height
-from innopetrol.render.scene import paint_headers, paint_log, paint_tops_overlay, track_edges, total_width
+from innopetrol.render.scene import paint_headers, paint_log, paint_tops_overlay, total_width, track_edges
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.tile_cache import TILE_H, TileCache
 

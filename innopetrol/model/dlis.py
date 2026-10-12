@@ -88,7 +88,7 @@ def _header(origin, lf) -> list[HeaderItem]:
     for p in lf.parameters:
         try:
             values = p.values
-        except Exception:  # noqa: BLE001 - malformed parameters are ignored
+        except Exception:
             continue
         if values is not None and np.size(values) == 1:
             value = np.asarray(values).ravel()[0]

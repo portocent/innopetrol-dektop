@@ -13,8 +13,8 @@ from innopetrol.model.io import load_well
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.location import Location
 from innopetrol.model.petro import PetroParams
-from innopetrol.model.tops import Top
 from innopetrol.model.survey import Survey
+from innopetrol.model.tops import Top
 from innopetrol.model.well import Curve, Well
 
 FORMAT = "innopetrol-project"
@@ -84,7 +84,7 @@ def load_project(path: str | Path) -> LoadResult:
         las_path = (path.parent / w["path"]).resolve()
         try:
             well = load_well(las_path, w.get("source"))
-        except Exception as e:  # noqa: BLE001 - any read error is reported and loading continues
+        except Exception as e:
             result.errors.append(f"{w.get('name', las_path.name)}: {e}")
             continue
         well.tops = [Top.from_dict(t) for t in w.get("tops", [])]
@@ -92,7 +92,7 @@ def load_project(path: str | Path) -> LoadResult:
         if w.get("survey"):
             try:
                 well.survey = Survey.from_dict(w["survey"])
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 result.errors.append(_("{well}: invalid survey: {error}").format(well=well.name, error=e))
         if "elevation" in w:
             well.elevation = w["elevation"]
@@ -104,7 +104,7 @@ def load_project(path: str | Path) -> LoadResult:
         for c in w.get("computed", []):
             try:
                 values = evaluate(c["formula"], well.formula_env())
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 result.errors.append(_("{well}: could not recompute {curve}: {error}").format(
                     well=well.name, curve=c["mnemonic"], error=e))
                 continue

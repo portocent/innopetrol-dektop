@@ -2,8 +2,20 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (QAbstractItemView, QDialog, QDialogButtonBox, QFileDialog, QHBoxLayout, QHeaderView,
-                               QLabel, QLineEdit, QMessageBox, QPushButton, QTableWidget, QVBoxLayout)
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QVBoxLayout,
+)
 
 from innopetrol.i18n import _
 from innopetrol.model.tops import PALETTE, Top, load_tops_csv, save_tops_csv

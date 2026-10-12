@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 from innopetrol.model import petro
-from innopetrol.model.project import WellEntry, load_project, save_project
 from innopetrol.model.mnemonics import build_triple_combo
+from innopetrol.model.project import WellEntry, load_project, save_project
 from innopetrol.model.survey import Survey
 from innopetrol.model.tops import Top, zones_from_tops
 

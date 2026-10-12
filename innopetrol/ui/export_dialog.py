@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
-                               QMessageBox, QSpinBox)
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QFormLayout,
+    QMessageBox,
+    QSpinBox,
+)
 
 from innopetrol.i18n import _, ngettext
 from innopetrol.model.scales import SCALE_PRESETS

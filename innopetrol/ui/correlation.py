@@ -7,8 +7,22 @@ import sys
 import shiboken6
 from PySide6.QtCore import QEvent, QPointF, Qt, QTimer
 from PySide6.QtGui import QAction, QColor, QKeySequence, QPainter, QPen
-from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QInputDialog, QLabel, QListWidget,
-                               QListWidgetItem, QMenu, QPushButton, QScrollArea, QScrollBar, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QPushButton,
+    QScrollArea,
+    QScrollBar,
+    QVBoxLayout,
+    QWidget,
+)
 
 from innopetrol.i18n import _
 from innopetrol.model.scales import MM_PER_UNIT, SCALE_PRESETS

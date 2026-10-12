@@ -11,8 +11,18 @@ from dataclasses import dataclass
 import numpy as np
 import shiboken6
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import (QBrush, QColor, QFont, QFontMetricsF, QLinearGradient, QPainter, QPainterPath, QPen,
-                           QPolygonF, QTransform)
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QFontMetricsF,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPolygonF,
+    QTransform,
+)
 
 from innopetrol.i18n import _, pgettext
 from innopetrol.model import units

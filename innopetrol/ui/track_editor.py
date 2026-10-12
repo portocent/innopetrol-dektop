@@ -12,9 +12,25 @@ from __future__ import annotations
 import copy
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox,
-                               QFormLayout, QHBoxLayout, QHeaderView, QLineEdit, QMessageBox, QPushButton, QSpinBox,
-                               QTableWidget, QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QHBoxLayout,
+    QHeaderView,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QTableWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from innopetrol.i18n import _
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec

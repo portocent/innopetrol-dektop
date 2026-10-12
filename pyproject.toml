@@ -1,13 +1,14 @@
 [project]
 name = "innopetrol"
 version = "2.0.0"
-description = "Visor de registros de pozo (LAS) para ingenieros de petróleo"
+description = "Well log viewer and petrophysics for petroleum engineers (LAS and DLIS)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "LGPL-3.0-or-later"
 license-files = ["COPYING", "COPYING.LESSER"]
-authors = [{ name = "Jacobo Porto" }]
-# pyside6-essentials: sólo los módulos de Qt que se usan (el paquete pyside6 completo pesa ~1 GB).
+authors = [{ name = "portocent" }]
+# pyside6-essentials: only the Qt modules the program uses (the full pyside6 package is ~1 GB).
+# dlisio has no wheels for Intel Macs: DLIS reading is optional there.
 dependencies = [
     "pyside6-essentials>=6.7",
     "lasio>=0.31",
@@ -15,7 +16,7 @@ dependencies = [
     "dlisio>=1.0 ; platform_machine == 'arm64' or sys_platform != 'darwin'",
 ]
 
-# gui-scripts: en Windows el lanzador no abre una consola negra junto a la aplicación.
+# gui-scripts: on Windows the launcher does not open a console window next to the application.
 [project.gui-scripts]
 innopetrol = "innopetrol.__main__:main"
 
@@ -23,6 +24,10 @@ innopetrol = "innopetrol.__main__:main"
 build = ["pyinstaller>=6.10", "pillow>=10"]
 dev = [
     "babel>=2.14",
+    "mypy>=1.11",
+    "pre-commit>=3.7",
+    "pytest-cov>=5",
+    "ruff>=0.6",
     "dliswriter>=1.2",
     "pytest>=8",
     "pytest-qt>=4.4",
@@ -40,3 +45,42 @@ packages = ["innopetrol"]
 testpaths = ["tests"]
 qt_api = "pyside6"
 timeout = 120
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "C90", "RUF", "PL"]
+ignore = [
+    "PLR2004",  # magic values: petrophysical formulas and drawing are full of meaningful constants
+    "RUF001", "RUF002", "RUF003",  # φ, ρ, °, µ and typographic quotes are intentional
+    "PLR0913", "PLR0917",  # drawing and dialog helpers legitimately take many arguments
+    "PLC0415",  # imports inside functions: used on purpose to keep startup fast and avoid cycles
+    "PLW0603",  # module-level state for the interface language (i18n)
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pylint]
+max-statements = 60
+max-branches = 15
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR0915", "B018"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["innopetrol"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+packages = ["innopetrol"]
+
+[tool.coverage.run]
+source = ["innopetrol"]
+omit = ["innopetrol/__main__.py"]
