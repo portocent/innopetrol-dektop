@@ -530,9 +530,9 @@ class LogCanvas(QWidget):
             for c in t.curves:
                 if c.visible and c.mnemonic in well.curves and c.mnemonic not in seen:
                     seen.add(c.mnemonic)
-                    v = well.value_at(c.mnemonic, md)
+                    v = self.doc.view.display_value(c.mnemonic, well.value_at(c.mnemonic, md))
                     if np.isfinite(v):
-                        curve_unit = well.curves[c.mnemonic].unit
+                        curve_unit = self.doc.view.curves[c.mnemonic].unit
                         parts.append(f"{c.mnemonic} {v:.4g}{(' ' + curve_unit) if curve_unit else ''}")
         for top in sorted(well.tops, key=lambda t: t.depth, reverse=True):
             if top.depth <= md:

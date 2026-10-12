@@ -15,6 +15,9 @@ Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python w
 - True vertical scales (1:200, 1:500, 1:1000…) or fit to window.
 - Configurable tracks: curves, linear or logarithmic scale, color, width, style, fills between curves or against a fixed value with 10 patterns.
 - Add, remove, move, rename and resize tracks (by dragging their border).
+- **Units on demand**: View ▸ Unit system (as in the file / oilfield / metric) or per curve from the well tree
+  (g/cm³ ↔ kg/m³, µs/ft ↔ µs/m, fraction ↔ %, °F ↔ °C, psi ↔ kPa, in ↔ mm). Stored data is never changed and
+  calculations convert their inputs, so results do not depend on how each file was delivered.
 - Interface in **English or Spanish**, switched live from **View ▸ Language / Idioma** (the first start uses the system language).
 
 **Navigation** (on Mac, ⌘ instead of Ctrl)

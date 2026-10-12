@@ -6,12 +6,14 @@ Grouping them into families lets a template made for one well work on another.
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 
 import numpy as np
 
 from innopetrol.i18n import N_, _, pgettext
 from innopetrol.model.layout import CurveStyle, FillSpec, LogLayout, TrackSpec
+from innopetrol.model import units
 from innopetrol.model.scales import log_decades, nice_linear_range
 
 
@@ -25,6 +27,12 @@ class Family:
     log: bool = False
     color: str = "#000000"
     style: str = "solid"
+    unit: str | None = None  # unit of the default left/right scale (converted to the curve's unit)
+
+
+# Unit in which each family's default scale is written.
+_FAMILY_UNITS = {"caliper": "in", "bit_size": "in", "density": "g/cm3", "density_corr": "g/cm3", "neutron": "v/v",
+                 "sonic": "us/ft", "porosity_density": "v/v", "effective_porosity": "v/v", "vsh": "v/v", "sw": "v/v"}
 
 
 FAMILIES: dict[str, Family] = {f.key: f for f in [
@@ -62,6 +70,7 @@ FAMILIES: dict[str, Family] = {f.key: f for f in [
     Family("permeability", N_("Permeability"), ("PERM", "K", "PERMCORE", "KCORE", "KINT", "KLOG"),
            0.01, 10000, log=True, color="#117864"),
 ]}
+FAMILIES = {k: dataclasses.replace(f, unit=_FAMILY_UNITS.get(k)) for k, f in FAMILIES.items()}
 
 _ALIAS_INDEX = {alias: fam.key for fam in FAMILIES.values() for alias in fam.aliases}
 
@@ -93,12 +102,10 @@ def default_scale(well, mnemonic: str, family: str | None = None) -> tuple[float
     fam = FAMILIES.get(family) if family else None
     if fam and fam.left is not None and fam.right is not None:
         left, right = fam.left, fam.right
-        # Neutron and porosities sometimes come in % (0–45) instead of fraction (0–0.45).
-        if fam.key in ("neutron", "porosity_density", "effective_porosity") and curve is not None:
-            unit = curve.unit.upper()
-            if "%" in unit or unit in ("PU", "P.U.") or (curve.has_data and np.nanpercentile(curve.values, 95) > 1.5):
-                left, right = left * 100, right * 100
-        return left, right, fam.log
+        curve_unit = data_unit(curve, fam.unit) if curve is not None else fam.unit
+        if fam.unit and curve_unit and curve_unit != fam.unit:
+            left, right = (float(v) for v in units.convert([left, right], fam.unit, curve_unit))
+        return _clean(left), _clean(right), fam.log
     if curve is None or not curve.has_data:
         return 0.0, 1.0, False
     lo, hi = curve.min, curve.max
@@ -120,6 +127,30 @@ def resolve_curve(well, style: CurveStyle) -> str | None:
     return find_curve(well, fam) if fam else None
 
 
+def data_unit(curve, expected: str | None = None) -> str | None:
+    """Canonical unit of a curve's stored values.
+
+    Uses the unit written in the file, checked against the values for the two common mistakes:
+    porosity in % (95th percentile above 1.5) and density in kg/m³ (median above 100), whether
+    the unit is missing, unknown or wrongly declared.
+    """
+    key = units.normalize(curve.unit)
+    if expected is None or not curve.has_data or (key is not None and units.UNITS[key].dimension
+                                                   != units.UNITS[expected].dimension):
+        return key
+    # Values that are physically impossible in the declared unit win over the label
+    # (files labeled "DEC" with porosity 0–45 are common).
+    if expected == "v/v" and key in (None, "v/v") and np.nanpercentile(curve.values, 95) > 1.5:
+        return "%"
+    if expected == "g/cm3" and key in (None, "g/cm3") and np.nanmedian(curve.values) > 100:
+        return "kg/m3"
+    return key or expected
+
+
+def _clean(v: float) -> float:
+    return float(f"{v:.6g}")
+
+
 def make_curve_style(well, mnemonic: str) -> CurveStyle:
     fam_key = family_of(mnemonic)
     fam = FAMILIES.get(fam_key) if fam_key else None
@@ -133,6 +164,7 @@ def make_curve_style(well, mnemonic: str) -> CurveStyle:
         left=left,
         right=right,
         log=log,
+        unit=well.curves[mnemonic].unit if mnemonic in well.curves else None,
     )
 
 

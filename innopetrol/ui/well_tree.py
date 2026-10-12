@@ -12,6 +12,7 @@ from PySide6.QtGui import QBrush, QColor, QFont
 from PySide6.QtWidgets import QMenu, QTreeWidget, QTreeWidgetItem
 
 from innopetrol.i18n import _
+from innopetrol.model import units
 from innopetrol.model.mnemonics import FAMILIES, family_of
 from innopetrol.ui.document import WellDocument
 
@@ -24,6 +25,7 @@ class WellTree(QTreeWidget):
     docActivated = Signal(object)
     curveStatsRequested = Signal(object, str)
     curveDeleteRequested = Signal(object, str)
+    curveUnitRequested = Signal(object, str, object)  # doc, mnemonic, unit (None = file unit)
     topsRequested = Signal(object)
     topActivated = Signal(object, float)
 
@@ -120,7 +122,10 @@ class WellTree(QTreeWidget):
         curves.setExpanded(True)
         for m, c in w.curves.items():
             fam = FAMILIES.get(family_of(m) or "")
-            label = f"{m}" + (f"  [{c.unit}]" if c.unit else "") + (f"  · {_(fam.name)}" if fam else "")
+            unit_text = c.unit
+            if m in doc.curve_units:  # displayed converted: show both units
+                unit_text = f"{c.unit or '?'} → {units.label(doc.curve_units[m])}"
+            label = f"{m}" + (f"  [{unit_text}]" if unit_text else "") + (f"  · {_(fam.name)}" if fam else "")
             if c.formula:
                 label += "  " + _("(computed)")
             ci = QTreeWidgetItem(curves, [label])
@@ -179,6 +184,23 @@ class WellTree(QTreeWidget):
             name = item.data(0, ROLE_NAME)
             menu.addAction(_("Statistics and histogram…")).triggered.connect(
                 lambda: self.curveStatsRequested.emit(doc, name))
+            options = units.convertible(doc.well.curves[name].unit)
+            if not options and name in doc.curve_units:
+                options = [k for k, u in units.UNITS.items()
+                           if u.dimension == units.UNITS[doc.curve_units[name]].dimension]
+            if options:
+                sub = menu.addMenu(_("Display unit"))
+                current = doc.curve_units.get(name)
+                original = sub.addAction(_("As in the file ({unit})").format(unit=doc.well.curves[name].unit))
+                original.setCheckable(True)
+                original.setChecked(current is None)
+                original.triggered.connect(lambda: self.curveUnitRequested.emit(doc, name, None))
+                sub.addSeparator()
+                for key in options:
+                    a = sub.addAction(units.label(key))
+                    a.setCheckable(True)
+                    a.setChecked(current == key)
+                    a.triggered.connect(lambda _checked=False, key=key: self.curveUnitRequested.emit(doc, name, key))
             if doc.well.curves[name].formula:
                 menu.addAction(_("Delete computed curve")).triggered.connect(
                     lambda: self.curveDeleteRequested.emit(doc, name))

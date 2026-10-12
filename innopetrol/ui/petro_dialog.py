@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog,
                                QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
-                               QListWidget, QMessageBox, QPlainTextEdit, QPushButton, QTableWidget, QTableWidgetItem,
+                               QListWidget, QListWidgetItem, QMessageBox, QPlainTextEdit, QPushButton, QTableWidget, QTableWidgetItem,
                                QVBoxLayout)
 
 from innopetrol.i18n import _
@@ -269,10 +269,17 @@ class CalculatorDialog(QDialog):
 
         right = QVBoxLayout()
         right.addWidget(QLabel(_("Curves (double-click to insert):")))
+        unit_hint = QLabel(_("Values are used in the file's units, shown in brackets."))
+        unit_hint.setWordWrap(True)
+        unit_hint.setStyleSheet("color: #566573")
+        right.addWidget(unit_hint)
         self.list = QListWidget()
         for m in doc.well.curves:
-            self.list.addItem(m)
-        self.list.itemDoubleClicked.connect(lambda it: self.expr.insertPlainText(curve_ref(it.text())))
+            unit = doc.well.curves[m].unit
+            item = QListWidgetItem(f"{m}  [{unit}]" if unit else m)
+            item.setData(Qt.UserRole, m)
+            self.list.addItem(item)
+        self.list.itemDoubleClicked.connect(lambda it: self.expr.insertPlainText(curve_ref(it.data(Qt.UserRole))))
         right.addWidget(self.list)
         lay.addLayout(right)
 

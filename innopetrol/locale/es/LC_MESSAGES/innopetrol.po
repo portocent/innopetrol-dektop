@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 23:23-0500\n"
+"POT-Creation-Date: 2026-10-11 23:34-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -101,6 +101,10 @@ msgstr "Líneas aproximadas (neutrón en caliza); marcas cada 10 p.u."
 
 msgid "As in the file"
 msgstr "Como en el archivo"
+
+#, python-brace-format
+msgid "As in the file ({unit})"
+msgstr "Como en el archivo ({unit})"
 
 msgid "Automatic (from the first curve)"
 msgstr "Automática (según la primera curva)"
@@ -378,6 +382,9 @@ msgstr "Survey de desviación y elevación…"
 msgid "Deviation survey: {count} stations, max. inclination {inc}°"
 msgstr "Survey de desviación: {count} estaciones, inclinación máx. {inc}°"
 
+msgid "Display unit"
+msgstr "Unidad de visualización"
+
 msgid "Dolomite"
 msgstr "Dolomita"
 
@@ -653,6 +660,9 @@ msgstr "Metros"
 msgid "Method:"
 msgstr "Método:"
 
+msgid "Metric (m, kg/m³, µs/m, °C, kPa, mm)"
+msgstr "Métrico (m, kg/m³, µs/m, °C, kPa, mm)"
+
 #, python-brace-format
 msgid "Min {min} · Max {max} · Mean {mean}"
 msgstr "Mín {min} · Máx {max} · Media {mean}"
@@ -742,6 +752,9 @@ msgid ""
 msgstr ""
 "No se encontraron topes en el archivo.\n"
 "Formato esperado: nombre, profundidad[, color] (con o sin encabezado)."
+
+msgid "Oilfield (ft, g/cm³, µs/ft, °F, psi, in)"
+msgstr "Petrolero (ft, g/cm³, µs/ft, °F, psi, in)"
 
 msgid "Open LAS"
 msgstr "Abrir LAS"
@@ -1085,6 +1098,9 @@ msgstr "Escriba la escala como 1:500 o 500."
 msgid "Type:"
 msgstr "Tipo:"
 
+msgid "Unit system"
+msgstr "Sistema de unidades"
+
 msgid "Unit:"
 msgstr "Unidad:"
 
@@ -1116,6 +1132,9 @@ msgstr "Válida: {count} muestras · mín {min} · máx {max} · media {mean}"
 
 msgid "Value"
 msgstr "Valor"
+
+msgid "Values are used in the file's units, shown in brackets."
+msgstr "Los valores se usan en las unidades del archivo, indicadas entre corchetes."
 
 msgid "Vertical scale"
 msgstr "Escala vertical"

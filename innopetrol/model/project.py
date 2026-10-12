@@ -32,6 +32,7 @@ class WellEntry:
     petro: PetroParams | None = None
     depth_reference: str = "md"
     display_unit: str | None = None
+    curve_units: dict[str, str] = field(default_factory=dict)  # curve display units
 
 
 @dataclass
@@ -61,6 +62,7 @@ def save_project(path: str | Path, entries: list[WellEntry]) -> None:
             "elevation": e.well.elevation,
             "depth_reference": e.depth_reference,
             "display_unit": e.display_unit,
+            "curve_units": e.curve_units,
         })
     data = {"format": FORMAT, "version": VERSION, "wells": wells}
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -102,7 +104,8 @@ def load_project(path: str | Path) -> LoadResult:
             well.elevation = w["elevation"]
         petro = PetroParams.from_dict(w["petro"]) if w.get("petro") else None
         result.entries.append(WellEntry(well, LogLayout.from_dict(w.get("layout", {})), petro,
-                                        w.get("depth_reference", "md"), w.get("display_unit")))
+                                        w.get("depth_reference", "md"), w.get("display_unit"),
+                                        w.get("curve_units", {})))
     return result
 
 

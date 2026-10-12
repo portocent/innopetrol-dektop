@@ -9,7 +9,8 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QF
                                QLabel, QLineEdit, QPushButton, QWidget)
 
 from innopetrol.i18n import N_, _
-from innopetrol.model.mnemonics import default_scale, find_curve
+from innopetrol.model import units
+from innopetrol.model.mnemonics import data_unit, find_curve
 from innopetrol.model.petro import PetroParams
 from innopetrol.model.scales import log_decades, nice_linear_range
 from innopetrol.render.painter import BORDER, fmt, polygon_from_arrays
@@ -44,7 +45,8 @@ class CrossplotWidget(QWidget):
         self.c_range = (0.0, 1.0)
         self.c_label = ""
         self.overlay = None  # "nd" | "pickett"
-        self.neutron_scale = 1.0
+        # Converters from the reference units of the overlays (fraction, g/cm³) to the axes' units.
+        self.x_from_ref = self.y_from_ref = lambda v: v
         self.pickett: PetroParams | None = None
 
     def paintEvent(self, e):
@@ -103,8 +105,8 @@ class CrossplotWidget(QWidget):
         if self.overlay == "nd":
             phi = np.linspace(0, 0.4, 41)
             for name, (fn, fr, color) in LITHOLOGY.items():
-                xs = r.left() + self.xa.map(fn(phi) * self.neutron_scale, r.width())
-                ys = r.bottom() - self.ya.map(fr(phi), r.height())
+                xs = r.left() + self.xa.map(self.x_from_ref(fn(phi)), r.width())
+                ys = r.bottom() - self.ya.map(self.y_from_ref(fr(phi)), r.height())
                 p.setPen(QPen(QColor(color), 2))
                 for i in range(len(phi) - 1):
                     p.drawLine(QPointF(xs[i], ys[i]), QPointF(xs[i + 1], ys[i + 1]))
@@ -124,7 +126,7 @@ class CrossplotWidget(QWidget):
             phi = np.logspace(-2, 0, 50)
             for sw, color in ((1.0, "#1a5276"), (0.5, "#27ae60"), (0.25, "#c0392b")):
                 rt = pp.a * pp.rw / (phi ** pp.m * sw ** pp.n)
-                xs = r.left() + self.xa.map(phi, r.width())
+                xs = r.left() + self.xa.map(self.x_from_ref(phi), r.width())
                 ys = r.bottom() - self.ya.map(rt, r.height())
                 p.setPen(QPen(QColor(color), 1.8, Qt.DashLine))
                 valid = np.isfinite(xs) & np.isfinite(ys)
@@ -247,13 +249,12 @@ class CrossplotWindow(QDialog):
             self._select(self.c, find_curve(w, "gamma_ray"))
             self.logx.setChecked(False)
             self.logy.setChecked(False)
-            n = self.x.currentData()
-            pct = n is not None and abs(default_scale(w, n)[0]) > 1.5
-            k = 100 if pct else 1
-            self.xmin.setText(fmt(-0.15 * k))
-            self.xmax.setText(fmt(0.45 * k))
-            self.ymin.setText("3")
-            self.ymax.setText("1.9")
+            x_lo, x_hi = self._from_ref(self.x.currentData(), np.array([-0.15, 0.45]), "v/v")
+            y_lo, y_hi = self._from_ref(self.y.currentData(), np.array([3.0, 1.9]), "g/cm3")
+            self.xmin.setText(fmt(round(float(x_lo), 6)))
+            self.xmax.setText(fmt(round(float(x_hi), 6)))
+            self.ymin.setText(fmt(round(float(y_lo), 6)))
+            self.ymax.setText(fmt(round(float(y_hi), 6)))
         elif mode == "pickett":
             phi = "PHIE" if "PHIE" in w.curves else find_curve(w, "effective_porosity")
             self._select(self.x, phi)
@@ -261,12 +262,23 @@ class CrossplotWindow(QDialog):
             self._select(self.c, "VSH" if "VSH" in w.curves else find_curve(w, "gamma_ray"))
             self.logx.setChecked(True)
             self.logy.setChecked(True)
-            self.xmin.setText("0.01")
-            self.xmax.setText("1")
+            x_lo, x_hi = self._from_ref(self.x.currentData(), np.array([0.01, 1.0]), "v/v")
+            self.xmin.setText(fmt(round(float(x_lo), 6)))
+            self.xmax.setText(fmt(round(float(x_hi), 6)))
         for wdg in (self.pickett_label, self.rw, self.a, self.m, self.n):
             wdg.setEnabled(mode == "pickett")
         self._setting_mode = False
         self._update()
+
+    def _from_ref(self, mnemonic: str | None, values, reference_unit: str):
+        """Values given in a reference unit (fraction, g/cm³) converted to how the curve is displayed."""
+        if not mnemonic or mnemonic not in self.doc.well.curves:
+            return values
+        shown = self.doc.curve_units.get(mnemonic) or data_unit(self.doc.well.curves[mnemonic], reference_unit)
+        try:
+            return units.convert(values, reference_unit, shown)
+        except ValueError:
+            return values
 
     def _axis(self, values, log, lo_edit, hi_edit, label) -> Axis:
         f = values[np.isfinite(values)]
@@ -291,16 +303,17 @@ class CrossplotWindow(QDialog):
         if self._setting_mode:
             return
         w = self.doc.well
+        shown = self.doc.view.curves  # values and units as displayed
         mx, my, mc = self.x.currentData(), self.y.currentData(), self.c.currentData()
         if not mx or not my:
             return
         top, base = self.zone.currentData()
         mask = w.interval_mask(top, base)
-        x, y = w.curves[mx].values[mask], w.curves[my].values[mask]
-        c = w.curves[mc].values[mask] if mc else np.array([])
+        x, y = shown[mx].values[mask], shown[my].values[mask]
+        c = shown[mc].values[mask] if mc else np.array([])
         plot = self.plot
         plot.x, plot.y, plot.c = x, y, c
-        unit = lambda m: f" ({w.curves[m].unit})" if w.curves[m].unit else ""  # noqa: E731
+        unit = lambda m: f" ({shown[m].unit})" if shown[m].unit else ""  # noqa: E731
         plot.xa = self._axis(x, self.logx.isChecked(), self.xmin, self.xmax, mx + unit(mx))
         plot.ya = self._axis(y, self.logy.isChecked(), self.ymin, self.ymax, my + unit(my))
         if c.size:
@@ -309,7 +322,8 @@ class CrossplotWindow(QDialog):
             plot.c_label = mc + unit(mc)
         mode = self.mode.currentData()
         plot.overlay = mode if mode in ("nd", "pickett") else None
-        plot.neutron_scale = 100 if mode == "nd" and abs(plot.xa.hi) > 1.5 else 1
+        plot.x_from_ref = lambda v, m=mx: self._from_ref(m, v, "v/v")
+        plot.y_from_ref = lambda v, m=my: self._from_ref(m, v, "g/cm3")
         plot.pickett = PetroParams(rw=self.rw.value(), a=self.a.value(), m=self.m.value(), n=self.n.value())
         plot.update()
 

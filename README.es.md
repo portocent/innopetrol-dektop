@@ -15,6 +15,9 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 - Escalas verticales reales (1:200, 1:500, 1:1000…) o ajuste a la ventana.
 - Tracks configurables: curvas, escala lineal o logarítmica, color, grosor, estilo, rellenos entre curvas o contra un valor fijo con 10 patrones.
 - Agregar, quitar, mover, renombrar y cambiar el ancho de tracks (arrastrando el borde).
+- **Unidades a demanda**: Ver ▸ Sistema de unidades (como en el archivo / petrolero / métrico) o por curva desde
+  el árbol del pozo (g/cm³ ↔ kg/m³, µs/ft ↔ µs/m, fracción ↔ %, °F ↔ °C, psi ↔ kPa, in ↔ mm). Los datos guardados
+  nunca cambian y los cálculos convierten sus entradas, así que el resultado no depende de cómo vino cada archivo.
 - Interfaz en **español o inglés**, se cambia en vivo desde **Ver ▸ Language / Idioma** (al primer arranque usa el idioma del sistema).
 
 **Navegación** (en Mac, ⌘ en lugar de Ctrl)

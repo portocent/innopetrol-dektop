@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass
 import numpy as np
 
 from innopetrol.i18n import N_, _
+from innopetrol.model import units
 from innopetrol.model.calculator import curve_ref, evaluate
 from innopetrol.model.tops import Zone
 from innopetrol.model.well import Curve
@@ -87,10 +88,22 @@ class FormulaSpec:
     formula: str
 
 
-def _neutron_in_percent(well, mnem: str) -> bool:
-    c = well.curves[mnem]
-    unit = c.unit.upper()
-    return "%" in unit or unit in ("PU", "P.U.") or (c.has_data and np.nanpercentile(c.values, 95) > 1.5)
+def input_ref(well, mnem: str, expected: str) -> str:
+    """A curve reference inside a formula, converted to the unit the equation expects.
+
+    The conversion is written into the formula (e.g. `(RHOB * 0.001)` for kg/m³), so stored
+    formulas stay correct and readable whatever units the file or the display use.
+    """
+    from innopetrol.model.mnemonics import data_unit  # local import: mnemonics imports this module's peers
+
+    ref = curve_ref(mnem)
+    scale, shift = units.linear_coefficients(data_unit(well.curves[mnem], expected), expected)
+    if scale == 1.0 and shift == 0.0:
+        return ref
+    text = f"{ref} * {scale:.10g}"
+    if shift:
+        text += f" + {shift:.10g}"
+    return f"({text})"
 
 
 def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
@@ -109,11 +122,10 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
         has_vsh = True
 
     if p.rhob_curve and p.rhob_curve in well.curves:
-        phid = f"({p.rho_ma:g} - {curve_ref(p.rhob_curve)}) / ({p.rho_ma:g} - {p.rho_fl:g})"
+        rhob = input_ref(well, p.rhob_curve, "g/cm3")
+        phid = f"({p.rho_ma:g} - {rhob}) / ({p.rho_ma:g} - {p.rho_fl:g})"
         if p.phi_method != "density" and p.nphi_curve and p.nphi_curve in well.curves:
-            phin = curve_ref(p.nphi_curve)
-            if _neutron_in_percent(well, p.nphi_curve):
-                phin = f"({phin} / 100)"
+            phin = input_ref(well, p.nphi_curve, "v/v")
             out.append(FormulaSpec("PHID", "v/v", _("Density porosity"), f"clip({phid}, -0.15, 0.6)"))
             if p.phi_method == "nd_average":
                 phit = f"(PHID + {phin}) / 2"
@@ -187,9 +199,9 @@ def zone_summary(well, zones: list[Zone], vsh: str | None, phi: str | None, sw: 
     """
     h = sample_thickness(well.depth)
     nan = np.full(well.depth.shape, np.nan)
-    v = well.curves[vsh].values if vsh in well.curves else nan
-    f = well.curves[phi].values if phi in well.curves else nan
-    s = well.curves[sw].values if sw in well.curves else nan
+    v = _as_fraction(well, vsh, nan)
+    f = _as_fraction(well, phi, nan)
+    s = _as_fraction(well, sw, nan)
 
     res = np.isfinite(f) & (f >= phi_cut)
     if vsh in well.curves:
@@ -210,6 +222,17 @@ def zone_summary(well, zones: list[Zone], vsh: str | None, phi: str | None, sw: 
             vsh_avg=_wavg(v, h, m & res),
         ))
     return out
+
+
+def _as_fraction(well, mnem: str | None, default: np.ndarray) -> np.ndarray:
+    """Values of a volume curve (porosity, Sw, Vsh) as a fraction, whatever unit it comes in."""
+    if mnem not in well.curves:
+        return default
+    from innopetrol.model.mnemonics import data_unit
+
+    curve = well.curves[mnem]
+    unit = data_unit(curve, "v/v")
+    return units.convert(curve.values, unit, "v/v") if unit in ("%", "v/v") else curve.values
 
 
 def _wavg(values, weights, mask) -> float:

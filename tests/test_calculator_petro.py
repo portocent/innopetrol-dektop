@@ -82,3 +82,27 @@ def test_tops_csv(tmp_path):
     p.write_text("Top A,100\nTop B,200,#00ff00\n")
     tops = load_tops_csv(p)
     assert tops[1].color == "#00ff00" and tops[0].depth == 100
+
+
+def test_results_do_not_depend_on_input_units(testdata_well):
+    """Density in kg/m³ and neutron in % give the same results as g/cm³ and fraction."""
+    from innopetrol.model.well import Curve
+
+    w = testdata_well
+    p = petro.PetroParams(gr_curve="SGR", rhob_curve="RHOB", nphi_curve="TNPH", phi_method="nd_average",
+                          rt_curve="LLD")
+    reference = {c.mnemonic: c.values for c in petro.compute(w, p)}
+    w.add_curve(Curve("RHOB", "KG/M3", "", w.curves["RHOB"].values * 1000))
+    w.add_curve(Curve("TNPH", "PU", "", w.curves["TNPH"].values * 100))
+    converted = {c.mnemonic: c for c in petro.compute(w, p)}
+    for name in ("PHIT", "PHIE", "SW"):
+        assert np.allclose(converted[name].values, reference[name], equal_nan=True)
+    assert "RHOB * 0.001" in converted["PHID"].formula  # the conversion is visible in the formula
+    zones = zones_from_tops([Top("A", 7700)], w.stop)
+    for c in converted.values():
+        w.add_curve(c)
+    w.add_curve(Curve("PHIE_PCT", "%", "", converted["PHIE"].values * 100))
+    by_fraction = petro.zone_summary(w, zones, "VSH", "PHIE", "SW", 0.4, 0.08, 0.6)[0]
+    by_percent = petro.zone_summary(w, zones, "VSH", "PHIE_PCT", "SW", 0.4, 0.08, 0.6)[0]
+    assert by_percent.net_reservoir == pytest.approx(by_fraction.net_reservoir)
+    assert by_percent.phi_avg == pytest.approx(by_fraction.phi_avg)

@@ -24,6 +24,7 @@ from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.model.template import SUFFIX as TEMPLATE_SUFFIX
 from innopetrol.model.template import (TemplateError, apply_template, load_template, save_template,
                                        template_from_json, template_to_json)
+from innopetrol.model import units
 from innopetrol.model.io import is_well_file, load_wells
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
@@ -77,6 +78,7 @@ class MainWindow(QMainWindow):
         self.tree.docActivated.connect(self.activate_doc)
         self.tree.curveStatsRequested.connect(self.show_stats)
         self.tree.curveDeleteRequested.connect(self._delete_curve)
+        self.tree.curveUnitRequested.connect(self.set_curve_unit)
         self.tree.topsRequested.connect(self.edit_tops)
         self.tree.topActivated.connect(self._go_to_top)
         self.tree.set_template_name(self.settings.value("default_template_name"))
@@ -134,6 +136,13 @@ class MainWindow(QMainWindow):
             a.triggered.connect(lambda _checked=False, code=code: self.set_depth_reference(code))
             self.reference_group.addAction(a)
             self.reference_actions[code] = a
+        self.system_group = QActionGroup(self)
+        self.system_actions = {}
+        for code in units.SYSTEMS:
+            a = QAction(self, checkable=True)
+            a.triggered.connect(lambda _checked=False, code=code: self.set_unit_system(code))
+            self.system_group.addAction(a)
+            self.system_actions[code] = a
         self.unit_group = QActionGroup(self)
         self.unit_actions = {}
         for code in ("file", "m", "ft"):
@@ -216,6 +225,9 @@ class MainWindow(QMainWindow):
         self.unit_menu = self.m_view.addMenu("")
         for a in self.unit_actions.values():
             self.unit_menu.addAction(a)
+        self.system_menu = self.m_view.addMenu("")
+        for a in self.system_actions.values():
+            self.system_menu.addAction(a)
         self.m_view.addSeparator()
         for a in (self.a_tile, self.a_cascade, self.a_tabs):
             self.m_view.addAction(a)
@@ -337,6 +349,10 @@ class MainWindow(QMainWindow):
         self.scale_menu.setTitle(_("Vertical scale"))
         self.reference_menu.setTitle(_("Depth reference"))
         self.unit_menu.setTitle(_("Depth unit"))
+        self.system_menu.setTitle(_("Unit system"))
+        for code, action in self.system_actions.items():
+            action.setText(_(units.SYSTEMS[code][0]))
+        self.system_actions[self.settings.value("unit_system") or "file"].setChecked(True)
         self.reference_title.setText(" " + _("Depth") + " ")
         self.language_menu.setTitle("Language / Idioma")  # bilingual on purpose: findable in any language
         self.m_help.setTitle(_("&Help"))
@@ -444,6 +460,19 @@ class MainWindow(QMainWindow):
         if doc:
             self._keeping_view(doc, lambda: doc.set_depth_display(unit=unit))
             self._refresh_depth_controls()
+
+    def set_unit_system(self, system: str):
+        """Unit system for every open well and for the ones opened later."""
+        self.settings.setValue("unit_system", system)
+        for doc in self.docs:
+            self._keeping_view(doc, lambda doc=doc: doc.apply_unit_system(system))
+            self.tree.refresh(doc)
+        self.system_actions[system].setChecked(True)
+        self._refresh_depth_controls()
+
+    def set_curve_unit(self, doc, mnemonic: str, unit: str | None):
+        doc.set_curve_unit(mnemonic, unit)
+        self.tree.refresh(doc)
 
     def _keeping_view(self, doc, change):
         """Applies a depth display change keeping the same well depth centered and the same 1:N scale."""
@@ -567,9 +596,16 @@ class MainWindow(QMainWindow):
         return build_triple_combo(well), []
 
     def add_doc(self, well, layout, petro=None, depth_reference: str = "md",
-                display_unit: str | None = None) -> WellDocument:
+                display_unit: str | None = None, curve_units: dict | None = None) -> WellDocument:
         doc = WellDocument(well, layout, petro, self)
         doc.depth_reference, doc.display_unit = depth_reference, display_unit
+        if curve_units is None:
+            doc.adopt_layout(layout)  # template scales -> this well's units
+            system = self.settings.value("unit_system") or "file"
+            if system != "file":
+                doc.apply_unit_system(system)
+        else:
+            doc.curve_units = dict(curve_units)
         view = WellView(doc)
         sub = self.mdi.addSubWindow(view)
         sub.setWindowIcon(app_icon())
@@ -653,7 +689,8 @@ class MainWindow(QMainWindow):
             return
         self._close_all()
         for entry in result.entries:
-            self.add_doc(entry.well, entry.layout, entry.petro, entry.depth_reference, entry.display_unit)
+            self.add_doc(entry.well, entry.layout, entry.petro, entry.depth_reference, entry.display_unit,
+                         entry.curve_units)
         self.project_path = Path(path)
         self.dirty = False
         self._add_recent(path)
@@ -674,8 +711,8 @@ class MainWindow(QMainWindow):
                 return False
             path = Path(name if name.lower().endswith(PROJECT_SUFFIX) else name + PROJECT_SUFFIX)
         try:
-            save_project(path, [WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit)
-                                for d in self.docs])
+            save_project(path, [WellEntry(d.well, d.layout, d.petro, d.depth_reference, d.display_unit,
+                                          dict(d.curve_units)) for d in self.docs])
         except OSError as e:
             QMessageBox.warning(self, _("Save project"), _("Could not save: {error}").format(error=e))
             return False
@@ -745,7 +782,7 @@ class MainWindow(QMainWindow):
 
     def _apply_layout(self, doc, layout) -> list[str]:
         result, missing = apply_template(layout, doc.well)
-        doc.set_layout(result)
+        doc.set_layout(doc.adopt_layout(result))  # template scales -> this well's display units
         if missing:
             self.statusBar().showMessage(_("{well}: curves not found: {curves}").format(
                 well=doc.title, curves=", ".join(missing)), 8000)

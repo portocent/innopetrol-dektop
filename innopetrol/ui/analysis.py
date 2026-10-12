@@ -132,7 +132,7 @@ class StatsDialog(QDialog):
         if not m:
             return
         top, base = self.zone.currentData()
-        curve = self.doc.well.curves[m]
+        curve = self.doc.view.curves[m]  # as displayed (unit chosen by the user)
         v = curve.values[self.doc.well.interval_mask(top, base)]
         f = v[np.isfinite(v)]
         if f.size:
@@ -164,13 +164,18 @@ class StatsDialog(QDialog):
 class CurveTableModel(QAbstractTableModel):
     """Depth columns (MD, plus TVD/TVDSS when a survey or elevation exists) followed by every curve."""
 
-    def __init__(self, well, parent=None):
+    def __init__(self, doc, parent=None):
         super().__init__(parent)
-        self.well = well
+        self.doc = doc
         self._build()
+
+    @property
+    def well(self):
+        return self.doc.well
 
     def _build(self):
         w = self.well
+        self.curves = self.doc.view.curves  # values and units as displayed
         self.depths = [(f"{w.depth_mnemonic}\n{w.depth_unit}", w.depth)]
         if w.survey is not None or w.elevation is not None:
             tvd = w.tvd()
@@ -178,7 +183,7 @@ class CurveTableModel(QAbstractTableModel):
                 self.depths.append((f"TVD\n{w.depth_unit}", tvd))
             if w.elevation is not None:
                 self.depths.append((f"TVDSS\n{w.depth_unit}", tvd - w.elevation))
-        self.names = list(w.curves)
+        self.names = list(self.curves)
 
     def refresh(self):
         self.beginResetModel()
@@ -195,7 +200,7 @@ class CurveTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             r, c = index.row(), index.column()
             nd = len(self.depths)
-            v = self.depths[c][1][r] if c < nd else self.well.curves[self.names[c - nd]].values[r]
+            v = self.depths[c][1][r] if c < nd else self.curves[self.names[c - nd]].values[r]
             return "" if not np.isfinite(v) else f"{v:.4f}".rstrip("0").rstrip(".")
         if role == Qt.TextAlignmentRole:
             return int(Qt.AlignRight | Qt.AlignVCenter)
@@ -207,7 +212,7 @@ class CurveTableModel(QAbstractTableModel):
         if orientation == Qt.Horizontal:
             if section < len(self.depths):
                 return self.depths[section][0]
-            c = self.well.curves[self.names[section - len(self.depths)]]
+            c = self.curves[self.names[section - len(self.depths)]]
             return f"{c.mnemonic}\n{c.unit}"
         return str(section + 1)
 
@@ -227,7 +232,7 @@ class DataTableWindow(QDialog):
         self.follow = QCheckBox(_("Follow the log cursor"))
         self.follow.setChecked(True)
         lay.addWidget(self.follow)
-        self.model = CurveTableModel(doc.well, self)
+        self.model = CurveTableModel(doc, self)
         self.view = QTableView()
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QTableView.SelectRows)

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-11 23:23-0500\n"
+"POT-Creation-Date: 2026-10-11 23:34-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -97,6 +97,10 @@ msgid "Approximate lines (limestone neutron); marks every 10 p.u."
 msgstr ""
 
 msgid "As in the file"
+msgstr ""
+
+#, python-brace-format
+msgid "As in the file ({unit})"
 msgstr ""
 
 msgid "Automatic (from the first curve)"
@@ -367,6 +371,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Deviation survey: {count} stations, max. inclination {inc}°"
+msgstr ""
+
+msgid "Display unit"
 msgstr ""
 
 msgid "Dolomite"
@@ -644,6 +651,9 @@ msgstr ""
 msgid "Method:"
 msgstr ""
 
+msgid "Metric (m, kg/m³, µs/m, °C, kPa, mm)"
+msgstr ""
+
 #, python-brace-format
 msgid "Min {min} · Max {max} · Mean {mean}"
 msgstr ""
@@ -730,6 +740,9 @@ msgstr ""
 msgid ""
 "No tops were found in the file.\n"
 "Expected format: name, depth[, color] (with or without a header)."
+msgstr ""
+
+msgid "Oilfield (ft, g/cm³, µs/ft, °F, psi, in)"
 msgstr ""
 
 msgid "Open LAS"
@@ -1072,6 +1085,9 @@ msgstr ""
 msgid "Type:"
 msgstr ""
 
+msgid "Unit system"
+msgstr ""
+
 msgid "Unit:"
 msgstr ""
 
@@ -1102,6 +1118,9 @@ msgid "Valid: {count} samples · min {min} · max {max} · mean {mean}"
 msgstr ""
 
 msgid "Value"
+msgstr ""
+
+msgid "Values are used in the file's units, shown in brackets."
 msgstr ""
 
 msgid "Vertical scale"

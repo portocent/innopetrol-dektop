@@ -30,6 +30,7 @@ class CurveStyle:
     right: float | None = None
     log: bool = False
     visible: bool = True
+    unit: str | None = None  # unit in which left/right are written (None = the curve's file unit)
 
 
 @dataclass

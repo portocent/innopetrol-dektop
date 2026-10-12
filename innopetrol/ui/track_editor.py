@@ -166,7 +166,7 @@ class TrackEditor(QDialog):
             m = combo.currentData()
             if not m or m not in self.doc.well.curves:
                 return
-            d = make_curve_style(self.doc.well, m)
+            d = self.doc.style_for(m)  # scale in the unit the curve is displayed in
             left.setText(fmt(d.left))
             right.setText(fmt(d.right))
             log.setChecked(d.log)
@@ -201,10 +201,10 @@ class TrackEditor(QDialog):
             if log and any(v is not None and v <= 0 for v in (left, right)):
                 errors.append(_("{row}: on a logarithmic scale the limits must be greater than zero").format(row=row))
             if left is None or right is None:
-                d = make_curve_style(self.doc.well, m) if m in self.doc.well.curves else None
+                d = self.doc.style_for(m) if m in self.doc.well.curves else None
                 if d is not None:
                     if log and not d.log:
-                        c = self.doc.well.curves[m]
+                        c = self.doc.view.curves[m]
                         d.left, d.right = log_decades(c.min, c.max)
                     left = d.left if left is None else left
                     right = d.right if right is None else right
@@ -216,13 +216,14 @@ class TrackEditor(QDialog):
                 style=t.cellWidget(r, C_STYLE).value(),
                 left=left, right=right, log=log,
                 visible=t.cellWidget(r, C_VISIBLE).findChild(QCheckBox).isChecked(),
+                unit=self.doc.display_unit_of(m),
             ))
         return out, errors
 
     def _add_curve(self):
         used = {self.curve_table.cellWidget(r, C_CURVE).currentData() for r in range(self.curve_table.rowCount())}
         free = next((m for m in self._curve_names() if m not in used), None)
-        style = make_curve_style(self.doc.well, free) if free else CurveStyle(mnemonic="")
+        style = self.doc.style_for(free) if free else CurveStyle(mnemonic="")
         self._insert_curve_row(style)
 
     def _remove_curve(self):
