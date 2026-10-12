@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -24,6 +25,7 @@ from innopetrol.i18n import _
 from innopetrol.model import petro
 from innopetrol.model.mnemonics import find_curve
 from innopetrol.model.tops import Zone, zones_from_tops
+from innopetrol.model.workbook import write_table
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.widgets import curve_combo, spin
@@ -86,8 +88,11 @@ class ZoneSummaryDialog(QDialog):
         copy_btn.clicked.connect(self._copy)
         save_btn = QPushButton(_("Save CSV…"))
         save_btn.clicked.connect(self._save)
+        xlsx_btn = QPushButton(_("Save Excel…"))
+        xlsx_btn.clicked.connect(self._save_xlsx)
         out.addWidget(copy_btn)
         out.addWidget(save_btn)
+        out.addWidget(xlsx_btn)
         out.addStretch()
         close = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         close.rejected.connect(self.reject)
@@ -137,6 +142,7 @@ class ZoneSummaryDialog(QDialog):
             )
         self.note.setText("\n".join(notes))
         self._rows = []
+        self._summary = rows
         self.table.setRowCount(len(rows))
         for r, z in enumerate(rows):
             vals = [
@@ -175,6 +181,22 @@ class ZoneSummaryDialog(QDialog):
         if path:
             with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel on Windows
                 csv.writer(f).writerows([self._headers(), *self._rows])
+
+    def _save_xlsx(self):
+        """Excel file with numbers (not text), so the summary can be used in calculations."""
+        path, _filter = QFileDialog.getSaveFileName(
+            self, _("Save summary"), f"{self.doc.title}_zones.xlsx", "Excel (*.xlsx)"
+        )
+        if not path:
+            return
+        rows = [
+            [z.zone, z.top, z.base, z.gross, z.net_reservoir, z.net_pay, z.ntg, z.phi_avg, z.sw_avg, z.vsh_avg]
+            for z in self._summary
+        ]
+        try:
+            write_table(path, _("Zone summary"), self._headers(), rows)
+        except OSError as e:
+            QMessageBox.warning(self, _("Save summary"), _("Could not save: {error}").format(error=e))
 
 
 def _num(v: float) -> str:

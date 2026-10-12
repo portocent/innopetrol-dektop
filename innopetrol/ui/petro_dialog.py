@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFormLayout,
     QGridLayout,
     QGroupBox,
@@ -64,6 +65,15 @@ class PetroDialog(QDialog):
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText(_("Compute"))
         buttons.accepted.connect(self._run)
         buttons.rejected.connect(self.reject)
+        verify = QPushButton(_("Verification workbook (Excel)…"))
+        verify.setToolTip(
+            _(
+                "Saves the inputs, InnoPetrol's results and the same equations as spreadsheet formulas, "
+                "to check the calculation in Excel or LibreOffice."
+            )
+        )
+        verify.clicked.connect(self._export_workbook)
+        buttons.addButton(verify, QDialogButtonBox.ButtonRole.ActionRole)
         lay.addWidget(buttons)
 
         self.sw_model.currentIndexChanged.connect(self._update_enabled)
@@ -460,6 +470,32 @@ class PetroDialog(QDialog):
             if self.add_track.isChecked():
                 self._update_results_track([c.mnemonic for c in curves])
         self.accept()
+
+    def _export_workbook(self):
+        from innopetrol.model.workbook import verification_workbook
+
+        try:
+            p = self.params()
+        except ValueError as e:
+            QMessageBox.warning(self, _("Petrophysics"), str(e))
+            return
+        problem = self._check(p)
+        if problem:
+            QMessageBox.warning(self, _("Petrophysics"), problem)
+            return
+        path, _filter = QFileDialog.getSaveFileName(
+            self, _("Verification workbook"), f"{self.doc.title}_verification.xlsx", "Excel (*.xlsx)"
+        )
+        if not path:
+            return
+        try:
+            n = verification_workbook(path, self.doc.well, p)
+        except (OSError, CalculatorError) as e:
+            QMessageBox.warning(self, _("Verification workbook"), _("Could not save: {error}").format(error=e))
+            return
+        QMessageBox.information(
+            self, _("Verification workbook"), _("{count} samples written to {path}").format(count=n, path=path)
+        )
 
     def _update_results_track(self, names: list[str]):
         tracks = results_tracks(self.doc.well, names)

@@ -14,6 +14,7 @@ dependencies = [
     "lasio>=0.31",
     "numpy>=1.26",
     "dlisio>=1.0 ; platform_machine == 'arm64' or sys_platform != 'darwin'",
+    "openpyxl>=3.1",
 ]
 
 # gui-scripts: on Windows the launcher does not open a console window next to the application.
@@ -32,6 +33,7 @@ dev = [
     "pytest>=8",
     "pytest-qt>=4.4",
     "pytest-timeout>=2.4.0",
+    "pycel>=1.0b30",
 ]
 
 [build-system]
@@ -48,6 +50,8 @@ timeout = 120
 # Real-data tests download third-party files: run them explicitly with  pytest -m realdata
 markers = ["realdata: runs the program over real well files downloaded to a local cache"]
 addopts = "-m 'not realdata'"
+# pycel (the spreadsheet engine the tests use to check the verification workbook) uses old ast names.
+filterwarnings = ["ignore::DeprecationWarning:pycel.*", "ignore:.*is deprecated.*:DeprecationWarning:ast"]
 
 [tool.ruff]
 line-length = 120

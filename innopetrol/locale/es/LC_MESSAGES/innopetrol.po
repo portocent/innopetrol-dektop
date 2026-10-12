@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 08:04-0500\n"
+"POT-Creation-Date: 2026-10-12 12:42-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -211,6 +211,9 @@ msgstr "Caliper"
 msgid "Cascade"
 msgstr "Cascada"
 
+msgid "Change any input or parameter to see the effect: the formulas recalculate."
+msgstr "Cambie cualquier entrada o parámetro para ver el efecto: las fórmulas se recalculan."
+
 msgid "Change layout"
 msgstr "Cambiar diseño"
 
@@ -341,6 +344,10 @@ msgstr "Crear curva"
 #, python-brace-format
 msgid "Create curve {name}"
 msgstr "Crear curva {name}"
+
+#, python-brace-format
+msgid "Created by InnoPetrol {version}"
+msgstr "Creado con InnoPetrol {version}"
 
 msgid "Crossover (possible gas)"
 msgstr "Cruce (posible gas)"
@@ -475,6 +482,10 @@ msgctxt "track title"
 msgid "Depth"
 msgstr "Prof."
 
+#, python-brace-format
+msgid "Depth MD ({unit})"
+msgstr "Profundidad MD ({unit})"
+
 msgid "Depth reference"
 msgstr "Referencia de profundidad"
 
@@ -509,6 +520,10 @@ msgstr "Survey de desviación, elevación y ubicación…"
 #, python-brace-format
 msgid "Deviation survey: {count} stations, max. inclination {inc}°"
 msgstr "Survey de desviación: {count} estaciones, inclinación máx. {inc}°"
+
+#, python-brace-format
+msgid "Difference {curve}"
+msgstr "Diferencia {curve}"
 
 msgid "Display unit"
 msgstr "Unidad de visualización"
@@ -713,6 +728,10 @@ msgstr "Gradiente geotérmico"
 msgid "Gradient ({unit}/100 {depth_unit} TVD):"
 msgstr "Gradiente ({unit}/100 {depth_unit} TVD):"
 
+#, python-brace-format
+msgid "Gradient ({unit}/100)"
+msgstr "Gradiente ({unit}/100)"
+
 msgid "Grayscale"
 msgstr "Escala de grises"
 
@@ -782,6 +801,10 @@ msgstr "Intervalo:"
 #, python-brace-format
 msgid "Interval: {start} – {stop} {unit} (step {step})"
 msgstr "Intervalo: {start} – {stop} {unit} (paso {step})"
+
+#, python-brace-format
+msgid "Interval: {top} – {base} {unit} (MD)"
+msgstr "Intervalo: {top} – {base} {unit} (MD)"
 
 msgid "Known elevation of the depth reference (KB/DF) above sea level"
 msgstr "Elevación conocida de la referencia de profundidad (KB/DF) sobre el nivel del mar"
@@ -904,6 +927,10 @@ msgstr "Metros"
 
 msgid "Method:"
 msgstr "Método:"
+
+#, python-brace-format
+msgid "Methods: Vsh {vsh} · porosity {phi} · Sw {sw}"
+msgstr "Métodos: Vsh {vsh} · porosidad {phi} · Sw {sw}"
 
 msgid "Metric (m, kg/m³, µs/m, °C, kPa, mm)"
 msgstr "Métrico (m, kg/m³, µs/m, °C, kPa, mm)"
@@ -1124,6 +1151,9 @@ msgstr "Petrofísica"
 msgid "Petrophysics (Vsh, φ, Sw)…"
 msgstr "Petrofísica (Vsh, φ, Sw)…"
 
+msgid "Petrophysics verification workbook"
+msgstr "Planilla de verificación de la petrofísica"
+
 #, python-brace-format
 msgid "Petrophysics — {well}"
 msgstr "Petrofísica — {well}"
@@ -1185,6 +1215,9 @@ msgstr "Salir"
 
 msgid "Rainbow"
 msgstr "Arcoíris"
+
+msgid "Read me"
+msgstr "Léame"
 
 #, python-brace-format
 msgid "Ready. Open a LAS file ({shortcut}) or drag it onto the window."
@@ -1283,11 +1316,19 @@ msgstr "Rw a temperatura de formación (Arps)"
 msgid "Rw is the same at every depth"
 msgstr "Rw igual a toda profundidad"
 
+#, python-brace-format
+msgid "Rw measured at ({unit})"
+msgstr "Rw medida a ({unit})"
+
 msgid "Rw measured at:"
 msgstr "Rw medida a:"
 
 msgid "Rw, a, m, n and Rsh must be greater than zero."
 msgstr "Rw, a, m, n y Rsh deben ser mayores que cero."
+
+#, python-brace-format
+msgid "Samples: {count} (only those with every input known)"
+msgstr "Muestras: {count} (solo las que tienen todas las entradas)"
 
 msgid "Sand"
 msgstr "Arena"
@@ -1300,6 +1341,9 @@ msgstr "Guardar"
 
 msgid "Save CSV…"
 msgstr "Guardar CSV…"
+
+msgid "Save Excel…"
+msgstr "Guardar Excel…"
 
 msgid "Save as"
 msgstr "Guardar como"
@@ -1327,6 +1371,13 @@ msgstr "Guardar plantilla del pozo activo…"
 
 msgid "Save the current project before continuing?"
 msgstr "¿Guardar el proyecto actual antes de continuar?"
+
+msgid ""
+"Saves the inputs, InnoPetrol's results and the same equations as spreadsheet formulas, to check the calculation in "
+"Excel or LibreOffice."
+msgstr ""
+"Guarda las entradas, los resultados de InnoPetrol y las mismas ecuaciones como fórmulas de planilla, para verificar "
+"el cálculo en Excel o LibreOffice."
 
 msgid "Scale"
 msgstr "Escala"
@@ -1369,6 +1420,15 @@ msgstr "Volumen de arcilla (Vsh) desde rayos gamma"
 
 msgid "Shallow resistivity"
 msgstr "Resistividad somera"
+
+msgid ""
+"Sheet “Data”: blue columns are inputs (in the units the equations use) and the parameters of each sample's zone; "
+"yellow columns recompute the results with spreadsheet formulas; green columns are InnoPetrol's results; red columns "
+"are the absolute differences."
+msgstr ""
+"Hoja «Datos»: las columnas azules son las entradas (en las unidades que usan las ecuaciones) y los parámetros de la "
+"zona de cada muestra; las amarillas recalculan los resultados con fórmulas de planilla; las verdes son los resultados"
+" de InnoPetrol; las rojas son las diferencias absolutas."
 
 msgid "Shortcuts"
 msgstr "Atajos"
@@ -1420,6 +1480,10 @@ msgstr "Estilo"
 msgid "Surface location"
 msgstr "Ubicación de superficie"
 
+#, python-brace-format
+msgid "Surface temperature ({unit})"
+msgstr "Temperatura de superficie ({unit})"
+
 msgid "Surface temperature:"
 msgstr "Temperatura de superficie:"
 
@@ -1434,11 +1498,22 @@ msgstr "Surveys (*.csv *.txt *.dev *.svy);;Todos los archivos (*)"
 msgid "Sw - {model}"
 msgstr "Sw - {model}"
 
+#, python-brace-format
+msgid "TVD ({unit})"
+msgstr "TVD ({unit})"
+
 msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
 msgstr "TVDSS necesita la elevación de la referencia de profundidad (Pozo ▸ Survey de desviación y elevación…)."
 
 msgid "Temperature"
 msgstr "Temperatura"
+
+msgid "Temperature (Excel)"
+msgstr "Temperatura (Excel)"
+
+#, python-brace-format
+msgid "Temperature ({unit})"
+msgstr "Temperatura ({unit})"
 
 msgid "Temperature curve"
 msgstr "Curva de temperatura"
@@ -1579,6 +1654,12 @@ msgstr "Los valores se usan en las unidades del archivo, indicadas entre corchet
 msgid "Values beyond the scale are drawn again, dashed, shifted by one scale width (e.g. GR 150–300)."
 msgstr "Los valores fuera de la escala se dibujan de nuevo, a trazos, desplazados un ancho de escala (p. ej. GR 150–300)."
 
+msgid "Verification workbook"
+msgstr "Planilla de verificación"
+
+msgid "Verification workbook (Excel)…"
+msgstr "Planilla de verificación (Excel)…"
+
 msgid "Vertical scale"
 msgstr "Escala vertical"
 
@@ -1701,6 +1782,9 @@ msgstr "Los pozos abiertos se guardaron para poder recuperarlos."
 
 msgid "Zone"
 msgstr "Zona"
+
+msgid "Zone summary"
+msgstr "Resumen de zonas"
 
 msgid "Zone summary (net pay)…"
 msgstr "Resumen por zonas (net pay)…"
@@ -1958,6 +2042,10 @@ msgstr[0] "se eliminó {count} muestra con profundidad repetida (se conserva la 
 msgstr[1] "se eliminaron {count} muestras con profundidad repetida (se conserva la primera)"
 
 #, python-brace-format
+msgid "{count} samples written to {path}"
+msgstr "{count} muestras guardadas en {path}"
+
+#, python-brace-format
 msgid "{count} stations · maximum inclination {inc}° · TVD at total depth {tvd} {unit} (MD {md} {unit})"
 msgstr "{count} estaciones · inclinación máxima {inc}° · TVD en el fondo {tvd} {unit} (MD {md} {unit})"
 
@@ -1974,6 +2062,10 @@ msgstr[1] "{count} valores iguales a marcadores de nulo comunes (-999, -9999…)
 #, python-brace-format
 msgid "{curve} (not available)"
 msgstr "{curve} (no disponible)"
+
+#, python-brace-format
+msgid "{curve} InnoPetrol"
+msgstr "{curve} InnoPetrol"
 
 #, python-brace-format
 msgid "{curve} — not available"
