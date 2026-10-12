@@ -595,8 +595,20 @@ versión 1 abren como antes (todos los pozos), y su resumen se lee del encabezad
 *Medido con 500 LAS reales de Kansas:* abrir el proyecto tarda **0,02 s**. Leer sólo el encabezado de
 un LAS (`lasio` con `ignore_data=True`) cuesta 12 ms contra 45 ms de la lectura completa.
 
+**Encontrar pozos y curvas.** Sobre el árbol hay:
+- una búsqueda por nombre, UWI, campo o compañía (todas las palabras deben aparecer);
+- un selector "Con la curva…": una familia (densidad, sónico…) o cualquier mnemónico escrito a mano.
+  Los pozos que la tienen muestran esa curva en negrita;
+- un contador, "10 de 500 pozos".
+
+Con 500 pozos, filtrar tarda 1 ms: se usa el resumen, sin leer archivos.
+
+**Selección múltiple** (Ctrl/Shift + clic): abrir, cargar, correlacionar, descargar o quitar varios pozos
+a la vez. Correlacionar carga antes los que falten.
+
 *Decisión de diseño:* las herramientas multipozo (correlación, crossplot, histograma, normalización)
-trabajan con los pozos **cargados**. Para usar otros, se cargan antes desde el árbol.
+trabajan con los pozos **cargados**. Para usar otros, se seleccionan en el árbol y se cargan o se
+correlacionan desde ahí.
 
 ## 4. Arquitectura
 

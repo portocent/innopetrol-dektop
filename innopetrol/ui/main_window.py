@@ -49,6 +49,7 @@ from innopetrol.ui.project_wells import ProjectWells
 from innopetrol.ui.session import Session
 from innopetrol.ui.well_tree import WellTree
 from innopetrol.ui.well_view import WellView
+from innopetrol.ui.wells_panel import WellsPanel
 from innopetrol.ui.widgets import key_text
 
 AUTOSAVE_MS = 2 * 60 * 1000  # autosave interval while there are unsaved changes
@@ -93,7 +94,8 @@ class MainWindow(QMainWindow):
         self.tree = WellTree()
         self.dock = QDockWidget(self)
         self.dock.setObjectName("dock_wells")
-        self.dock.setWidget(self.tree)
+        self.wells_panel = WellsPanel(self.tree)
+        self.dock.setWidget(self.wells_panel)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dock)
         self.tree.docActivated.connect(self.activate_doc)
         self.tree.curveStatsRequested.connect(self.show_stats)
@@ -103,10 +105,11 @@ class MainWindow(QMainWindow):
         self.tree.topsRequested.connect(self.edit_tops)
         self.tree.intervalsRequested.connect(self.edit_intervals)
         self.tree.topActivated.connect(self._go_to_top)
-        self.tree.refOpenRequested.connect(lambda ref: self.open_refs([ref]))
-        self.tree.refLoadRequested.connect(lambda ref: self.load_refs([ref]))
-        self.tree.refUnloadRequested.connect(self.unload_well)
-        self.tree.refRemoveRequested.connect(self.remove_well)
+        self.tree.refsOpenRequested.connect(self.open_refs)
+        self.tree.refsLoadRequested.connect(self.load_refs)
+        self.tree.refsUnloadRequested.connect(self.unload_wells)
+        self.tree.refsRemoveRequested.connect(self.remove_wells)
+        self.tree.refsCorrelateRequested.connect(self.correlate_refs)
         self.wells.added.connect(lambda ref: self.tree.add_ref(ref, self.wells.docs.get(ref)))
         self.wells.removed.connect(self.tree.remove_ref)
         self.wells.loaded.connect(lambda ref: self.tree.set_doc(ref, self.wells.docs[ref]))
@@ -450,6 +453,7 @@ class MainWindow(QMainWindow):
         self.scale_combo.setItemText(0, _("Fit"))
         self.dock.setWindowTitle(_("Wells"))
         self.tree.retranslate()
+        self.wells_panel.retranslate()
         self._refresh_recent()
         self._update_title()
         self.statusBar().showMessage(
@@ -815,46 +819,52 @@ class MainWindow(QMainWindow):
         self.undo_group.removeStack(doc.undo_stack)
         doc.deleteLater()
 
-    def unload_well(self, ref: WellRef) -> None:
-        """Free the data of a well; it stays in the project with all its changes (not its undo history)."""
-        doc = self.wells.docs.get(ref)
-        if doc is None:
-            return
-        if doc.undo_stack.count() and (
+    def unload_wells(self, refs: list[WellRef]) -> None:
+        """Free the data of wells; they stay in the project with all their changes (not their undo history)."""
+        docs = {r: self.wells.docs[r] for r in refs if r in self.wells.docs}
+        with_history = [d.title for d in docs.values() if d.undo_stack.count()]
+        if with_history and (
             QMessageBox.question(
                 self,
                 _("Unload from memory"),
                 _("The changes to “{well}” are kept, but they can no longer be undone. Continue?").format(
-                    well=doc.title
+                    well=", ".join(with_history)
                 ),
             )
             != QMessageBox.StandardButton.Yes
         ):
             return
-        self.wells.unload(ref)
-        self._discard_doc(doc)
+        for ref, doc in docs.items():
+            self.wells.unload(ref)
+            self._discard_doc(doc)
         self._update_actions()
 
-    def remove_well(self, ref: WellRef, confirm: bool = True) -> None:
-        """Take a well out of the project (its file is not touched)."""
-        if confirm and (
-            QMessageBox.question(
-                self,
-                _("Remove from project"),
-                _(
+    def remove_wells(self, refs: list[WellRef], confirm: bool = True) -> None:
+        """Take wells out of the project (their files are not touched)."""
+        if confirm:
+            if len(refs) == 1:
+                question = _(
                     "Remove “{well}” from the project? Its tops, intervals and computed curves are lost; "
                     "the well file is not touched."
-                ).format(well=ref.name),
-            )
-            != QMessageBox.StandardButton.Yes
-        ):
-            return
-        doc = self.wells.docs.get(ref)
-        self.wells.remove(ref)
-        if doc is not None:
-            self._discard_doc(doc)
+                ).format(well=refs[0].name)
+            else:
+                question = _(
+                    "Remove {count} wells from the project? Their tops, intervals and computed curves are lost; "
+                    "the well files are not touched."
+                ).format(count=len(refs))
+            if QMessageBox.question(self, _("Remove from project"), question) != QMessageBox.StandardButton.Yes:
+                return
+        for ref in refs:
+            doc = self.wells.docs.get(ref)
+            self.wells.remove(ref)
+            if doc is not None:
+                self._discard_doc(doc)
         self.dirty = True
         self._update_actions()
+
+    def correlate_refs(self, refs: list[WellRef]) -> None:
+        """Correlation of wells chosen in the tree (loaded first if needed)."""
+        self.correlation(self.load_refs(refs))
 
     # The session keeps this state; these properties keep the window's simple API.
     @property
@@ -1006,8 +1016,7 @@ class MainWindow(QMainWindow):
 
     def _close_all(self):
         """Close every window and take every well out of the project."""
-        for ref in list(self.wells.refs):
-            self.remove_well(ref, confirm=False)
+        self.remove_wells(list(self.wells.refs), confirm=False)
 
     def _confirm_discard(self) -> bool:
         if not self.dirty:

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 14:00-0500\n"
+"POT-Creation-Date: 2026-10-12 14:03-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -379,6 +379,9 @@ msgstr "Correcciones al cargar ({count})"
 
 msgid "Corrects for the effect of gas, which lowers the neutron and raises the density porosity."
 msgstr "Corrige el efecto del gas, que baja la porosidad neutrón y sube la de densidad."
+
+msgid "Correlate"
+msgstr "Correlacionar"
 
 #, python-brace-format
 msgid "Correlate selected ({count})"
@@ -1577,6 +1580,14 @@ msgid "Remove track “{title}”"
 msgstr "Quitar track «{title}»"
 
 #, python-brace-format
+msgid ""
+"Remove {count} wells from the project? Their tops, intervals and computed curves are lost; the well files are not "
+"touched."
+msgstr ""
+"¿Quitar {count} pozos del proyecto? Se pierden sus topes, intervalos y curvas calculadas; los archivos de los pozos "
+"no se modifican."
+
+#, python-brace-format
 msgid "Remove “{well}” from the project? Its tops, intervals and computed curves are lost; the well file is not touched."
 msgstr ""
 "¿Quitar «{well}» del proyecto? Se pierden sus topes, intervalos y curvas calculadas; el archivo del pozo no se "
@@ -1710,6 +1721,9 @@ msgstr "Escala"
 msgid "Scale:"
 msgstr "Escala:"
 
+msgid "Search wells (name, UWI, field, company)"
+msgstr "Buscar pozos (nombre, UWI, campo, compañía)"
+
 msgid "Select a well window."
 msgstr "Seleccione la ventana de un pozo."
 
@@ -1793,6 +1807,9 @@ msgstr "Mostrar en:"
 
 msgid "Show it, dashed, in the tracks of the original curve"
 msgstr "Mostrarla, a trazos, en los tracks de la curva original"
+
+msgid "Show only the wells with this curve: a family, or a mnemonic typed in"
+msgstr "Mostrar sólo los pozos con esta curva: una familia, o un mnemónico escrito aquí"
 
 msgid "Show the equation and its reference"
 msgstr "Mostrar la ecuación y su referencia"
@@ -2218,6 +2235,13 @@ msgstr "Ancho / grilla / divisiones:"
 
 msgid "Window (samples, odd):"
 msgstr "Ventana (muestras, impar):"
+
+msgid "With any curve"
+msgstr "Con cualquier curva"
+
+#, python-brace-format
+msgid "With {family}"
+msgstr "Con {family}"
 
 #, python-brace-format
 msgid "Without coordinates (enter them in Well ▸ Deviation survey, elevation and location…): {wells}"
@@ -2710,8 +2734,16 @@ msgid "{row}: the left and right scale values cannot be equal"
 msgstr "{row}: la escala izquierda y derecha no pueden ser iguales"
 
 #, python-brace-format
+msgid "{shown} of {total} wells"
+msgstr "{shown} de {total} pozos"
+
+#, python-brace-format
 msgid "{top} – {base} {unit} · thickness {thickness} {unit}"
 msgstr "{top} – {base} {unit} · espesor {thickness} {unit}"
+
+#, python-brace-format
+msgid "{total} wells"
+msgstr "{total} pozos"
 
 #, python-brace-format
 msgid "{track} add track · {tops} tops · {petro} petrophysics · {calc} calculator"

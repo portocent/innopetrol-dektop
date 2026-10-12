@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 14:00-0500\n"
+"POT-Creation-Date: 2026-10-12 14:03-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -372,6 +372,9 @@ msgid "Corrections on load ({count})"
 msgstr ""
 
 msgid "Corrects for the effect of gas, which lowers the neutron and raises the density porosity."
+msgstr ""
+
+msgid "Correlate"
 msgstr ""
 
 #, python-brace-format
@@ -1558,6 +1561,12 @@ msgstr ""
 
 #, python-brace-format
 msgid ""
+"Remove {count} wells from the project? Their tops, intervals and computed curves are lost; the "
+"well files are not touched."
+msgstr ""
+
+#, python-brace-format
+msgid ""
 "Remove “{well}” from the project? Its tops, intervals and computed curves are lost; the well file"
 " is not touched."
 msgstr ""
@@ -1688,6 +1697,9 @@ msgstr ""
 msgid "Scale:"
 msgstr ""
 
+msgid "Search wells (name, UWI, field, company)"
+msgstr ""
+
 msgid "Select a well window."
 msgstr ""
 
@@ -1767,6 +1779,9 @@ msgid "Show in:"
 msgstr ""
 
 msgid "Show it, dashed, in the tracks of the original curve"
+msgstr ""
+
+msgid "Show only the wells with this curve: a family, or a mnemonic typed in"
 msgstr ""
 
 msgid "Show the equation and its reference"
@@ -2185,6 +2200,13 @@ msgid "Width / grid / divisions:"
 msgstr ""
 
 msgid "Window (samples, odd):"
+msgstr ""
+
+msgid "With any curve"
+msgstr ""
+
+#, python-brace-format
+msgid "With {family}"
 msgstr ""
 
 #, python-brace-format
@@ -2678,7 +2700,15 @@ msgid "{row}: the left and right scale values cannot be equal"
 msgstr ""
 
 #, python-brace-format
+msgid "{shown} of {total} wells"
+msgstr ""
+
+#, python-brace-format
 msgid "{top} – {base} {unit} · thickness {thickness} {unit}"
+msgstr ""
+
+#, python-brace-format
+msgid "{total} wells"
 msgstr ""
 
 #, python-brace-format

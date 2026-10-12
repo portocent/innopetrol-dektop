@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QMenu, QTreeWidget, QTreeWidgetItem
 
 from innopetrol.i18n import _
 from innopetrol.model import units
-from innopetrol.model.catalog import WellRef, WellSummary
+from innopetrol.model.catalog import WellRef, WellSummary, matches, matching_curves
 from innopetrol.model.equations import EQUATIONS, curve_equations
 from innopetrol.model.intervals import KINDS as INTERVAL_KINDS
 from innopetrol.model.mnemonics import FAMILIES, family_of
@@ -36,14 +36,19 @@ class WellTree(QTreeWidget):
     topsRequested = Signal(object)
     intervalsRequested = Signal(object)
     topActivated = Signal(object, float)
-    refOpenRequested = Signal(object)  # WellRef: load if needed and show its window
-    refLoadRequested = Signal(object)
-    refUnloadRequested = Signal(object)
-    refRemoveRequested = Signal(object)
+    # Lists of WellRef (one or several selected wells)
+    refsOpenRequested = Signal(list)  # load if needed and show their windows
+    refsLoadRequested = Signal(list)
+    refsUnloadRequested = Signal(list)
+    refsRemoveRequested = Signal(list)
+    refsCorrelateRequested = Signal(list)
+    countChanged = Signal(int, int)  # wells shown by the filter, wells in the project
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setHeaderHidden(True)
+        self.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
+        self._text_filter, self._curve_filter = "", ""
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
         self.itemDoubleClicked.connect(self._double_click)
@@ -62,9 +67,11 @@ class WellTree(QTreeWidget):
         self.set_template_name(self._template_name)
         for i in range(self.topLevelItemCount()):
             item = self.topLevelItem(i)
-            ref = item.data(0, ROLE_REF)
-            if ref is not None:
-                self.set_doc(ref, item.data(0, ROLE_DOC))
+            ref, doc = item.data(0, ROLE_REF), item.data(0, ROLE_DOC)
+            if doc is not None:
+                self.refresh(doc)
+            elif ref is not None:
+                self.set_doc(ref, None)
 
     def _item_for(self, doc) -> QTreeWidgetItem | None:
         for i in range(self.topLevelItemCount()):
@@ -85,6 +92,8 @@ class WellTree(QTreeWidget):
         item.setData(0, ROLE_REF, ref)
         self.addTopLevelItem(item)
         self._fill(item, ref, doc)
+        self._apply_filter(item)
+        self.countChanged.emit(*self.counts())
 
     def set_doc(self, ref: WellRef, doc: WellDocument | None) -> None:
         """The well was loaded (doc) or unloaded (None)."""
@@ -94,11 +103,14 @@ class WellTree(QTreeWidget):
             item.takeChildren()
             self._fill(item, ref, doc)
             item.setExpanded(expanded)
+            self._apply_filter(item)
+            self.countChanged.emit(*self.counts())
 
     def remove_ref(self, ref) -> None:
         it = self._item_for_ref(ref)
         if it is not None:
             self.takeTopLevelItem(self.indexOfTopLevelItem(it))
+            self.countChanged.emit(*self.counts())
 
     def _fill(self, item: QTreeWidgetItem, ref: WellRef, doc: WellDocument | None) -> None:
         item.setData(0, ROLE_DOC, doc)
@@ -122,6 +134,51 @@ class WellTree(QTreeWidget):
         ref = item.data(0, ROLE_REF)
         if ref is not None and item.data(0, ROLE_DOC) is None and item.childCount() == 0:
             _add_summary(item, ref.summary)
+            self._mark_curves(item)
+
+    # ---------------------------------------------------------------- filter
+    def _well_items(self) -> list[QTreeWidgetItem]:
+        items = (self.topLevelItem(i) for i in range(self.topLevelItemCount()))
+        return [it for it in items if it is not None and it.data(0, ROLE_REF) is not None]
+
+    def counts(self) -> tuple[int, int]:
+        """(wells shown by the filter, wells in the tree)."""
+        items = self._well_items()
+        return sum(not it.isHidden() for it in items), len(items)
+
+    def set_filter(self, text: str, curve: str) -> None:
+        """Show only the wells whose name, UWI, field or company contain the words of `text` and that
+        have `curve` (a family key or a mnemonic); the matching curves are shown in bold."""
+        self._text_filter, self._curve_filter = text, curve
+        for item in self._well_items():
+            self._apply_filter(item)
+        self.countChanged.emit(*self.counts())
+
+    @staticmethod
+    def _summary(item: QTreeWidgetItem) -> WellSummary:
+        doc = item.data(0, ROLE_DOC)
+        return WellSummary.from_well(doc.well) if doc is not None else item.data(0, ROLE_REF).summary
+
+    def _apply_filter(self, item: QTreeWidgetItem) -> None:
+        if self._text_filter or self._curve_filter:
+            item.setHidden(not matches(self._summary(item), self._text_filter, self._curve_filter))
+        else:
+            item.setHidden(False)
+        self._mark_curves(item)
+
+    def _mark_curves(self, item: QTreeWidgetItem) -> None:
+        """Bold the curves of a well that match the "with the curve…" filter."""
+        children = [c for c in (item.child(i) for i in range(item.childCount())) if c is not None]
+        curves = next((c for c in children if c.data(0, ROLE_KIND) == "curves"), None)
+        if curves is None:
+            return
+        wanted = set(matching_curves(self._summary(item), self._curve_filter)) if self._curve_filter else set()
+        for i in range(curves.childCount()):
+            child = curves.child(i)
+            if child is not None:
+                font = child.font(0)
+                font.setBold(child.data(0, ROLE_NAME) in wanted)
+                child.setFont(0, font)
 
     def refresh(self, doc):
         it = self._item_for(doc)
@@ -133,6 +190,7 @@ class WellTree(QTreeWidget):
         for i in range(it.childCount()):
             child = it.child(i)
             child.setExpanded(expanded.get(child.text(0), child.isExpanded()))
+        self._apply_filter(it)
 
     def select_doc(self, doc):
         it = self._item_for(doc)
@@ -180,6 +238,7 @@ class WellTree(QTreeWidget):
     def _add_curves(parent: QTreeWidgetItem, doc: WellDocument) -> None:
         w = doc.well
         curves = QTreeWidgetItem(parent, [_("Curves ({count})").format(count=len(w.curves))])
+        curves.setData(0, ROLE_KIND, "curves")
         curves.setExpanded(True)
         for m, c in w.curves.items():
             ci = QTreeWidgetItem(curves, [_curve_label(doc, m, c)])
@@ -232,7 +291,7 @@ class WellTree(QTreeWidget):
         if doc is None:
             ref = self._ref_of(item)
             if ref is not None:
-                self.refOpenRequested.emit(ref)
+                self.refsOpenRequested.emit([ref])
             return
         kind = item.data(0, ROLE_KIND)
         if kind == "curve":
@@ -252,13 +311,13 @@ class WellTree(QTreeWidget):
         if ref is None:
             return
         menu = QMenu(self)
+        selected = self.selected_refs()
+        if len(selected) > 1 and ref in selected:
+            self._wells_menu(menu, selected)
+            menu.exec(self.viewport().mapToGlobal(pos))
+            return
         if doc is None:
-            menu.addAction(_("Open")).triggered.connect(lambda: self.refOpenRequested.emit(ref))
-            menu.addAction(_("Load without opening a window")).triggered.connect(
-                lambda: self.refLoadRequested.emit(ref)
-            )
-            menu.addSeparator()
-            menu.addAction(_("Remove from project…")).triggered.connect(lambda: self.refRemoveRequested.emit(ref))
+            self._wells_menu(menu, [ref])
             menu.exec(self.viewport().mapToGlobal(pos))
             return
         if item.data(0, ROLE_KIND) == "curve":
@@ -294,9 +353,28 @@ class WellTree(QTreeWidget):
         menu.addAction(_("Show well window")).triggered.connect(lambda: self.docActivated.emit(doc))
         menu.addAction(_("Edit tops…")).triggered.connect(lambda: self.topsRequested.emit(doc))
         menu.addSeparator()
-        menu.addAction(_("Unload from memory")).triggered.connect(lambda: self.refUnloadRequested.emit(ref))
-        menu.addAction(_("Remove from project…")).triggered.connect(lambda: self.refRemoveRequested.emit(ref))
+        menu.addAction(_("Unload from memory")).triggered.connect(lambda: self.refsUnloadRequested.emit([ref]))
+        menu.addAction(_("Remove from project…")).triggered.connect(lambda: self.refsRemoveRequested.emit([ref]))
         menu.exec(self.viewport().mapToGlobal(pos))
+
+    def selected_refs(self) -> list[WellRef]:
+        """The selected wells, in tree order."""
+        selected = {id(self._ref_of(it)) for it in self.selectedItems()}
+        return [it.data(0, ROLE_REF) for it in self._well_items() if id(it.data(0, ROLE_REF)) in selected]
+
+    def _wells_menu(self, menu: QMenu, refs: list[WellRef]) -> None:
+        """Actions on one or several wells (several: the count is shown)."""
+        n = f" ({len(refs)})" if len(refs) > 1 else ""
+        menu.addAction(_("Open") + n).triggered.connect(lambda: self.refsOpenRequested.emit(refs))
+        menu.addAction(_("Load without opening a window") + n).triggered.connect(
+            lambda: self.refsLoadRequested.emit(refs)
+        )
+        if len(refs) > 1:
+            menu.addAction(_("Correlate") + n).triggered.connect(lambda: self.refsCorrelateRequested.emit(refs))
+        menu.addSeparator()
+        if any(it.data(0, ROLE_DOC) is not None for it in self._well_items() if it.data(0, ROLE_REF) in refs):
+            menu.addAction(_("Unload from memory") + n).triggered.connect(lambda: self.refsUnloadRequested.emit(refs))
+        menu.addAction(_("Remove from project…") + n).triggered.connect(lambda: self.refsRemoveRequested.emit(refs))
 
 
 def _add_summary(parent: QTreeWidgetItem, summary: WellSummary) -> None:
@@ -312,9 +390,11 @@ def _add_summary(parent: QTreeWidgetItem, summary: WellSummary) -> None:
     if summary.location is not None:
         QTreeWidgetItem(info, [_("Location: {x:g}, {y:g}").format(x=summary.location.x, y=summary.location.y)])
     curves = QTreeWidgetItem(parent, [_("Curves ({count})").format(count=len(summary.curves))])
+    curves.setData(0, ROLE_KIND, "curves")
     for mnemonic, unit in summary.curves:
         fam = FAMILIES.get(family_of(mnemonic) or "")
-        QTreeWidgetItem(curves, [mnemonic + (f"  [{unit}]" if unit else "") + (f"  · {_(fam.name)}" if fam else "")])
+        text = mnemonic + (f"  [{unit}]" if unit else "") + (f"  · {_(fam.name)}" if fam else "")
+        QTreeWidgetItem(curves, [text]).setData(0, ROLE_NAME, mnemonic)
     QTreeWidgetItem(parent, [_("Tops ({count})").format(count=summary.tops)])
 
 

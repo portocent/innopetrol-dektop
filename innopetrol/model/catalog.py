@@ -14,6 +14,7 @@ from pathlib import Path
 
 from innopetrol.model.io import load_wells
 from innopetrol.model.location import Location, location_from_header
+from innopetrol.model.mnemonics import FAMILIES, family_of
 from innopetrol.model.well import FEET_UNITS, HeaderItem, Well, detect_encoding, las_well_name, unique_mnemonic
 
 
@@ -142,3 +143,21 @@ def summaries_from_file(path: str | Path) -> list[tuple[str | None, WellSummary]
         company=value("COMP"),
     )
     return [(None, summary)]
+
+
+def matching_curves(summary: WellSummary, curve: str) -> list[str]:
+    """Curves of the well that match `curve`: a family key (gamma_ray, density…) or a mnemonic
+    (case-insensitive)."""
+    if curve in FAMILIES:
+        return [m for m, _unit in summary.curves if family_of(m) == curve]
+    wanted = curve.strip().upper()
+    return [m for m, _unit in summary.curves if m.upper() == wanted]
+
+
+def matches(summary: WellSummary, text: str = "", curve: str = "") -> bool:
+    """The well passes a filter: every word of `text` is in its name, UWI, field or company, and it
+    has the `curve` (see matching_curves). Empty parts of the filter match every well."""
+    haystack = summary.text()
+    if any(word not in haystack for word in text.lower().split()):
+        return False
+    return not curve or bool(matching_curves(summary, curve))
