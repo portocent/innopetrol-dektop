@@ -150,6 +150,15 @@ class PetroParams:
     surface_temp: float = 25.0
     gradient: float = 3.0
     temp_curve: str | None = None
+    # Bad hole: density and neutron are not trusted where the hole is washed out (caliper − bit size above
+    # `washout`, in inches) or the density correction is large (|DRHO| above `drho_max`, g/cm³).
+    bad_hole: bool = False
+    cali_curve: str | None = None
+    bs_curve: str | None = None  # None = the constant bs_value
+    bs_value: float = 8.5  # in
+    washout: float = 1.0  # in
+    drho_curve: str | None = None
+    drho_max: float = 0.15  # g/cm³
     zones: dict[str, dict[str, float]] = field(default_factory=dict)  # zone name -> {parameter: value}
 
     def to_dict(self) -> dict:
@@ -266,6 +275,28 @@ class _Builder:
         }[p.vsh_method]
         self.add("VSH", "v/v", _("Vsh - {method}").format(method=_(VSH_METHODS[p.vsh_method])), vsh)
 
+    def bad_hole(self) -> None:
+        """BADHOLE = 1 where density and neutron are not reliable; porosity is left empty there."""
+        p, well = self.p, self.well
+        if not p.bad_hole:
+            return
+        conditions = []
+        caliper = _available(well, p.cali_curve, "in")
+        if caliper is not None:
+            bit_curve = _available(well, p.bs_curve, "in")
+            bit = input_ref(well, bit_curve, "in") if bit_curve else _num(p.bs_value)
+            conditions.append(f"(({input_ref(well, caliper, 'in')} - {bit}) > {_num(p.washout)})")
+        drho = _available(well, p.drho_curve, "g/cm3")
+        if drho is not None:
+            conditions.append(f"(abs({input_ref(well, drho, 'g/cm3')}) > {_num(p.drho_max)})")
+        if conditions:
+            self.add(
+                "BADHOLE",
+                "",
+                _("Bad hole flag (washout or large density correction)"),
+                f"where({' | '.join(conditions)}, 1, 0)",
+            )
+
     def porosity(self) -> None:
         p, well = self.p, self.well
         density, neutron = _available(well, p.rhob_curve, "g/cm3"), _available(well, p.nphi_curve, "v/v")
@@ -282,7 +313,10 @@ class _Builder:
             self.add("PHID", "v/v", _("Density porosity"), f"clip({phid}, -0.15, 0.6)")
             phit = f"(PHID + {phin}) / 2" if method_key == "nd_average" else f"sqrt((PHID ** 2 + {phin} ** 2) / 2)"
         method = _(PHI_METHODS[method_key])
-        self.add("PHIT", "v/v", _("Total porosity - {method}").format(method=method), f"clip({phit}, 0, 0.6)", phit)
+        limited = f"clip({phit}, 0, 0.6)"
+        if self.has("BADHOLE"):  # unreliable density/neutron: no porosity, so no Sw or net pay either
+            limited, phit = f"where(BADHOLE > 0, nan, {limited})", f"where(BADHOLE > 0, nan, {phit})"
+        self.add("PHIT", "v/v", _("Total porosity - {method}").format(method=method), limited, phit)
         phie = "clip(PHIT * (1 - VSH), 0, 0.6)" if self.has("VSH") else "PHIT"
         self.add("PHIE", "v/v", _("Effective porosity"), phie)
 
@@ -364,7 +398,7 @@ class _Builder:
 def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
     """Formulas in dependency order, depending on which input curves are available."""
     b = _Builder(well, p)
-    for step in (b.vsh, b.porosity, b.saturation, b.volumes, b.flags):
+    for step in (b.vsh, b.bad_hole, b.porosity, b.saturation, b.volumes, b.flags):
         step()
     return b.out
 

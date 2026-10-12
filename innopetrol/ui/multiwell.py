@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QListWidget, QListWidgetItem
 from innopetrol.i18n import _
 from innopetrol.model import units
 from innopetrol.model.mnemonics import family_of, find_curve
+from innopetrol.model.normalize import zone_mask as model_zone_mask
 from innopetrol.model.tops import zones_from_tops
 
 # Distinct colors for wells (categorical, colorblind-friendly first).
@@ -65,14 +66,7 @@ def zone_names(docs) -> list[str]:
 
 def zone_mask(doc, zone: str | None) -> np.ndarray:
     """Samples of a well inside the zone of that name (each well uses its own tops); None = whole well."""
-    well = doc.well
-    if zone is None:
-        return np.ones(well.depth.shape, bool)
-    mask = np.zeros(well.depth.shape, bool)
-    for z in zones_from_tops(well.tops, well.stop):
-        if z.name == zone:
-            mask |= well.interval_mask(z.top, z.base)
-    return mask
+    return model_zone_mask(doc.well, zone)
 
 
 def well_list(docs, active) -> QListWidget:

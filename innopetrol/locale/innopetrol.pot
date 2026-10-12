@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 12:47-0500\n"
+"POT-Creation-Date: 2026-10-12 13:08-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -53,6 +53,9 @@ msgid "(by well)"
 msgstr ""
 
 msgid "(computed)"
+msgstr ""
+
+msgid "(constant)"
 msgstr ""
 
 msgid "(no color)"
@@ -172,6 +175,15 @@ msgstr ""
 msgid "Backup"
 msgstr ""
 
+msgid "Bad hole"
+msgstr ""
+
+msgid "Bad hole flag (washout or large density correction)"
+msgstr ""
+
+msgid "Bad hole: do not use density and neutron where…"
+msgstr ""
+
 #, python-brace-format
 msgid "Base ({unit})"
 msgstr ""
@@ -186,6 +198,9 @@ msgid "Bins:"
 msgstr ""
 
 msgid "Bit size"
+msgstr ""
+
+msgid "Bit size:"
 msgstr ""
 
 msgid "Built-in names"
@@ -209,6 +224,12 @@ msgid "Calculator"
 msgstr ""
 
 msgid "Caliper"
+msgstr ""
+
+msgid "Caliper − bit size above:"
+msgstr ""
+
+msgid "Caliper:"
 msgstr ""
 
 msgid "Cascade"
@@ -376,6 +397,9 @@ msgstr ""
 msgid "Curve calculator…"
 msgstr ""
 
+msgid "Curve editing"
+msgstr ""
+
 msgid "Curve names of your company, recognized when opening wells and applying templates"
 msgstr ""
 
@@ -476,6 +500,9 @@ msgstr ""
 msgid "Density correction"
 msgstr ""
 
+msgid "Density correction (DRHO):"
+msgstr ""
+
 #, python-brace-format
 msgid "Density outside 1.0–3.2 g/cm³ in {pct} of the samples{where}: bad hole or wrong units."
 msgstr ""
@@ -498,6 +525,9 @@ msgid "Depth reference"
 msgstr ""
 
 msgid "Depth reference:"
+msgstr ""
+
+msgid "Depth shift"
 msgstr ""
 
 msgid "Depth track"
@@ -565,6 +595,13 @@ msgid "E.g.: (2.65 - RHOB) / (2.65 - 1.0)"
 msgstr ""
 
 msgid "Edit"
+msgstr ""
+
+msgid "Edit curve (depth shift, despike, smoothing)…"
+msgstr ""
+
+#, python-brace-format
+msgid "Edit curve — {well}"
 msgstr ""
 
 msgid "Edit formation tops"
@@ -763,6 +800,9 @@ msgstr ""
 msgid "Gross ({unit})"
 msgstr ""
 
+msgid "High percentile"
+msgstr ""
+
 msgid "Hydrocarbon"
 msgstr ""
 
@@ -788,6 +828,11 @@ msgid "Import tops"
 msgstr ""
 
 msgid "Import…"
+msgstr ""
+
+msgid ""
+"In each well, the low and high percentiles of the curve inside the zone are taken to the values "
+"of the reference well (or to values you type). The result is a new curve; the original is kept."
 msgstr ""
 
 msgid "Indonesia (shaly sands, fresh water)"
@@ -920,6 +965,9 @@ msgstr ""
 msgid "Longitude:"
 msgstr ""
 
+msgid "Low percentile"
+msgstr ""
+
 msgid "Main"
 msgstr ""
 
@@ -974,6 +1022,9 @@ msgid "Mnemonic aliases…"
 msgstr ""
 
 msgid "Model:"
+msgstr ""
+
+msgid "Move deeper by (negative: shallower):"
 msgstr ""
 
 msgid "Move left"
@@ -1056,6 +1107,9 @@ msgstr ""
 msgid "Neutron-density porosity (average)"
 msgstr ""
 
+msgid "New curve:"
+msgstr ""
+
 msgid "New top"
 msgstr ""
 
@@ -1093,11 +1147,31 @@ msgid ""
 "elevation and location…"
 msgstr ""
 
+msgid "Normalization between wells (two points)"
+msgstr ""
+
+msgid "Normalize"
+msgstr ""
+
+msgid "Normalize a curve between wells"
+msgstr ""
+
+msgid "Normalize a curve between wells…"
+msgstr ""
+
+#, python-brace-format
+msgid "Normalize {curve}"
+msgstr ""
+
 #, python-brace-format
 msgid "Not shown, coordinates of another type (projected vs. latitude/longitude): {wells}"
 msgstr ""
 
 msgid "Oilfield (ft, g/cm³, µs/ft, °F, psi, in)"
+msgstr ""
+
+#, python-brace-format
+msgid "One sample = {step} {unit}"
 msgstr ""
 
 msgid "Open LAS"
@@ -1122,6 +1196,9 @@ msgid "Open recent"
 msgstr ""
 
 msgid "Open well files"
+msgstr ""
+
+msgid "Operation:"
 msgstr ""
 
 #, python-brace-format
@@ -1173,6 +1250,9 @@ msgid "Pattern"
 msgstr ""
 
 msgid "Pay"
+msgstr ""
+
+msgid "Percentiles (low / high):"
 msgstr ""
 
 msgid "Permeability"
@@ -1285,10 +1365,16 @@ msgstr ""
 msgid "Reference elevation: {value} {unit}"
 msgstr ""
 
+msgid "Reference:"
+msgstr ""
+
 msgid "Remove"
 msgstr ""
 
 msgid "Remove selected track"
+msgstr ""
+
+msgid "Remove spikes (despike)"
 msgstr ""
 
 msgid "Remove survey"
@@ -1354,6 +1440,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Row {row}: a name and a numeric depth are required"
+msgstr ""
+
+msgid "Running median"
 msgstr ""
 
 msgid "Rw at formation temperature (Arps)"
@@ -1444,6 +1533,9 @@ msgstr ""
 msgid "Select the GR curve first."
 msgstr ""
 
+msgid "Select the caliper or the density correction curve to detect bad hole."
+msgstr ""
+
 msgid "Select the temperature curve."
 msgstr ""
 
@@ -1497,6 +1589,9 @@ msgstr ""
 msgid "Show as tabs"
 msgstr ""
 
+msgid "Show it, dashed, in the tracks of the original curve"
+msgstr ""
+
 msgid "Show the equation and its reference"
 msgstr ""
 
@@ -1504,6 +1599,13 @@ msgid "Show well window"
 msgstr ""
 
 msgid "Simandoux (shaly sands, n = 2)"
+msgstr ""
+
+#, python-brace-format
+msgid "Skipped (no curve, too few samples or an original curve with that name): {wells}"
+msgstr ""
+
+msgid "Smoothing (moving average)"
 msgstr ""
 
 msgid "Solid"
@@ -1519,6 +1621,9 @@ msgid "Sonic"
 msgstr ""
 
 msgid "Sonic / PEF"
+msgstr ""
+
+msgid "Spike removal, Hampel filter"
 msgstr ""
 
 msgid "Spontaneous potential"
@@ -1578,6 +1683,9 @@ msgstr ""
 msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
 msgstr ""
 
+msgid "Target values (low / high):"
+msgstr ""
+
 msgid "Temperature"
 msgstr ""
 
@@ -1613,15 +1721,26 @@ msgstr ""
 msgid "The fill takes the color of its curve's value at each depth, along the curve's scale."
 msgstr ""
 
+msgid "The high target must be greater than the low one."
+msgstr ""
+
 msgid ""
 "The hole between stations is a circular arc; log samples between stations are placed on the arc "
 "(north and east are computed the same way)."
+msgstr ""
+
+msgid ""
+"The spread is never taken smaller than the typical sample-to-sample change of the curve, so flat "
+"stretches do not flag small steps."
 msgstr ""
 
 msgid "The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first."
 msgstr ""
 
 msgid "These names are in more than one family:"
+msgstr ""
+
+msgid "Threshold (robust standard deviations):"
 msgstr ""
 
 msgid "Tile"
@@ -1714,6 +1833,9 @@ msgstr ""
 msgid "Use a name made of letters, digits or _."
 msgstr ""
 
+msgid "Use a zone with the same rocks in every well, typically a regional shale and a clean sand."
+msgstr ""
+
 msgid "Use the active well's layout as the default template"
 msgstr ""
 
@@ -1744,6 +1866,9 @@ msgid "Values are used in the file's units, shown in brackets."
 msgstr ""
 
 msgid "Values beyond the scale are drawn again, dashed, shifted by one scale width (e.g. GR 150–300)."
+msgstr ""
+
+msgid "Values typed here"
 msgstr ""
 
 msgid "Verification workbook"
@@ -1847,6 +1972,9 @@ msgstr ""
 msgid "Wheel: scroll in depth · Shift + wheel: scroll horizontally · PgUp/PgDn, Home/End, arrows"
 msgstr ""
 
+msgid "Where the flag is 1, density and neutron are not used: porosity, Sw and net pay are left empty."
+msgstr ""
+
 msgid "Whole well"
 msgstr ""
 
@@ -1854,6 +1982,9 @@ msgid "Width"
 msgstr ""
 
 msgid "Width / grid / divisions:"
+msgstr ""
+
+msgid "Window (samples, odd):"
 msgstr ""
 
 #, python-brace-format
@@ -1905,6 +2036,9 @@ msgstr ""
 msgid "Zone {zone}, {parameter}: “{text}” is not a number."
 msgstr ""
 
+msgid "Zone:"
+msgstr ""
+
 #, python-brace-format
 msgid "Zone: {name}"
 msgstr ""
@@ -1935,6 +2069,9 @@ msgstr ""
 msgid "a curve named {name} already exists"
 msgstr ""
 
+msgid "absolute value above"
+msgstr ""
+
 msgid "aliases"
 msgstr ""
 
@@ -1954,6 +2091,9 @@ msgstr ""
 msgid "bulk density from the log (g/cm³)"
 msgstr ""
 
+msgid "caliper and bit size (in)"
+msgstr ""
+
 msgid "comparison not allowed"
 msgstr ""
 
@@ -1969,6 +2109,9 @@ msgid "could not save the image"
 msgstr ""
 
 msgid "density and neutron porosity (fraction)"
+msgstr ""
+
+msgid "density correction (g/cm³)"
 msgstr ""
 
 msgid "depth was not always increasing; samples were sorted by depth"
@@ -2050,6 +2193,9 @@ msgstr ""
 msgid "measured depth (MD)"
 msgstr ""
 
+msgid "median and median absolute deviation of the window"
+msgstr ""
+
 msgid "meters (m)"
 msgstr ""
 
@@ -2068,10 +2214,16 @@ msgstr ""
 msgid "none (vertical well assumed)"
 msgstr ""
 
+msgid "not enough data"
+msgstr ""
+
 msgid "number"
 msgstr ""
 
 msgid "only numbers are allowed"
+msgstr ""
+
+msgid "percentiles of the curve in the zone, in this well"
 msgstr ""
 
 msgid "project"
@@ -2091,6 +2243,9 @@ msgid "template"
 msgstr ""
 
 msgid "the curve does not have the same number of samples as the depth"
+msgstr ""
+
+msgid "the depth offset must be a number"
 msgstr ""
 
 msgid "the expression does not use any curve"
@@ -2128,10 +2283,23 @@ msgstr ""
 msgid "the result does not have the size of the curves"
 msgstr ""
 
+msgid "the same percentiles in the reference well"
+msgstr ""
+
 msgid "the survey has no valid stations"
 msgstr ""
 
 msgid "the template was created with a newer version of the program"
+msgstr ""
+
+msgid "the threshold must be greater than zero"
+msgstr ""
+
+#, python-brace-format
+msgid "the window must be a whole number of samples between 1 and {maximum}"
+msgstr ""
+
+msgid "threshold, in robust standard deviations"
 msgstr ""
 
 msgid "too many curves for the page height"
@@ -2173,6 +2341,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "{alias}: {families}"
+msgstr ""
+
+#, python-brace-format
+msgid "{changed} of {total} samples change."
 msgstr ""
 
 #, python-brace-format
@@ -2219,6 +2391,14 @@ msgstr ""
 
 #, python-brace-format
 msgid "{curve} InnoPetrol"
+msgstr ""
+
+#, python-brace-format
+msgid "{curve} created in: {wells}"
+msgstr ""
+
+#, python-brace-format
+msgid "{curve} normalized (P{low:g}–P{high:g} → {t_low:g}–{t_high:g})"
 msgstr ""
 
 #, python-brace-format

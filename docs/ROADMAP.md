@@ -133,10 +133,10 @@ Pending items, grouped. Each one keeps the rules in [ARCHITECTURE.md](ARCHITECTU
 - Array curves from DLIS (images, NMR T2).
 
 **Petrophysics and quality control**
+- Done: bad-hole flag masking density/neutron; depth shift, Hampel despike, running median and
+  smoothing as formula curves; two-point normalization across wells.
 - Waxman-Smits, Rw from SP, permeability (Timur, Coates), cutoff sensitivity.
-- Depth shifting/matching, splicing runs, despike and smoothing filters.
-- Quality flags (bad hole from CALI − BS, high DRHO) masking density/neutron.
-- GR normalization across wells (the multi-well histogram already shows when it is needed).
+- Splicing runs, automatic depth matching (cross-correlation), environmental corrections.
 
 **Trust and distribution**
 - Done: corpus of 1498 real LAS files (Kansas Geological Survey) checked weekly in CI; reference

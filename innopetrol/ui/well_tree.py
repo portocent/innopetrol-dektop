@@ -25,6 +25,7 @@ ROLE_NAME = Qt.ItemDataRole.UserRole + 2
 class WellTree(QTreeWidget):
     docActivated = Signal(object)
     curveStatsRequested = Signal(object, str)
+    curveEditRequested = Signal(object, str)
     curveDeleteRequested = Signal(object, str)
     curveUnitRequested = Signal(object, str, object)  # doc, mnemonic, unit (None = file unit)
     topsRequested = Signal(object)
@@ -186,6 +187,9 @@ class WellTree(QTreeWidget):
             name = item.data(0, ROLE_NAME)
             menu.addAction(_("Statistics and histogram…")).triggered.connect(
                 lambda: self.curveStatsRequested.emit(doc, name)
+            )
+            menu.addAction(_("Edit curve (depth shift, despike, smoothing)…")).triggered.connect(
+                lambda: self.curveEditRequested.emit(doc, name)
             )
             options = units.convertible(doc.well.curves[name].unit)
             if not options and name in doc.curve_units:

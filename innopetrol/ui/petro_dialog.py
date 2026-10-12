@@ -114,8 +114,37 @@ class PetroDialog(QDialog):
         f2.addRow(row_of(QLabel(_("ρ matrix")), self.rho_ma, QLabel(_("ρ fluid")), self.rho_fl))
         f2.addRow(_("Method:"), self._with_equation(self.phi_method, self._porosity_equations))
         page_lay.addWidget(g2)
+        page_lay.addWidget(self._build_bad_hole(p))
         page_lay.addStretch()
         return page
+
+    def _build_bad_hole(self, p: petro.PetroParams) -> QGroupBox:
+        """Where density and neutron are not reliable (washouts, large density correction)."""
+        well = self.doc.well
+        group = QGroupBox(_("Bad hole: do not use density and neutron where…"))
+        group.setCheckable(True)
+        group.setChecked(p.bad_hole)
+        form = QFormLayout(group)
+        self.bad_hole = group
+        self.cali = curve_combo(well, p.cali_curve)
+        self.bs = curve_combo(well, p.bs_curve)
+        self.bs.setItemText(0, _("(constant)"))
+        self.bs_value = spin(p.bs_value, 2, 40, 0.125, 3)
+        self.bs_value.setSuffix(" in")
+        self.washout = spin(p.washout, 0, 10, 0.25, 2)
+        self.washout.setSuffix(" in")
+        self.drho = curve_combo(well, p.drho_curve)
+        self.drho_max = spin(p.drho_max, 0, 1, 0.01, 3)
+        self.drho_max.setSuffix(" g/cm³")
+        form.addRow(_("Caliper:"), self.cali)
+        form.addRow(_("Bit size:"), row_of(self.bs, self.bs_value))
+        form.addRow(_("Caliper − bit size above:"), self.washout)
+        form.addRow(
+            _("Density correction (DRHO):"), row_of(self.drho, QLabel(_("absolute value above")), self.drho_max)
+        )
+        self.bs.currentIndexChanged.connect(lambda: self.bs_value.setEnabled(self.bs.currentData() is None))
+        self.bs_value.setEnabled(self.bs.currentData() is None)
+        return group
 
     def _build_saturation_tab(self, p: petro.PetroParams) -> QWidget:
         page = QWidget()
@@ -268,6 +297,9 @@ class PetroDialog(QDialog):
                     p.rsh = round(float(rsh), 2)
         if p.nphi_curve:
             p.phi_method = "nd_average"
+        p.cali_curve, p.bs_curve = find_curve(w, "caliper"), find_curve(w, "bit_size")
+        p.drho_curve = find_curve(w, "density_corr")
+        p.bad_hole = bool(p.cali_curve or p.drho_curve)  # on when the curves to judge the hole exist
         if w.depth_unit == "ft":  # oilfield habits: °F and °F/100 ft
             p.temp_unit, p.surface_temp, p.rw_temp, p.gradient = "degF", 60.0, 75.0, 1.5
         else:
@@ -452,6 +484,13 @@ class PetroDialog(QDialog):
             surface_temp=self.surface_temp.value(),
             gradient=self.gradient.value(),
             temp_curve=self.temp_curve.currentData(),
+            bad_hole=self.bad_hole.isChecked(),
+            cali_curve=self.cali.currentData(),
+            bs_curve=self.bs.currentData(),
+            bs_value=self.bs_value.value(),
+            washout=self.washout.value(),
+            drho_curve=self.drho.currentData(),
+            drho_max=self.drho_max.value(),
             zones=self._zone_overrides(),
         )
 
@@ -467,6 +506,8 @@ class PetroDialog(QDialog):
                 return _("Rw, a, m, n and Rsh must be greater than zero.") + where
         if p.temp_mode == "curve" and not p.temp_curve:
             return _("Select the temperature curve.")
+        if p.bad_hole and not (p.cali_curve or p.drho_curve):
+            return _("Select the caliper or the density correction curve to detect bad hole.")
         return None
 
     def _run(self):

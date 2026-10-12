@@ -78,6 +78,17 @@ EQUATIONS: dict[str, Equation] = {
             _ASQUITH,
         ),
         Equation(
+            "bad_hole",
+            N_("Bad hole"),
+            "BADHOLE = (CALI − BS > washout) or (|DRHO| > limit)",
+            (
+                ("CALI, BS", N_("caliper and bit size (in)")),
+                ("DRHO", N_("density correction (g/cm³)")),
+            ),
+            N_("Where the flag is 1, density and neutron are not used: porosity, Sw and net pay are left empty."),
+            _ASQUITH,
+        ),
+        Equation(
             "nd_average",
             N_("Neutron-density porosity (average)"),
             "φ<sub>T</sub> = (φ<sub>D</sub> + φ<sub>N</sub>) / 2",
@@ -148,6 +159,33 @@ EQUATIONS: dict[str, Equation] = {
             _ASQUITH,
         ),
         Equation(
+            "despike",
+            N_("Spike removal, Hampel filter"),
+            "x' = median<sub>w</sub> if |x − median<sub>w</sub>| > k · 1.4826 · MAD<sub>w</sub>, otherwise x",
+            (
+                ("median<sub>w</sub>, MAD<sub>w</sub>", N_("median and median absolute deviation of the window")),
+                ("k", N_("threshold, in robust standard deviations")),
+            ),
+            N_(
+                "The spread is never taken smaller than the typical sample-to-sample change of the curve, so flat "
+                "stretches do not flag small steps."
+            ),
+            "Hampel, F. R. (1974). The influence curve and its role in robust estimation. "
+            "Journal of the American Statistical Association 69(346), 383–393.",
+        ),
+        Equation(
+            "normalization",
+            N_("Normalization between wells (two points)"),
+            "x<sub>N</sub> = T<sub>low</sub> + (x − P<sub>low</sub>) · (T<sub>high</sub> − T<sub>low</sub>) / "
+            "(P<sub>high</sub> − P<sub>low</sub>)",
+            (
+                ("P<sub>low</sub>, P<sub>high</sub>", N_("percentiles of the curve in the zone, in this well")),
+                ("T<sub>low</sub>, T<sub>high</sub>", N_("the same percentiles in the reference well")),
+            ),
+            N_("Use a zone with the same rocks in every well, typically a regional shale and a clean sand."),
+            "Shier, D. E. (2004). Well log normalization: methods and guidelines. Petrophysics 45(3), 268–280.",
+        ),
+        Equation(
             "minimum_curvature",
             N_("Wellbore trajectory, minimum curvature"),
             "ΔTVD = (ΔMD/2)·(cos I<sub>1</sub> + cos I<sub>2</sub>)·RF,  RF = (2/β)·tan(β/2)",
@@ -171,9 +209,10 @@ TEMPERATURE_EQUATIONS = {"none": (), "gradient": ("geothermal", "arps"), "curve"
 # Sections of the "Equations and references" window, in order (title translated with _()).
 SECTIONS = (
     (N_("Shale volume"), ("linear", "larionov_tertiary", "larionov_older")),
-    (N_("Porosity"), ("density", "nd_average", "nd_rms")),
+    (N_("Porosity"), ("density", "nd_average", "nd_rms", "bad_hole")),
     (N_("Water saturation"), ("archie", "simandoux", "indonesia")),
     (N_("Water resistivity and temperature"), ("arps", "geothermal")),
+    (N_("Curve editing"), ("despike", "normalization")),
     (N_("Depth"), ("minimum_curvature",)),
 )
 
@@ -194,5 +233,6 @@ def curve_equations(mnemonic: str, params, has_vsh: bool) -> tuple[str, ...]:
         "SW": (params.sw_model if has_vsh else "archie",),
         "RWT": ("arps",),
         "TFORM": ("geothermal",),
+        "BADHOLE": ("bad_hole",),
     }
     return tuple(k for k in by_curve.get(mnemonic, ()) if k in EQUATIONS)

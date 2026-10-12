@@ -495,6 +495,45 @@ y gradiente; Indonesia con curva de temperatura.
   Para eso evalúa la misma fórmula sin el recorte final, así que no hay una segunda implementación que
   se pueda desincronizar.
 
+### 3.9 Control de calidad de curvas
+
+**Pozo malo.** Donde el pozo está derrumbado, la herramienta de densidad pierde contacto con la pared
+y mide barro, no roca. Interpretar ese tramo daría porosidades altísimas y "petróleo" que no existe. En
+el diálogo de petrofísica hay ahora una sección "Pozo malo":
+- *Cuándo se marca:* el tramo se marca cuando el caliper supera al trépano en más de lo indicado
+  (1 pulgada por defecto) o cuando la corrección de densidad (|DRHO|) es grande (0,15 g/cm³).
+- *Qué pasa en ese tramo:* no se usan densidad ni neutrón, así que porosidad, Sw y espesor útil quedan
+  vacíos.
+- *Cómo se ve:* la bandera `BADHOLE` aparece en gris en el track de banderas.
+- *Cuándo está activo:* se activa sola cuando el pozo tiene caliper o DRHO. Los proyectos guardados
+  antes no cambian, porque el parámetro nuevo vale "apagado" por defecto.
+- *Unidades:* se convierten dentro de la fórmula (un caliper en mm contra un trépano en pulgadas
+  funciona).
+
+**Edición de curvas.** Con Pozo ▸ "Editar curva" (o clic derecho sobre la curva en el árbol) se puede:
+- corrimiento de profundidad: mover la curva para alinearla con otra corrida o con un núcleo;
+- quitar picos;
+- mediana móvil;
+- suavizado.
+
+El resultado siempre es una **curva nueva con fórmula**, por ejemplo `despike(GR, 7, 3)`: la original no
+se toca, se puede deshacer y el proyecto la recalcula. Los filtros quedaron también como funciones de la
+calculadora.
+
+*Una lección del dato real.* El primer filtro de picos comparaba cada muestra con la dispersión de
+**toda** la curva. En el GR real de ejemplo cambiaba 182 muestras (el 8%), y en la densidad 554 (el
+25%): tomaba por picos la variabilidad normal de las capas. Además, en curvas escalonadas la
+dispersión robusta (MAD) da 0. Se cambió por el **filtro de Hampel**, el método estándar, que mide la
+dispersión dentro de cada ventana con un piso igual al cambio típico entre muestras. Ahora cambia
+entre 3 y 8 muestras en curvas reales, y sigue eliminando todos los picos inyectados en las pruebas.
+
+**Normalización entre pozos** (Análisis ▸ "Normalizar una curva entre pozos"). Dos pozos con
+herramientas o calibraciones distintas leen distinto la misma arcilla. Para cada pozo se toman los
+percentiles bajo y alto (P5 y P95) dentro de una zona común, y se llevan a los del pozo de referencia
+con una transformación lineal. Se crea `GRN` en cada pozo, cada una con su propio paso de deshacer. El
+histograma multipozo permite ver antes y después. La referencia es Shier (2004), que figura con las
+demás en Ayuda ▸ Ecuaciones y referencias.
+
 ## 4. Arquitectura
 
 ```

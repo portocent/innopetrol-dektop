@@ -116,6 +116,10 @@ def check_file(path: Path) -> FileResult:
                     rhob_curve=rhob,
                     nphi_curve=find_curve(w, "neutron"),
                     rt_curve=find_curve(w, "deep_res"),
+                    bad_hole=True,
+                    cali_curve=find_curve(w, "caliper"),
+                    bs_curve=find_curve(w, "bit_size"),
+                    drho_curve=find_curve(w, "density_corr"),
                 )
                 petro.compute(w, params)
                 result.petro = True

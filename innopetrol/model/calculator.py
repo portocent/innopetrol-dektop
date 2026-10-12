@@ -16,6 +16,7 @@ from collections.abc import Callable
 import numpy as np
 
 from innopetrol.i18n import _
+from innopetrol.model.filters import FILTERS
 
 
 class CalculatorError(Exception):
@@ -53,6 +54,8 @@ FUNCTIONS: dict[str, Callable] = {
     "where": np.where,
     "isnan": np.isnan,
     "round": np.round,
+    # curve filters and depth shifting (model/filters.py)
+    **FILTERS,
 }
 CONSTANTS = {"pi": np.pi, "e": np.e, "nan": np.nan, "NaN": np.nan, "NAN": np.nan}
 
@@ -177,6 +180,8 @@ def _eval_call(node: ast.Call, curves: Curves):
         return FUNCTIONS[name](*args)
     except TypeError as e:
         raise CalculatorError(_("invalid arguments for {function}()").format(function=name)) from e
+    except ValueError as e:
+        raise CalculatorError(f"{name}(): {e}") from e
 
 
 _HANDLERS: dict[type, Callable] = {

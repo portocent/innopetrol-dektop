@@ -36,6 +36,7 @@ Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python w
 - **Parameters by zone** (between formation tops): clean/shale GR, matrix and fluid density, Rw, a, m, n, Rsh and cutoffs.
 - **Rw at formation temperature** (Arps) from a geothermal gradient on TVD or a temperature curve.
 - **Graphical parameter picking**: clean/shale GR dragging lines on the histogram, Rw dragging the water line on a Pickett plot (or fitted to the wettest clean points), for the whole well or one zone.
+- **Curve quality control**: bad-hole flag (caliper − bit size, |DRHO|) that removes density/neutron from the calculations where the hole is washed out; curve editing (depth shift, Hampel despike, running median, smoothing) as new curves with formulas; **normalization of a curve across wells** (two-point, by zone, against a reference well).
 - **Results you can check**: every equation with its bibliographic reference (Help ▸ Equations and references, and a “?” next to each method); a **verification workbook** (.xlsx) that recomputes Vsh, φ and Sw with spreadsheet formulas next to InnoPetrol's values; a **quality report** after computing (Sw above 1 before limiting, negative porosity, impossible densities…, per zone).
 - **Undo / redo** (Ctrl+Z / Ctrl+Shift+Z) for track, template, tops, survey, curve and petrophysics changes, one history per well.
 - Zone summary: gross, net reservoir and net pay thickness, N/G, average φ, Sw and Vsh (copy to Excel or CSV).

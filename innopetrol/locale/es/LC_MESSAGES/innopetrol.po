@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 12:47-0500\n"
+"POT-Creation-Date: 2026-10-12 13:08-0500\n"
 "PO-Revision-Date: 2026-10-11 21:21-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -55,6 +55,9 @@ msgstr "(por pozo)"
 
 msgid "(computed)"
 msgstr "(calculada)"
+
+msgid "(constant)"
+msgstr "(constante)"
 
 msgid "(no color)"
 msgstr "(sin color)"
@@ -176,6 +179,15 @@ msgstr "φ prom"
 msgid "Backup"
 msgstr "Respaldo"
 
+msgid "Bad hole"
+msgstr "Pozo malo"
+
+msgid "Bad hole flag (washout or large density correction)"
+msgstr "Bandera de pozo malo (derrumbe o corrección de densidad grande)"
+
+msgid "Bad hole: do not use density and neutron where…"
+msgstr "Pozo malo: no usar densidad ni neutrón donde…"
+
 #, python-brace-format
 msgid "Base ({unit})"
 msgstr "Base ({unit})"
@@ -191,6 +203,9 @@ msgstr "Clases:"
 
 msgid "Bit size"
 msgstr "Diámetro de broca"
+
+msgid "Bit size:"
+msgstr "Diámetro del trépano:"
 
 msgid "Built-in names"
 msgstr "Nombres incorporados"
@@ -214,6 +229,12 @@ msgstr "Calculadora"
 
 msgid "Caliper"
 msgstr "Caliper"
+
+msgid "Caliper − bit size above:"
+msgstr "Caliper − trépano mayor que:"
+
+msgid "Caliper:"
+msgstr "Caliper:"
 
 msgid "Cascade"
 msgstr "Cascada"
@@ -382,6 +403,9 @@ msgstr "Calculadora de curvas — {well}"
 msgid "Curve calculator…"
 msgstr "Calculadora de curvas…"
 
+msgid "Curve editing"
+msgstr "Edición de curvas"
+
 msgid "Curve names of your company, recognized when opening wells and applying templates"
 msgstr "Nombres de curva de su compañía, reconocidos al abrir pozos y aplicar plantillas"
 
@@ -482,6 +506,9 @@ msgstr "Densidad - Neutrón"
 msgid "Density correction"
 msgstr "Corrección de densidad"
 
+msgid "Density correction (DRHO):"
+msgstr "Corrección de densidad (DRHO):"
+
 #, python-brace-format
 msgid "Density outside 1.0–3.2 g/cm³ in {pct} of the samples{where}: bad hole or wrong units."
 msgstr "Densidad fuera de 1,0–3,2 g/cm³ en el {pct} de las muestras{where}: pozo en mal estado o unidades equivocadas."
@@ -505,6 +532,9 @@ msgstr "Referencia de profundidad"
 
 msgid "Depth reference:"
 msgstr "Referencia de profundidad:"
+
+msgid "Depth shift"
+msgstr "Corrimiento de profundidad"
 
 msgid "Depth track"
 msgstr "Track de profundidad"
@@ -576,6 +606,13 @@ msgstr "Ej.: (2.65 - RHOB) / (2.65 - 1.0)"
 
 msgid "Edit"
 msgstr "Edición"
+
+msgid "Edit curve (depth shift, despike, smoothing)…"
+msgstr "Editar curva (corrimiento, picos, suavizado)…"
+
+#, python-brace-format
+msgid "Edit curve — {well}"
+msgstr "Editar curva — {well}"
 
 msgid "Edit formation tops"
 msgstr "Editar topes de formación"
@@ -773,6 +810,9 @@ msgstr "Escala de grises"
 msgid "Gross ({unit})"
 msgstr "Bruto ({unit})"
 
+msgid "High percentile"
+msgstr "Percentil alto"
+
 msgid "Hydrocarbon"
 msgstr "Hidrocarburo"
 
@@ -799,6 +839,13 @@ msgstr "Importar topes"
 
 msgid "Import…"
 msgstr "Importar…"
+
+msgid ""
+"In each well, the low and high percentiles of the curve inside the zone are taken to the values of the reference well"
+" (or to values you type). The result is a new curve; the original is kept."
+msgstr ""
+"En cada pozo, los percentiles bajo y alto de la curva dentro de la zona se llevan a los valores del pozo de "
+"referencia (o a valores que usted escriba). El resultado es una curva nueva; la original se conserva."
 
 msgid "Indonesia (shaly sands, fresh water)"
 msgstr "Indonesia (arenas arcillosas, agua dulce)"
@@ -930,6 +977,9 @@ msgstr "Escala logarítmica"
 msgid "Longitude:"
 msgstr "Longitud:"
 
+msgid "Low percentile"
+msgstr "Percentil bajo"
+
 msgid "Main"
 msgstr "Principal"
 
@@ -985,6 +1035,9 @@ msgstr "Alias de mnemónicos…"
 
 msgid "Model:"
 msgstr "Modelo:"
+
+msgid "Move deeper by (negative: shallower):"
+msgstr "Mover más profundo (negativo: más somero):"
 
 msgid "Move left"
 msgstr "Mover a la izquierda"
@@ -1066,6 +1119,9 @@ msgstr "Porosidad neutrón-densidad (RMS, zonas de gas)"
 msgid "Neutron-density porosity (average)"
 msgstr "Porosidad neutrón-densidad (promedio)"
 
+msgid "New curve:"
+msgstr "Curva nueva:"
+
 msgid "New top"
 msgstr "Nuevo tope"
 
@@ -1105,12 +1161,32 @@ msgstr ""
 "Ninguno de los pozos abiertos tiene coordenadas en su encabezado. Ingréselas en Pozo ▸ Survey de desviación, "
 "elevación y ubicación…"
 
+msgid "Normalization between wells (two points)"
+msgstr "Normalización entre pozos (dos puntos)"
+
+msgid "Normalize"
+msgstr "Normalizar"
+
+msgid "Normalize a curve between wells"
+msgstr "Normalizar una curva entre pozos"
+
+msgid "Normalize a curve between wells…"
+msgstr "Normalizar una curva entre pozos…"
+
+#, python-brace-format
+msgid "Normalize {curve}"
+msgstr "Normalizar {curve}"
+
 #, python-brace-format
 msgid "Not shown, coordinates of another type (projected vs. latitude/longitude): {wells}"
 msgstr "No se muestran, coordenadas de otro tipo (proyectadas o latitud/longitud): {wells}"
 
 msgid "Oilfield (ft, g/cm³, µs/ft, °F, psi, in)"
 msgstr "Petrolero (ft, g/cm³, µs/ft, °F, psi, in)"
+
+#, python-brace-format
+msgid "One sample = {step} {unit}"
+msgstr "Una muestra = {step} {unit}"
 
 msgid "Open LAS"
 msgstr "Abrir LAS"
@@ -1135,6 +1211,9 @@ msgstr "Abrir reciente"
 
 msgid "Open well files"
 msgstr "Abrir archivos de pozo"
+
+msgid "Operation:"
+msgstr "Operación:"
 
 #, python-brace-format
 msgid "Operators: {operators}"
@@ -1188,6 +1267,9 @@ msgstr "Patrón"
 
 msgid "Pay"
 msgstr "Pago"
+
+msgid "Percentiles (low / high):"
+msgstr "Percentiles (bajo / alto):"
 
 msgid "Permeability"
 msgstr "Permeabilidad"
@@ -1301,11 +1383,17 @@ msgstr "Rehacer"
 msgid "Reference elevation: {value} {unit}"
 msgstr "Elevación de referencia: {value} {unit}"
 
+msgid "Reference:"
+msgstr "Referencia:"
+
 msgid "Remove"
 msgstr "Quitar"
 
 msgid "Remove selected track"
 msgstr "Eliminar track seleccionado"
+
+msgid "Remove spikes (despike)"
+msgstr "Quitar picos (despike)"
 
 msgid "Remove survey"
 msgstr "Quitar survey"
@@ -1371,6 +1459,9 @@ msgstr "Clic derecho: menú del track (agregar, mover, eliminar, agregar tope, e
 #, python-brace-format
 msgid "Row {row}: a name and a numeric depth are required"
 msgstr "Fila {row}: nombre y profundidad numérica son obligatorios"
+
+msgid "Running median"
+msgstr "Mediana móvil"
 
 msgid "Rw at formation temperature (Arps)"
 msgstr "Rw a temperatura de formación (Arps)"
@@ -1462,6 +1553,9 @@ msgstr "Seleccione una zona en la tabla."
 msgid "Select the GR curve first."
 msgstr "Primero seleccione la curva de GR."
 
+msgid "Select the caliper or the density correction curve to detect bad hole."
+msgstr "Seleccione el caliper o la curva de corrección de densidad para detectar pozo malo."
+
 msgid "Select the temperature curve."
 msgstr "Seleccione la curva de temperatura."
 
@@ -1518,6 +1612,9 @@ msgstr "Atajos"
 msgid "Show as tabs"
 msgstr "Ver como pestañas"
 
+msgid "Show it, dashed, in the tracks of the original curve"
+msgstr "Mostrarla, a trazos, en los tracks de la curva original"
+
 msgid "Show the equation and its reference"
 msgstr "Mostrar la ecuación y su referencia"
 
@@ -1526,6 +1623,13 @@ msgstr "Mostrar ventana del pozo"
 
 msgid "Simandoux (shaly sands, n = 2)"
 msgstr "Simandoux (arenas arcillosas, n = 2)"
+
+#, python-brace-format
+msgid "Skipped (no curve, too few samples or an original curve with that name): {wells}"
+msgstr "Omitidos (sin curva, pocas muestras o una curva original con ese nombre): {wells}"
+
+msgid "Smoothing (moving average)"
+msgstr "Suavizado (promedio móvil)"
 
 msgid "Solid"
 msgstr "Continua"
@@ -1541,6 +1645,9 @@ msgstr "Sónico"
 
 msgid "Sonic / PEF"
 msgstr "Sónico / PEF"
+
+msgid "Spike removal, Hampel filter"
+msgstr "Eliminación de picos, filtro de Hampel"
 
 msgid "Spontaneous potential"
 msgstr "Potencial espontáneo"
@@ -1601,6 +1708,9 @@ msgstr "La TVD se mide desde la referencia de profundidad del pozo (KB/DF), no d
 msgid "TVDSS needs the elevation of the depth reference (Well ▸ Deviation survey and elevation…)."
 msgstr "TVDSS necesita la elevación de la referencia de profundidad (Pozo ▸ Survey de desviación y elevación…)."
 
+msgid "Target values (low / high):"
+msgstr "Valores objetivo (bajo / alto):"
+
 msgid "Temperature"
 msgstr "Temperatura"
 
@@ -1636,6 +1746,9 @@ msgstr "Las curvas se calcularon. Puntos a revisar:"
 msgid "The fill takes the color of its curve's value at each depth, along the curve's scale."
 msgstr "El relleno toma, en cada profundidad, el color del valor de su curva según la escala de la curva."
 
+msgid "The high target must be greater than the low one."
+msgstr "El objetivo alto debe ser mayor que el bajo."
+
 msgid ""
 "The hole between stations is a circular arc; log samples between stations are placed on the arc (north and east are "
 "computed the same way)."
@@ -1643,11 +1756,21 @@ msgstr ""
 "El pozo entre estaciones es un arco de circunferencia; las muestras del registro entre estaciones se ubican sobre el "
 "arco (norte y este se calculan igual)."
 
+msgid ""
+"The spread is never taken smaller than the typical sample-to-sample change of the curve, so flat stretches do not "
+"flag small steps."
+msgstr ""
+"La dispersión nunca se toma menor que el cambio típico entre muestras de la curva, así los tramos planos no marcan "
+"escalones pequeños."
+
 msgid "The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first."
 msgstr "El track de volúmenes necesita VSH y VMAT: primero ejecute Pozo ▸ Petrofísica."
 
 msgid "These names are in more than one family:"
 msgstr "Estos nombres están en más de una familia:"
+
+msgid "Threshold (robust standard deviations):"
+msgstr "Umbral (desvíos estándar robustos):"
 
 msgid "Tile"
 msgstr "Mosaico"
@@ -1737,6 +1860,9 @@ msgstr "Subir"
 msgid "Use a name made of letters, digits or _."
 msgstr "Use un nombre con letras, números o _."
 
+msgid "Use a zone with the same rocks in every well, typically a regional shale and a clean sand."
+msgstr "Use una zona con las mismas rocas en todos los pozos, típicamente una arcilla regional y una arena limpia."
+
 msgid "Use the active well's layout as the default template"
 msgstr "Usar el layout del pozo activo como plantilla por defecto"
 
@@ -1768,6 +1894,9 @@ msgstr "Los valores se usan en las unidades del archivo, indicadas entre corchet
 
 msgid "Values beyond the scale are drawn again, dashed, shifted by one scale width (e.g. GR 150–300)."
 msgstr "Los valores fuera de la escala se dibujan de nuevo, a trazos, desplazados un ancho de escala (p. ej. GR 150–300)."
+
+msgid "Values typed here"
+msgstr "Valores escritos aquí"
 
 msgid "Verification workbook"
 msgstr "Planilla de verificación"
@@ -1873,6 +2002,9 @@ msgstr "Lo visible en pantalla"
 msgid "Wheel: scroll in depth · Shift + wheel: scroll horizontally · PgUp/PgDn, Home/End, arrows"
 msgstr "Rueda: desplazar en profundidad · Shift + rueda: desplazar horizontal · RePág/AvPág, Inicio/Fin, flechas"
 
+msgid "Where the flag is 1, density and neutron are not used: porosity, Sw and net pay are left empty."
+msgstr "Donde la bandera vale 1 no se usan densidad ni neutrón: porosidad, Sw y espesor útil quedan vacíos."
+
 msgid "Whole well"
 msgstr "Pozo completo"
 
@@ -1881,6 +2013,9 @@ msgstr "Grosor"
 
 msgid "Width / grid / divisions:"
 msgstr "Ancho / grilla / divisiones:"
+
+msgid "Window (samples, odd):"
+msgstr "Ventana (muestras, impar):"
 
 #, python-brace-format
 msgid "Without coordinates (enter them in Well ▸ Deviation survey, elevation and location…): {wells}"
@@ -1931,6 +2066,9 @@ msgstr "Zona {name}"
 msgid "Zone {zone}, {parameter}: “{text}” is not a number."
 msgstr "Zona {zone}, {parameter}: «{text}» no es un número."
 
+msgid "Zone:"
+msgstr "Zona:"
+
 #, python-brace-format
 msgid "Zone: {name}"
 msgstr "Zona: {name}"
@@ -1961,6 +2099,9 @@ msgstr "Alejar a la siguiente escala estándar"
 msgid "a curve named {name} already exists"
 msgstr "ya existe una curva llamada {name}"
 
+msgid "absolute value above"
+msgstr "valor absoluto mayor que"
+
 msgid "aliases"
 msgstr "alias"
 
@@ -1980,6 +2121,9 @@ msgstr "respaldo {left} – {right}"
 msgid "bulk density from the log (g/cm³)"
 msgstr "densidad total del registro (g/cm³)"
 
+msgid "caliper and bit size (in)"
+msgstr "caliper y diámetro del trépano (in)"
+
 msgid "comparison not allowed"
 msgstr "comparación no permitida"
 
@@ -1996,6 +2140,9 @@ msgstr "no se pudo guardar la imagen"
 
 msgid "density and neutron porosity (fraction)"
 msgstr "porosidad de densidad y de neutrón (fracción)"
+
+msgid "density correction (g/cm³)"
+msgstr "corrección de densidad (g/cm³)"
 
 msgid "depth was not always increasing; samples were sorted by depth"
 msgstr "la profundidad no siempre era creciente; las muestras se ordenaron por profundidad"
@@ -2074,6 +2221,9 @@ msgstr "densidad de matriz y de fluido (g/cm³)"
 msgid "measured depth (MD)"
 msgstr "profundidad medida (MD)"
 
+msgid "median and median absolute deviation of the window"
+msgstr "mediana y desviación absoluta mediana de la ventana"
+
 msgid "meters (m)"
 msgstr "metros (m)"
 
@@ -2092,11 +2242,17 @@ msgstr "no se encontraron estaciones numéricas en el survey"
 msgid "none (vertical well assumed)"
 msgstr "ninguno (se supone pozo vertical)"
 
+msgid "not enough data"
+msgstr "datos insuficientes"
+
 msgid "number"
 msgstr "número"
 
 msgid "only numbers are allowed"
 msgstr "sólo se permiten números"
+
+msgid "percentiles of the curve in the zone, in this well"
+msgstr "percentiles de la curva en la zona, en este pozo"
 
 msgid "project"
 msgstr "proyecto"
@@ -2116,6 +2272,9 @@ msgstr "plantilla"
 
 msgid "the curve does not have the same number of samples as the depth"
 msgstr "la curva no tiene el mismo número de muestras que la profundidad"
+
+msgid "the depth offset must be a number"
+msgstr "el corrimiento de profundidad debe ser un número"
 
 msgid "the expression does not use any curve"
 msgstr "la expresión no usa ninguna curva"
@@ -2152,11 +2311,24 @@ msgstr "la imagen tendría {height} px de alto; use PDF, un intervalo menor o un
 msgid "the result does not have the size of the curves"
 msgstr "el resultado no tiene el tamaño de las curvas"
 
+msgid "the same percentiles in the reference well"
+msgstr "los mismos percentiles en el pozo de referencia"
+
 msgid "the survey has no valid stations"
 msgstr "el survey no tiene estaciones válidas"
 
 msgid "the template was created with a newer version of the program"
 msgstr "la plantilla fue creada con una versión más nueva del programa"
+
+msgid "the threshold must be greater than zero"
+msgstr "el umbral debe ser mayor que cero"
+
+#, python-brace-format
+msgid "the window must be a whole number of samples between 1 and {maximum}"
+msgstr "la ventana debe ser un número entero de muestras entre 1 y {maximum}"
+
+msgid "threshold, in robust standard deviations"
+msgstr "umbral, en desvíos estándar robustos"
 
 msgid "too many curves for the page height"
 msgstr "demasiadas curvas para el alto de la página"
@@ -2198,6 +2370,10 @@ msgstr "pozo completo"
 #, python-brace-format
 msgid "{alias}: {families}"
 msgstr "{alias}: {families}"
+
+#, python-brace-format
+msgid "{changed} of {total} samples change."
+msgstr "Cambian {changed} de {total} muestras."
 
 #, python-brace-format
 msgid "{count} points"
@@ -2244,6 +2420,14 @@ msgstr "{curve} (no disponible)"
 #, python-brace-format
 msgid "{curve} InnoPetrol"
 msgstr "{curve} InnoPetrol"
+
+#, python-brace-format
+msgid "{curve} created in: {wells}"
+msgstr "{curve} creada en: {wells}"
+
+#, python-brace-format
+msgid "{curve} normalized (P{low:g}–P{high:g} → {t_low:g}–{t_high:g})"
+msgstr "{curve} normalizada (P{low:g}–P{high:g} → {t_low:g}–{t_high:g})"
 
 #, python-brace-format
 msgid "{curve} — not available"

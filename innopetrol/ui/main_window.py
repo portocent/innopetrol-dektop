@@ -94,6 +94,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dock)
         self.tree.docActivated.connect(self.activate_doc)
         self.tree.curveStatsRequested.connect(self.show_stats)
+        self.tree.curveEditRequested.connect(self.curve_tools)
         self.tree.curveDeleteRequested.connect(self._delete_curve)
         self.tree.curveUnitRequested.connect(self.set_curve_unit)
         self.tree.topsRequested.connect(self.edit_tops)
@@ -154,6 +155,8 @@ class MainWindow(QMainWindow):
         self.system_actions = self._choice_actions(units.SYSTEMS, self.set_unit_system)
         self.a_petro = A(self.petrophysics, "Ctrl+P")
         self.a_calc = A(self.calculator, "Ctrl+K")
+        self.a_curve_tools = A(lambda: self.curve_tools(self.active_doc()))
+        self.a_normalize = A(self.normalize_curves)
         self.a_zones = A(self.zone_summary)
         self.a_stats = A(lambda: self.show_stats(self.active_doc()))
         self.a_table = A(self.data_table, "Ctrl+D")
@@ -251,6 +254,7 @@ class MainWindow(QMainWindow):
             None,
             self.a_petro,
             self.a_calc,
+            self.a_curve_tools,
             self.a_zones,
             None,
             self.a_stats,
@@ -259,7 +263,7 @@ class MainWindow(QMainWindow):
             self.m_well.addSeparator() if a is None else self.m_well.addAction(a)
 
         self.m_analysis = mb.addMenu("")
-        for a in (self.a_xplot, self.a_nd, self.a_pickett, None, self.a_corr, self.a_map):
+        for a in (self.a_xplot, self.a_nd, self.a_pickett, None, self.a_corr, self.a_map, None, self.a_normalize):
             self.m_analysis.addSeparator() if a is None else self.m_analysis.addAction(a)
 
         self.m_view = mb.addMenu("")
@@ -375,6 +379,8 @@ class MainWindow(QMainWindow):
             self.unit_actions["ft"]: (_("Feet"), None, None),
             self.a_petro: (_("Petrophysics (Vsh, φ, Sw)…"), _("Petrophysics"), None),
             self.a_calc: (_("Curve calculator…"), _("Calculator"), None),
+            self.a_curve_tools: (_("Edit curve (depth shift, despike, smoothing)…"), None, None),
+            self.a_normalize: (_("Normalize a curve between wells…"), None, None),
             self.a_zones: (_("Zone summary (net pay)…"), _("Zones"), None),
             self.a_stats: (_("Statistics and histogram…"), None, None),
             self.a_table: (_("Data table"), _("Data"), None),
@@ -1041,6 +1047,19 @@ class MainWindow(QMainWindow):
             from innopetrol.ui.petro_dialog import PetroDialog
 
             PetroDialog(doc, self).exec()
+
+    def curve_tools(self, doc, curve: str | None = None):
+        if doc:
+            from innopetrol.ui.curve_tools_dialog import CurveToolsDialog
+
+            CurveToolsDialog(doc, curve, self).exec()
+
+    def normalize_curves(self):
+        doc = self.active_doc()
+        if doc:
+            from innopetrol.ui.normalize_dialog import NormalizeDialog
+
+            NormalizeDialog(self.docs, doc, self).exec()
 
     def calculator(self):
         doc = self.active_doc()

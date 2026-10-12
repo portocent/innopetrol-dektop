@@ -6,7 +6,12 @@ from innopetrol.i18n import _
 from innopetrol.model.layout import CurveStyle, FillSpec, LogLayout, TrackSpec
 from innopetrol.model.mnemonics import build_volumes_track, make_curve_style
 
-_FLAG_COLORS = {"RES_FLAG": ("#27ae60", "#82e0aa"), "PAY_FLAG": ("#c0392b", "#e74c3c")}  # (line, fill)
+# (line, fill) of each flag curve shown in the flags track.
+_FLAG_COLORS = {
+    "RES_FLAG": ("#27ae60", "#82e0aa"),
+    "PAY_FLAG": ("#c0392b", "#e74c3c"),
+    "BADHOLE": ("#7f8c8d", "#aab7b8"),
+}
 
 
 def results_tracks(well, names: list[str]) -> list[TrackSpec]:
@@ -28,7 +33,7 @@ def results_tracks(well, names: list[str]) -> list[TrackSpec]:
         for m in flags:
             line, fill = _FLAG_COLORS[m]
             flag_track.curves.append(CurveStyle(m, color=line, left=0, right=1, visible=False))
-            label = _("Reservoir") if m == "RES_FLAG" else _("Pay")
+            label = {"RES_FLAG": _("Reservoir"), "PAY_FLAG": _("Pay"), "BADHOLE": _("Bad hole")}[m]
             flag_track.fills.append(FillSpec(left_value=0, right_curve=m, color=fill, label=label))
         tracks.append(flag_track)
     volumes = build_volumes_track(well)
