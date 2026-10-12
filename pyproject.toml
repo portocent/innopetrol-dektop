@@ -1,0 +1,35 @@
+[project]
+name = "innopetrol"
+version = "2.0.0"
+description = "Visor de registros de pozo (LAS) para ingenieros de petróleo"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Jacobo Porto" }]
+dependencies = [
+    "pyside6>=6.7",
+    "lasio>=0.31",
+    "numpy>=1.26",
+    "pandas>=2.1",
+]
+
+[project.scripts]
+innopetrol = "innopetrol.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-qt>=4.4",
+    "pytest-timeout>=2.4.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["innopetrol"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"
+timeout = 120
