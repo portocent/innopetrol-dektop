@@ -1,0 +1,66 @@
+# Pruebas y ejecutables para Windows, Linux y macOS.
+# Cada push corre las pruebas en los tres sistemas; los ejecutables quedan como artefactos
+# descargables en la pestaña "Actions" de GitHub.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Pruebas (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Librerías de sistema para Qt (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      - run: uv sync
+      - run: uv run pytest -v
+
+  build:
+    name: Ejecutable (${{ matrix.os }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Librerías de sistema para Qt (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      - run: uv sync --group build
+      - run: uv run --group build python packaging/build.py
+
+      # Verifica que el ejecutable empaquetado arranca, abre un LAS y dibuja.
+      - name: Probar ejecutable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist\InnoPetrol\InnoPetrol.exe -ArgumentList '--smoke-test', "$PWD\samples\Testdata.las" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "smoke-test falló con código $($p.ExitCode)" }
+      - name: Probar ejecutable (Linux)
+        if: runner.os == 'Linux'
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ./dist/InnoPetrol/InnoPetrol --smoke-test "$PWD/samples/Testdata.las"
+      - name: Probar ejecutable (macOS)
+        if: runner.os == 'macOS'
+        run: ./dist/InnoPetrol.app/Contents/MacOS/InnoPetrol --smoke-test "$PWD/samples/Testdata.las"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: InnoPetrol-${{ runner.os }}
+          path: dist/*.zip

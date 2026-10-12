@@ -1,0 +1,22 @@
+# Entornos virtuales (incluye el venv de Windows antiguo)
+.venv/
+venv/
+Lib/
+Scripts/
+Include/
+share/
+pyvenv.cfg
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+.idea/
+.vscode/
+.DS_Store
+
+# Empaquetado
+packaging/*.spec
