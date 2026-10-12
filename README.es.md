@@ -14,6 +14,9 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 - Reconoce unos 125 mnemónicos (17 familias de curvas) de distintas compañías de servicio (GR/SGR/GRC, NPHI/TNPH, LLD/ILD/AT90…) y propone escala, color y tipo lineal/log.
 - Escalas verticales reales (1:200, 1:500, 1:1000…) o ajuste a la ventana.
 - Tracks configurables: curvas, escala lineal o logarítmica, color, grosor, estilo, rellenos entre curvas o contra un valor fijo con 10 patrones.
+- **Escalas de respaldo (wrap-around)**: los valores fuera de escala se dibujan de nuevo, a trazos, en el ancho siguiente (GR 150–300).
+- **Rellenos con color por valor** (paletas rayos gamma, resistividad, viridis, arcoíris, grises).
+- **Track de volúmenes**: arcilla / matriz / hidrocarburo / agua apilados, a partir de la petrofísica.
 - Agregar, quitar, mover, renombrar y cambiar el ancho de tracks (arrastrando el borde).
 - **Unidades a demanda**: Ver ▸ Sistema de unidades (como en el archivo / petrolero / métrico) o por curva desde
   el árbol del pozo (g/cm³ ↔ kg/m³, µs/ft ↔ µs/m, fracción ↔ %, °F ↔ °C, psi ↔ kPa, in ↔ mm). Los datos guardados
@@ -39,11 +42,12 @@ Visor de registros de pozo (archivos **LAS 2.0**) para ingenieros de petróleo, 
 - Estadísticas e histograma por curva y zona (P10/P50/P90).
 - Crossplots con color por una tercera curva: libre, **neutrón-densidad** con líneas de litología y **Pickett** con líneas de Sw.
 - **Correlación multi-pozo** lado a lado, en profundidad o **aplanada en un tope**, con líneas que unen topes del mismo nombre.
+  **Picado de topes con clic** en cada pozo (mismo nombre y color en todos, clic derecho para agregar o quitar, Ctrl+Z).
 
 **Archivos**
 - Plantillas en JSON (`.ipt.json`): se aplican a otros pozos aunque usen otros mnemónicos. Plantilla por defecto configurable.
 - Proyectos (`.ipproj`): pozos, layouts, topes, parámetros y curvas calculadas (guardadas como fórmulas).
-- Exportar el registro a **PDF paginado** o **PNG** a escala, **LAS** (con curvas calculadas) y **CSV**.
+- Exportar el registro a **PDF paginado** o **PNG** a escala, con **encabezado de registro** (compañía, campo, compañía de servicio, referencia de profundidad, elevación, survey), **LAS** (con curvas calculadas) y **CSV**.
 
 | Correlación aplanada en un tope | Crossplot neutrón-densidad |
 |---|---|

@@ -20,13 +20,14 @@ from innopetrol.i18n import _
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
 from innopetrol.model.mnemonics import FAMILIES, make_curve_style
 from innopetrol.model.scales import log_decades
+from innopetrol.render.colormaps import COLORMAPS
 from innopetrol.render.painter import fmt
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.widgets import ColorButton, LineStyleCombo, PatternCombo, parse_float
 
-C_CURVE, C_LEFT, C_RIGHT, C_LOG, C_COLOR, C_WIDTH, C_STYLE, C_VISIBLE = range(8)
-F_LEFT, F_LVAL, F_RIGHT, F_RVAL, F_COLOR, F_PATTERN, F_LABEL, F_VISIBLE = range(8)
+C_CURVE, C_LEFT, C_RIGHT, C_LOG, C_WRAP, C_COLOR, C_WIDTH, C_STYLE, C_VISIBLE = range(9)
+F_LEFT, F_LVAL, F_RIGHT, F_RVAL, F_COLOR, F_PATTERN, F_COLORMAP, F_LABEL, F_VISIBLE = range(9)
 EDGE, VALUE = "__edge__", "__value__"
 
 
@@ -74,10 +75,14 @@ class TrackEditor(QDialog):
 
         self.tabs = QTabWidget()
         root.addWidget(self.tabs, 1)
-        self.curve_table = self._make_table([_("Curve"), _("Left"), _("Right"), _("Log"), _("Color"), _("Width"),
-                                             _("Style"), _("Visible")])
+        self.curve_table = self._make_table([_("Curve"), _("Left"), _("Right"), _("Log"), _("Backup"), _("Color"),
+                                             _("Width"), _("Style"), _("Visible")])
+        self.curve_table.horizontalHeaderItem(C_WRAP).setToolTip(
+            _("Values beyond the scale are drawn again, dashed, shifted by one scale width (e.g. GR 150–300)."))
         self.fill_table = self._make_table([_("Left bound"), _("Value"), _("Right bound"), _("Value"), _("Color"),
-                                            _("Pattern"), _("Label"), _("Visible")])
+                                            _("Pattern"), _("Color by value"), _("Label"), _("Visible")])
+        self.fill_table.horizontalHeaderItem(F_COLORMAP).setToolTip(
+            _("The fill takes the color of its curve's value at each depth, along the curve's scale."))
         self.curve_table.horizontalHeader().setSectionResizeMode(C_CURVE, QHeaderView.Stretch)
         self.fill_table.horizontalHeader().setSectionResizeMode(F_LABEL, QHeaderView.Stretch)
         self.tabs.addTab(self._with_buttons(self.curve_table, self._add_curve, self._remove_curve, self._move_curve),
@@ -152,6 +157,8 @@ class TrackEditor(QDialog):
             e.setMaximumWidth(90)
         log = QCheckBox()
         log.setChecked(c.log)
+        wrap = QCheckBox()
+        wrap.setChecked(c.wrap)
         color = ColorButton(c.color)
         width = QDoubleSpinBox()
         width.setRange(0.5, 8)
@@ -176,7 +183,7 @@ class TrackEditor(QDialog):
 
         combo.currentIndexChanged.connect(on_curve)
         for col, w in ((C_CURVE, combo), (C_LEFT, left), (C_RIGHT, right), (C_LOG, _centered(log)),
-                       (C_COLOR, color), (C_WIDTH, width), (C_STYLE, style), (C_VISIBLE, _centered(visible))):
+                       (C_WRAP, _centered(wrap)), (C_COLOR, color), (C_WIDTH, width), (C_STYLE, style), (C_VISIBLE, _centered(visible))):
             t.setCellWidget(r, col, w)
         t.setCurrentCell(r, 0)
 
@@ -217,6 +224,7 @@ class TrackEditor(QDialog):
                 left=left, right=right, log=log,
                 visible=t.cellWidget(r, C_VISIBLE).findChild(QCheckBox).isChecked(),
                 unit=self.doc.display_unit_of(m),
+                wrap=t.cellWidget(r, C_WRAP).findChild(QCheckBox).isChecked(),
             ))
         return out, errors
 
@@ -291,8 +299,22 @@ class TrackEditor(QDialog):
         label.setPlaceholderText(_("(no legend)"))
         visible = QCheckBox()
         visible.setChecked(f.visible)
+        colormap = QComboBox()
+        colormap.addItem(_("No (solid color)"), None)
+        for key, (name, _stops) in COLORMAPS.items():
+            colormap.addItem(_(name), key)
+        colormap.setCurrentIndex(max(colormap.findData(f.colormap), 0))
+
+        def sync(_index=None):
+            solid = colormap.currentData() is None
+            color.setEnabled(solid)
+            pattern.setEnabled(solid)
+
+        colormap.currentIndexChanged.connect(sync)
+        sync()
         for col, w in ((F_LEFT, lcombo), (F_LVAL, lval), (F_RIGHT, rcombo), (F_RVAL, rval), (F_COLOR, color),
-                       (F_PATTERN, pattern), (F_LABEL, label), (F_VISIBLE, _centered(visible))):
+                       (F_PATTERN, pattern), (F_COLORMAP, colormap), (F_LABEL, label),
+                       (F_VISIBLE, _centered(visible))):
             t.setCellWidget(r, col, w)
         t.setCurrentCell(r, 0)
 
@@ -303,7 +325,8 @@ class TrackEditor(QDialog):
             row = _("Fills, row {row}").format(row=r + 1)
             spec = FillSpec(color=t.cellWidget(r, F_COLOR).color(), pattern=t.cellWidget(r, F_PATTERN).value(),
                             label=t.cellWidget(r, F_LABEL).text().strip(),
-                            visible=t.cellWidget(r, F_VISIBLE).findChild(QCheckBox).isChecked())
+                            visible=t.cellWidget(r, F_VISIBLE).findChild(QCheckBox).isChecked(),
+                            colormap=t.cellWidget(r, F_COLORMAP).currentData())
             ok = True
             for side, ccol, vcol in (("left", F_LEFT, F_LVAL), ("right", F_RIGHT, F_RVAL)):
                 data = t.cellWidget(r, ccol).currentData()
@@ -324,6 +347,9 @@ class TrackEditor(QDialog):
                     errors.append(_("{row}: a fixed value needs at least one curve in the track to be placed").format(
                         row=row))
                     ok = False
+            if spec.colormap and not (spec.left_curve or spec.right_curve):
+                errors.append(_("{row}: coloring by value needs a curve as one of the bounds").format(row=row))
+                ok = False
             if spec.left_curve and spec.left_curve == spec.right_curve:
                 errors.append(_("{row}: both bounds are the same curve").format(row=row))
                 ok = False

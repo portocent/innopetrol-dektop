@@ -284,6 +284,52 @@ temperatura que venga en el archivo.
 - Desde la pestaña de zonas, las dos herramientas trabajan sólo con los datos de la zona seleccionada y
   escriben el resultado en su fila.
 
+### 3.5 Presentación profesional
+
+**Escalas de respaldo (wrap-around).** En los registros impresos, cuando el GR supera el borde derecho de
+su escala (por ejemplo 150 API), la curva no se corta: se vuelve a dibujar desde el borde izquierdo, a
+trazos, como si la escala siguiera en 150–300. Se activa por curva con la columna *Respaldo* del editor
+de tracks, y el encabezado muestra la escala de respaldo. El desplazamiento se hace en píxeles (un ancho
+de track), así que en escala logarítmica funciona igual: 0,2–2000 ohm·m continúa en 2000–200 000.
+
+**Rellenos con color por valor.** Un relleno puede tomar, en cada profundidad, el color que corresponde al
+valor de su curva: amarillo en arena limpia y marrón en arcilla, con la paleta de rayos gamma. El color sale
+de la posición de la curva en su escala, así que respeta escalas invertidas y logarítmicas.
+
+*Cómo se dibuja rápido.* En vez de un rectángulo por muestra (podrían ser miles), se toma una muestra por
+fila de píxeles, y las filas consecutivas del mismo color se unen en un solo polígono escalonado. El costo
+depende de la altura en pantalla, no de la cantidad de datos.
+
+*Un problema que apareció en el PDF.* La primera versión dibujaba una línea por fila. En pantalla se veía
+bien, pero los visores de PDF suavizan los bordes de cada línea por separado y aparecían rayas finas.
+Agrupar las filas en polígonos eliminó los bordes internos.
+
+**Track de volúmenes (litología / fluidos).** Es el resultado típico de una interpretación: de izquierda a
+derecha, arcilla (VSH), matriz (VMAT), hidrocarburo (BVH) y agua (BVW), que suman 1. La petrofísica ahora
+calcula esas curvas (VMAT = 1 − VSH − φe, BVW = φe·Sw, BVH = φe·(1 − Sw)) y agrega el track. También se
+agrega desde el menú contextual. Si una curva se muestra en %, el track la convierte a fracción.
+
+*Un error evitado.* Al principio VMAT, BVW y BVH compartían una "familia" de curvas. Al aplicar una
+plantilla a un pozo sin BVH, el programa habría puesto BVW en su lugar, y el agua se habría dibujado como
+hidrocarburo. Ahora cada una tiene su propia familia, y una prueba lo verifica.
+
+**Encabezado de registro.** La primera página del PDF (y el PNG) empieza con un bloque con el nombre del
+pozo y los datos del archivo: compañía, campo, ubicación, UWI, compañía de servicio y fecha. Además
+incluye cómo se dibujó el registro: referencia de profundidad, intervalo, escala, elevación, survey,
+archivo y fecha de impresión. Las páginas siguientes llevan sólo la línea de título. Se puede desactivar
+en el diálogo de exportación.
+
+**Picar topes en la correlación.** Se escribe o elige el nombre del tope, se activa *Picar topes* y se hace
+clic en cada pozo:
+- un segundo clic en el mismo pozo mueve el tope;
+- el tope toma el mismo color que ya tiene en los otros pozos, así las líneas de correlación se leen bien;
+- el clic derecho permite poner el tope, crear uno nuevo o quitar el que está cerca;
+- Ctrl+Z deshace el último cambio hecho desde esa ventana.
+
+La profundidad del clic se convierte a MD antes de guardarla, así que funciona igual con la correlación en
+TVD/TVDSS o aplanada en otro tope. Los topes se guardan en el pozo original (con su historial de
+deshacer), y su ventana se actualiza al instante.
+
 ## 4. Arquitectura
 
 ```

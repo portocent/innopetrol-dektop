@@ -11,11 +11,15 @@ from dataclasses import dataclass
 import numpy as np
 import shiboken6
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QBrush, QColor, QFont, QFontMetricsF, QPainter, QPainterPath, QPen, QPolygonF, QTransform
+from PySide6.QtGui import (QBrush, QColor, QFont, QFontMetricsF, QLinearGradient, QPainter, QPainterPath, QPen,
+                           QPolygonF, QTransform)
 
 from innopetrol.i18n import _, pgettext
+from innopetrol.model import units
 from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
+from innopetrol.model.mnemonics import VOLUME_LABELS
 from innopetrol.model.scales import depth_ticks, log_grid_positions, map_values
+from innopetrol.render.colormaps import LEVELS, palette
 
 PEN_STYLES = {
     "solid": Qt.SolidLine, "dash": Qt.DashLine, "dashdot": Qt.DashDotLine,
@@ -109,7 +113,9 @@ def draw_track_body(p: QPainter, rect: QRectF, track: TrackSpec, well, tf: Depth
     _draw_vertical_grid(p, track, w, h, opts)
     _draw_depth_lines(p, tf, w, h, opts)
     sl = visible_slice(well.depth, tf, h)
-    if sl.stop > sl.start:
+    if sl.stop > sl.start and track.is_volumes:
+        _draw_volumes(p, track, well, sl, tf.y(well.depth[sl]), w, opts)
+    elif sl.stop > sl.start:
         y = tf.y(well.depth[sl])
         for fill in track.fills:
             if fill.visible:
@@ -218,11 +224,32 @@ def _envelope(x: np.ndarray, y: np.ndarray, dpr: float):
     return lo, hi, (rows[starts] + 0.5) / dpr
 
 
+WRAP_LEVELS = (-2, -1, 1, 2)  # how many scale widths a backup curve can be shifted
+
+
+def wrap_style(style: str) -> str:
+    """Line style of the backup (wrapped) curve: dashed, or dotted if the curve itself is dashed."""
+    return "dash" if style == "solid" else "dot"
+
+
 def _draw_curve(p, style: CurveStyle, values, y, w, h, opts):
     left, right, log = scale_of(style)
-    x = map_values(values, left, right, log, w)
-    valid = np.isfinite(x)
-    np.clip(x, 0, w, out=x)
+    raw = map_values(values, left, right, log, w)
+    valid = np.isfinite(raw)
+    x = np.clip(raw, 0, w)
+    _stroke(p, style, style.style, x, valid, y, opts)
+    if style.wrap and w > 0:
+        # Values beyond an edge are drawn again shifted by whole scale widths, as on printed logs
+        # (GR 150–300 over the same grid). Works on log scales too: the shift is in pixels, i.e. decades.
+        with np.errstate(invalid="ignore"):
+            k = np.floor(np.where(valid, raw, 0) / w)
+        for j in WRAP_LEVELS:
+            sel = valid & (k == j)
+            if sel.any():
+                _stroke(p, style, wrap_style(style.style), np.clip(raw - j * w, 0, w), sel, y, opts)
+
+
+def _stroke(p, style: CurveStyle, line_style: str, x, valid, y, opts):
     color = QColor(style.color)
     width = style.width * opts.k
     r = 1.5 * opts.k + width / 2
@@ -244,7 +271,7 @@ def _draw_curve(p, style: CurveStyle, values, y, w, h, opts):
             # semi-transparent to tell them apart.
             lo, hi, yc = _envelope(xs, ys, opts.dpr)
             span_color = QColor(color)
-            if style.style != "solid":
+            if line_style != "solid":
                 span_color.setAlphaF(0.45)
             pen = QPen(span_color, 1, Qt.SolidLine, Qt.FlatCap)
             pen.setCosmetic(True)
@@ -252,7 +279,7 @@ def _draw_curve(p, style: CurveStyle, values, y, w, h, opts):
             p.setPen(pen)
             _hlines(p, yc, lo - width / 2, hi + width / 2)
         else:
-            pen = QPen(color, width, PEN_STYLES.get(style.style, Qt.SolidLine), Qt.FlatCap,
+            pen = QPen(color, width, PEN_STYLES.get(line_style, Qt.SolidLine), Qt.FlatCap,
                        Qt.RoundJoin if width >= 2 else Qt.MiterJoin)
             p.setRenderHint(QPainter.Antialiasing, True)
             p.setPen(pen)
@@ -285,8 +312,12 @@ def _draw_fill(p, track, fill: FillSpec, well, sl, y, w, opts):
     xr = _fill_bound(track, fill, "right", well, sl, w, n)
     if xl is None or xr is None:
         return
+    color_x = xl if fill.left_curve else xr if fill.right_curve else None
     xl = np.clip(xl, 0, w)
     xr = np.clip(xr, 0, w)
+    if fill.colormap and color_x is not None and w > 0:
+        _draw_colormap_fill(p, fill.colormap, xl, xr, np.clip(color_x / w, 0, 1), y, opts)
+        return
     valid = np.isfinite(xl) & np.isfinite(xr)
     xr = np.where(valid, np.maximum(xl, xr), xr)  # only where the left bound is to the left
     path = QPainterPath()
@@ -301,6 +332,91 @@ def _draw_fill(p, track, fill: FillSpec, well, sl, y, w, opts):
     if opts.k != 1:
         brush.setTransform(QTransform.fromScale(opts.k, opts.k))
     p.fillPath(path, brush)
+
+
+def _rows(y: np.ndarray, opts: RenderOptions):
+    """Centers of the physical pixel rows covered by the samples, and the nearest sample of each."""
+    dpr = opts.dpr
+    r0, r1 = int(np.floor(y[0] * dpr)), int(np.ceil(y[-1] * dpr))
+    if r1 <= r0 or y.size < 2:
+        return None, None
+    ys = (np.arange(r0, r1) + 0.5) / dpr
+    idx = np.rint(np.interp(ys, y, np.arange(y.size))).astype(np.int64)
+    return ys, idx
+
+
+def _draw_colormap_fill(p, name: str, xl, xr, t, y, opts):
+    """Fill whose color follows the value, sampled once per physical pixel row.
+
+    Consecutive rows of the same color become one stepped polygon, so the cost is bounded by the
+    height on screen (not the number of samples) and PDF viewers show no seams between rows.
+    """
+    ys, idx = _rows(y, opts)
+    if ys is None:
+        return
+    a, b, tt = xl[idx], xr[idx], t[idx]
+    ok = np.isfinite(a) & np.isfinite(b) & np.isfinite(tt) & (b > a)
+    if not ok.any():
+        return
+    level = np.where(ok, np.rint(np.nan_to_num(tt) * (LEVELS - 1)), -1).astype(np.int64)
+    colors = palette(name)
+    half = 0.5 / opts.dpr
+    starts = np.flatnonzero(np.concatenate(([True], level[1:] != level[:-1])))
+    ends = np.concatenate((starts[1:], [level.size]))
+    p.save()
+    p.setPen(Qt.NoPen)
+    p.setRenderHint(QPainter.Antialiasing, False)
+    for i0, i1 in zip(starts, ends):
+        if level[i0] < 0:
+            continue
+        top, bottom = ys[i0:i1] - half, ys[i0:i1] + half
+        # Left edge downwards and right edge upwards, two vertices per row (a staircase).
+        lx = np.repeat(a[i0:i1], 2)
+        ly = np.column_stack((top, bottom)).ravel()
+        rx = np.repeat(b[i0:i1], 2)[::-1]
+        ry = ly[::-1]
+        p.setBrush(colors[level[i0]])
+        p.drawPolygon(polygon_from_arrays(np.concatenate((lx, rx)), np.concatenate((ly, ry))))
+    p.restore()
+
+
+def volume_fractions(track: TrackSpec, well, sl) -> list[tuple[CurveStyle, np.ndarray]]:
+    """Visible components of a volumes track as fractions (curves shown in % are converted)."""
+    out = []
+    for style in track.curves:
+        if not style.visible or style.mnemonic not in well.curves:
+            continue
+        values = well.curves[style.mnemonic].values[sl]
+        if units.normalize(style.unit) == "%":
+            values = values / 100.0
+        out.append((style, values))
+    return out
+
+
+def _draw_volumes(p, track: TrackSpec, well, sl, y, w, opts):
+    """Stacked volumes from the left: each component starts where the previous one ends (0–1)."""
+    parts = volume_fractions(track, well, sl)
+    if not parts:
+        return
+    # Drawn wherever the first component (shale) is known; a missing later component counts as 0
+    # (e.g. no Sw where the porosity is zero).
+    valid = np.isfinite(parts[0][1])
+    start = np.zeros(y.size)
+    for style, values in parts:
+        end = np.minimum(start + np.clip(np.nan_to_num(values), 0, 1), 1.0)
+        path = QPainterPath()
+        for a, b in _runs(valid):
+            if b - a < 2:
+                continue
+            xs = np.concatenate((start[a:b], end[a:b][::-1])) * w
+            path.addPolygon(polygon_from_arrays(xs, np.concatenate((y[a:b], y[a:b][::-1]))))
+        p.fillPath(path, QColor(style.color))
+        start = end
+    # Light grid on top so values can be read through the colors.
+    pen = QPen(QColor(255, 255, 255, 110), 0.6 * opts.k)
+    p.setPen(pen)
+    for i in range(1, 10):
+        p.drawLine(QPointF(w * i / 10, y[0]), QPointF(w * i / 10, y[-1]))
 
 
 def draw_tops(p, tops, tf: DepthTransform, w, h, opts: RenderOptions, labels=True):
@@ -364,8 +480,17 @@ def header_height(track: TrackSpec, fm: QFontMetricsF, k: float = 1.0) -> float:
     if track.is_depth:
         return line * 3 + 8 * k
     n_curves = sum(1 for c in track.curves if c.visible)
+    if track.is_volumes:
+        return line * (2 + n_curves) + (8 + 2 * n_curves) * k
+    n_wraps = sum(1 for c in track.curves if c.visible and c.wrap)
     n_fills = sum(1 for f in track.fills if f.visible and f.label)
-    return line * (1 + 2 * n_curves + n_fills) + (8 + 2 * n_curves) * k
+    return line * (1 + 2 * n_curves + n_wraps + n_fills) + (8 + 2 * n_curves) * k
+
+
+def backup_scale(style: CurveStyle) -> tuple[float, float]:
+    """Scale of the first wrap to the right: 150–300 for a 0–150 GR, 2000–200000 for 0.2–2000 ohm·m."""
+    left, right, log = scale_of(style)
+    return (right, right * right / left) if log else (right, right + (right - left))
 
 
 def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: RenderOptions = RenderOptions(),
@@ -394,6 +519,29 @@ def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: R
         unit = _("feet (ft)") if well.depth_unit == "ft" else _("meters (m)")
         p.drawText(QRectF(0, y, w, line), Qt.AlignCenter, well.depth_mnemonic)
         p.drawText(QRectF(0, y + line, w, line), Qt.AlignCenter, unit)
+    elif track.is_volumes:
+        for style in track.curves:
+            if not style.visible:
+                continue
+            box = QRectF(pad, y + 2 * opts.k, line * 1.6, line - 4 * opts.k)
+            p.fillRect(box, QColor(style.color))
+            p.setPen(QPen(QColor("#95a5a6"), 0.8 * opts.k))
+            p.drawRect(box)
+            curve = well.curves.get(style.mnemonic)
+            label = VOLUME_LABELS.get(style.mnemonic)
+            if curve is None:
+                name = _("{curve} — not available").format(curve=style.mnemonic)
+            else:
+                name = f"{_(label)} ({style.mnemonic})" if label else style.mnemonic
+            p.setPen(BORDER if curve else QColor("#999999"))
+            text_x = box.right() + 4 * opts.k
+            p.drawText(QRectF(text_x, y, w - text_x - pad, line), Qt.AlignLeft | Qt.AlignVCenter,
+                       fm.elidedText(name, Qt.ElideRight, w - text_x - pad))
+            y += line + 2 * opts.k
+        p.setPen(BORDER)
+        p.drawText(QRectF(pad, y, w, line), Qt.AlignLeft | Qt.AlignVCenter, "0")
+        p.drawText(QRectF(0, y, w - pad, line), Qt.AlignRight | Qt.AlignVCenter, "1")
+        p.drawText(QRectF(0, y, w, line), Qt.AlignCenter, _("volume fraction"))
     else:
         for style in track.curves:
             if not style.visible:
@@ -418,13 +566,28 @@ def draw_track_header(p: QPainter, rect: QRectF, track: TrackSpec, well, opts: R
             if x1 > x0:
                 p.drawLine(QPointF(x0, y + line * 1.5), QPointF(x1, y + line * 1.5))
             y += 2 * line + 2 * opts.k
+            if style.wrap:
+                b_left, b_right = backup_scale(style)
+                p.setPen(color)
+                p.drawText(QRectF(pad, y - 2 * opts.k, w - 2 * pad, line), Qt.AlignCenter,
+                           fm.elidedText(_("backup {left} – {right}").format(left=fmt(b_left), right=fmt(b_right)),
+                                         Qt.ElideRight, w - 2 * pad))
+                y += line
         for fill in track.fills:
             if not (fill.visible and fill.label):
                 continue
             box = QRectF(pad, y + 1, w - 2 * pad, line - 2)
-            brush = QBrush(QColor(fill.color), BRUSH_STYLES.get(fill.pattern, Qt.SolidPattern))
-            if opts.k != 1:
-                brush.setTransform(QTransform.fromScale(opts.k, opts.k))
+            if fill.colormap:
+                gradient = QLinearGradient(box.left(), 0, box.right(), 0)
+                colors = palette(fill.colormap)
+                for i in range(0, LEVELS, 6):
+                    gradient.setColorAt(i / (LEVELS - 1), colors[i])
+                gradient.setColorAt(1.0, colors[-1])
+                brush = QBrush(gradient)
+            else:
+                brush = QBrush(QColor(fill.color), BRUSH_STYLES.get(fill.pattern, Qt.SolidPattern))
+                if opts.k != 1:
+                    brush.setTransform(QTransform.fromScale(opts.k, opts.k))
             p.fillRect(box, brush)
             p.setPen(QPen(QColor("#95a5a6"), 0.8 * opts.k))
             p.drawRect(box)

@@ -257,6 +257,14 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
         sw = f"where((PHIE > 0) & ({rt} > 0), clip({core}, 0, 1), nan)"
         out.append(FormulaSpec("SW", "v/v", _("Sw - {model}").format(model=_(SW_MODELS[model])), sw))
 
+    # Volumes for the lithology / fluids track: shale + matrix + porosity = 1, porosity split into
+    # water (BVW) and hydrocarbon (BVH).
+    if has_phi and has_vsh:
+        out.append(FormulaSpec("VMAT", "v/v", _("Matrix volume"), "clip(1 - VSH - PHIE, 0, 1)"))
+    if any(f.mnemonic == "SW" for f in out):
+        out.append(FormulaSpec("BVW", "v/v", _("Bulk volume water"), "PHIE * SW"))
+        out.append(FormulaSpec("BVH", "v/v", _("Bulk volume hydrocarbon"), "PHIE * (1 - SW)"))
+
     if has_phi:
         cond = f"(PHIE >= {P('phi_cut')})"
         if has_vsh:

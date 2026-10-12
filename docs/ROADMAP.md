@@ -106,6 +106,10 @@ Items marked **[checked]** were verified in the code.
   parameters by zone, Simandoux and Indonesia, Rw at formation temperature (Arps, gradient on TVD or
   temperature curve), graphical picking of clean/shale GR (histogram) and Rw (Pickett plot).
   Still open from item A.5: Waxman-Smits, Rw from SP, permeability and cutoff sensitivity.
+- **Phase 4 (done):** backup (wrap-around) scales, fills colored by value (color maps), volumes track
+  (shale / matrix / hydrocarbon / water from VSH, VMAT, BVH, BVW), log heading on the first page of the
+  PDF/PNG, picking tops by clicking in the correlation window (moves, removes, undo). Still open from B:
+  core / interval / comment tracks, interval selection with the mouse, synchronized cursor across wells.
 
 ## Recommended order
 
@@ -114,5 +118,5 @@ Items marked **[checked]** were verified in the code.
 | 1 | Correlation unit bug · LICENSE · corpus of real-world LAS quirks in the tests **(done)** | Fixes a real error, makes sharing legal and gives the base to validate everything else |
 | 2 | DLIS · surveys + TVD/TVDSS + datum · display depth unit **(done)** | Without these, real project data cannot be opened or correlated correctly |
 | 3 | Curve units · undo/redo · zone parameters · Simandoux/Indonesia · temperature-corrected Rw · graphical parameter picking **(done)** | Interpretation becomes trustworthy and correctable |
-| 4 | Wrap-around · color-map fill · lithology track · log header · click-to-pick tops | Professional presentation quality |
+| 4 | Wrap-around · color-map fill · lithology track · log header · click-to-pick tops **(done)** | Professional presentation quality |
 | 5 | Signing/notarization and installers · editable aliases · autosave · base map · multi-well | Deployment and scale |

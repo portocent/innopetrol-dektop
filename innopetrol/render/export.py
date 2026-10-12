@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
+import datetime
 import math
 from pathlib import Path
 
-from PySide6.QtCore import QMarginsF, QRectF, QSizeF, Qt
-from PySide6.QtGui import QColor, QFont, QFontMetricsF, QImage, QPageLayout, QPageSize, QPainter, QPdfWriter
+from PySide6.QtCore import QMarginsF, QPointF, QRectF, QSizeF, Qt
+from PySide6.QtGui import QColor, QFont, QFontMetricsF, QImage, QPageLayout, QPageSize, QPainter, QPdfWriter, QPen
 
 from innopetrol import __version__
-from innopetrol.i18n import _
+from innopetrol.i18n import N_, _
 from innopetrol.model.layout import LogLayout
 from innopetrol.model.scales import px_per_unit
 from innopetrol.render.painter import BORDER, DepthTransform, RenderOptions
@@ -36,6 +37,91 @@ def _title_lines(well, scale_ratio: float, top: float, bottom: float) -> list[st
     return ["   ·   ".join(info), f"{scale}   ·   {interval}   ·   InnoPetrol {__version__}"]
 
 
+# Header items shown in the log heading, in this order (mnemonic, label translated when shown).
+HEADING_ITEMS = (("COMP", N_("Company")), ("FLD", N_("Field")), ("LOC", N_("Location")), ("CTRY", N_("Country")),
+                 ("STAT", N_("State / province")), ("PROV", N_("State / province")), ("CNTY", N_("County")),
+                 ("UWI", "UWI"), ("API", "API"), ("LIC", N_("Licence")), ("SRVC", N_("Service company")),
+                 ("DATE", N_("Log date")))
+
+
+def heading_rows(well, scale_ratio: float, top: float, bottom: float) -> list[tuple[str, str]]:
+    """(label, value) pairs of the log heading: well data from the file plus how the log is drawn."""
+    stored = getattr(well, "well", well)  # the Well behind a DepthView
+    rows: list[tuple[str, str]] = []
+    seen = set()
+    for mnem, label in HEADING_ITEMS:
+        value = well.header_value(mnem).strip()
+        if value and _(label) not in seen:
+            rows.append((_(label), value))
+            seen.add(_(label))
+    reference = getattr(well, "reference", "md").upper()
+    rows.append((_("Depth reference"), f"{reference} ({well.depth_unit})"))
+    rows.append((_("Interval"), f"{top:g} – {bottom:g} {well.depth_unit}"))
+    rows.append((_("Vertical scale"), f"1:{scale_ratio:g}"))
+    if stored.elevation is not None:
+        rows.append((_("Elevation of the depth reference"), _("{value} {unit} above sea level").format(
+            value=f"{stored.elevation:g}", unit=stored.depth_unit)))
+    survey = stored.survey
+    rows.append((_("Deviation survey"), _("none (vertical well assumed)") if survey is None else
+                 _("{count} stations, max. inclination {inc}°").format(count=survey.md.size,
+                                                                     inc=f"{survey.max_inclination:.1f}")))
+    if stored.path is not None:
+        rows.append((_("File"), Path(stored.path).name + (f" [{stored.source}]" if stored.source else "")))
+    rows.append((_("Printed"), f"{datetime.date.today().isoformat()} · InnoPetrol {__version__}"))
+    return rows
+
+
+def heading_height(p: QPainter, rows: list[tuple[str, str]]) -> float:
+    fm = QFontMetricsF(p.font())
+    return fm.height() * 2.2 + math.ceil(len(rows) / 2) * fm.height() * 1.45 + fm.height() * 0.8
+
+
+def draw_heading(p: QPainter, rect: QRectF, well, rows: list[tuple[str, str]]) -> None:
+    """Log heading: a framed block with the well name and a two-column grid of label/value cells."""
+    base = QFont(p.font())
+    bold = QFont(base)
+    bold.setBold(True)
+    big = QFont(bold)
+    big.setPointSizeF(base.pointSizeF() * 1.6)
+    line = QFontMetricsF(base).height()
+    p.save()
+    box = QRectF(rect.left(), rect.top(), rect.width(), rect.height() - line * 0.6)
+    band = QRectF(box.left(), box.top(), box.width(), line * 2.2)
+    p.fillRect(band, QColor("#eaf2f8"))
+    p.setPen(BORDER)
+    p.setFont(big)
+    p.drawText(band.adjusted(line * 0.6, 0, -line * 0.6, 0), Qt.AlignLeft | Qt.AlignVCenter, well.name)
+
+    half = box.width() / 2
+    row_h = line * 1.45
+    n = math.ceil(len(rows) / 2)
+    label_w = max((QFontMetricsF(bold).horizontalAdvance(label) for label, _value in rows), default=0) + line
+    label_w = min(label_w, half * 0.45)
+    fm = QFontMetricsF(base)
+    for i, (label, value) in enumerate(rows):
+        col, r = divmod(i, n)
+        cell = QRectF(box.left() + col * half, band.bottom() + r * row_h, half, row_h)
+        p.setPen(QPen(QColor("#d5d8dc"), line / 14))
+        p.drawLine(cell.bottomLeft(), cell.bottomRight())
+        p.setPen(QColor("#566573"))
+        p.setFont(bold)
+        p.drawText(QRectF(cell.left() + line * 0.6, cell.top(), label_w, row_h), Qt.AlignLeft | Qt.AlignVCenter,
+                   label)
+        p.setPen(BORDER)
+        p.setFont(base)
+        vx = cell.left() + line * 0.6 + label_w
+        room = cell.right() - vx - line * 0.4
+        p.drawText(QRectF(vx, cell.top(), room, row_h), Qt.AlignLeft | Qt.AlignVCenter,
+                   fm.elidedText(value, Qt.ElideRight, room))
+    p.setPen(QPen(QColor("#d5d8dc"), line / 14))
+    p.drawLine(QPointF(box.left() + half, band.bottom()), QPointF(box.left() + half, box.bottom()))
+    p.setPen(QPen(BORDER, line / 10))
+    p.setBrush(Qt.NoBrush)
+    p.drawLine(band.bottomLeft(), band.bottomRight())
+    p.drawRect(box)
+    p.restore()
+
+
 def _draw_title(p: QPainter, rect: QRectF, lines: list[str]) -> None:
     bold = QFont(p.font())
     bold.setBold(True)
@@ -58,7 +144,8 @@ def _title_height(p: QPainter) -> float:
 
 
 def export_png(path: str | Path, well, layout: LogLayout, scale_ratio: float, top: float, bottom: float,
-               dpi: int = 200) -> Path:
+               dpi: int = 200, heading: bool = True) -> Path:
+    """PNG of the interval at scale. With `heading`, the log heading (well data) replaces the title lines."""
     k = dpi / 96
     ppu = px_per_unit(scale_ratio, dpi, well.depth_unit)
     body_h = (bottom - top) * ppu
@@ -67,8 +154,9 @@ def export_png(path: str | Path, well, layout: LogLayout, scale_ratio: float, to
 
     probe = QImage(1, 1, QImage.Format_ARGB32)
     _set_dpi(probe, dpi)
+    rows = heading_rows(well, scale_ratio, top, bottom)
     with _painter(probe) as p:
-        title_h = _title_height(p)
+        title_h = heading_height(p, rows) if heading else _title_height(p)
         header_h = headers_height(p, layout, k)
     height = int(title_h + header_h + body_h + 2 * margin)
     if height > MAX_IMAGE_PX:
@@ -79,7 +167,11 @@ def export_png(path: str | Path, well, layout: LogLayout, scale_ratio: float, to
     _set_dpi(img, dpi)
     img.fill(Qt.white)
     with _painter(img) as p:
-        _draw_title(p, QRectF(margin, margin, width - 2 * margin, title_h), _title_lines(well, scale_ratio, top, bottom))
+        title_rect = QRectF(margin, margin, width - 2 * margin, title_h)
+        if heading:
+            draw_heading(p, title_rect, well, rows)
+        else:
+            _draw_title(p, title_rect, _title_lines(well, scale_ratio, top, bottom))
         tf = DepthTransform(top, ppu)
         paint_log(p, layout, well, tf, margin, margin + title_h, header_h, body_h, RenderOptions(k=k))
     if not img.save(str(path)):
@@ -88,8 +180,11 @@ def export_png(path: str | Path, well, layout: LogLayout, scale_ratio: float, to
 
 
 def export_pdf(path: str | Path, well, layout: LogLayout, scale_ratio: float, top: float, bottom: float,
-               dpi: int = 300, page: str = "A4") -> int:
-    """Paginated PDF. The page width fits the tracks; the header is repeated on every page."""
+               dpi: int = 300, page: str = "A4", heading: bool = True) -> int:
+    """Paginated PDF. The page width fits the tracks; the track headers are repeated on every page.
+
+    With `heading`, the first page starts with the log heading (well data); the others with a title line.
+    """
     k = dpi / 96
     ppu = px_per_unit(scale_ratio, dpi, well.depth_unit)
     margin_mm = 10
@@ -111,21 +206,35 @@ def export_pdf(path: str | Path, well, layout: LogLayout, scale_ratio: float, to
         p.setFont(QFont(p.font().family(), 8))
         area = writer.pageLayout().paintRectPixels(dpi)
         title_h = _title_height(p)
+        rows = heading_rows(well, scale_ratio, top, bottom)
+        first_h = heading_height(p, rows) if heading else title_h
         header_h = headers_height(p, layout, k)
         body_h = area.height() - title_h - header_h
-        if body_h <= 50:
+        first_body_h = area.height() - first_h - header_h
+        if min(body_h, first_body_h) <= 50:
             raise ExportError(_("too many curves for the page height"))
-        depth_per_page = body_h / ppu
-        n_pages = max(1, math.ceil((bottom - top) / depth_per_page - 1e-9))
+        # Depth interval of each page: the first one is shorter when it carries the heading.
+        starts = [top]
+        while True:
+            span = (first_body_h if len(starts) == 1 else body_h) / ppu
+            if starts[-1] + span >= bottom - 1e-9:
+                break
+            starts.append(starts[-1] + span)
+        n_pages = len(starts)
         lines = _title_lines(well, scale_ratio, top, bottom)
-        for i in range(n_pages):
+        for i, d0 in enumerate(starts):
             if i:
                 writer.newPage()
-            d0 = top + i * depth_per_page
-            d1 = min(bottom, d0 + depth_per_page)
+            d1 = starts[i + 1] if i + 1 < n_pages else bottom
             h = (d1 - d0) * ppu
-            _draw_title(p, QRectF(0, 0, area.width(), title_h), [lines[0], lines[1] + "   ·   " + _("Page {page}/{pages}").format(page=i + 1, pages=n_pages)])
-            paint_log(p, layout, well, DepthTransform(d0, ppu), 0, title_h, header_h, h, RenderOptions(k=k))
+            page_text = _("Page {page}/{pages}").format(page=i + 1, pages=n_pages)
+            if i == 0 and heading:
+                draw_heading(p, QRectF(0, 0, area.width(), first_h), well, rows)
+                y0 = first_h
+            else:
+                _draw_title(p, QRectF(0, 0, area.width(), title_h), [lines[0], lines[1] + "   ·   " + page_text])
+                y0 = title_h
+            paint_log(p, layout, well, DepthTransform(d0, ppu), 0, y0, header_h, h, RenderOptions(k=k))
             pages += 1
     return pages
 

@@ -16,8 +16,8 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, 
 from innopetrol.i18n import _
 from innopetrol.model import petro, units
 from innopetrol.model.calculator import CalculatorError, FUNCTIONS, curve_ref, evaluate
-from innopetrol.model.layout import CurveStyle, FillSpec, TrackSpec
-from innopetrol.model.mnemonics import find_curve, make_curve_style
+from innopetrol.model.layout import CurveStyle, FillSpec, LogLayout, TrackSpec
+from innopetrol.model.mnemonics import build_volumes_track, find_curve, make_curve_style
 from innopetrol.model.tops import Zone, zones_from_tops
 from innopetrol.model.well import Curve
 from innopetrol.resources import app_icon
@@ -458,13 +458,17 @@ class PetroDialog(QDialog):
             for m in flags:
                 flag_track.fills.append(FillSpec(left_value=0, right_curve=m, color=colors[m],
                                                  label=_("Reservoir") if m == "RES_FLAG" else _("Pay")))
+        volumes = build_volumes_track(w)
+        if volumes is not None:
+            self.doc.adopt_layout(LogLayout([volumes]))  # in the units the curves are displayed in
         tracks = self.doc.layout.tracks
 
         # Tracks are found by the curves they contain, never by title: titles depend on the
         # language that was active when the layout was created.
-        def find(mnemonics=(), families=()):
+        def find(mnemonics=(), families=(), kind="curves"):
             for i, t in enumerate(tracks):
-                if any(c.mnemonic in mnemonics or (c.family and c.family in families) for c in t.curves):
+                if t.kind == kind and any(c.mnemonic in mnemonics or (c.family and c.family in families)
+                                          for c in t.curves):
                     return i
             return None
 
@@ -474,10 +478,11 @@ class PetroDialog(QDialog):
             anchor = find(families=("deep_res",))
         if anchor is None:
             anchor = len(tracks) - 1
-        for new, owned in ((track, ("VSH", "PHIE", "SW")), (flag_track, ("RES_FLAG", "PAY_FLAG"))):
+        for new, owned in ((track, ("VSH", "PHIE", "SW")), (flag_track, ("RES_FLAG", "PAY_FLAG")),
+                           (volumes, ("VMAT",))):
             if new is None:
                 continue
-            idx = find(mnemonics=owned)
+            idx = find(mnemonics=owned, kind=new.kind)
             if idx is None:
                 anchor += 1
                 tracks.insert(anchor, new)

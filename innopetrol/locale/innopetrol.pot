@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InnoPetrol VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-12 06:41-0500\n"
+"POT-Creation-Date: 2026-10-12 07:01-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -95,6 +95,9 @@ msgstr ""
 msgid "Add track"
 msgstr ""
 
+msgid "Add volumes track (lithology / fluids)"
+msgstr ""
+
 msgid "Add/update a “Petrophysical results” track"
 msgstr ""
 
@@ -140,6 +143,9 @@ msgstr ""
 msgid "Avg φ"
 msgstr ""
 
+msgid "Backup"
+msgstr ""
+
 #, python-brace-format
 msgid "Base ({unit})"
 msgstr ""
@@ -148,6 +154,12 @@ msgid "Bins:"
 msgstr ""
 
 msgid "Bit size"
+msgstr ""
+
+msgid "Bulk volume hydrocarbon"
+msgstr ""
+
+msgid "Bulk volume water"
 msgstr ""
 
 #, python-brace-format
@@ -179,6 +191,9 @@ msgstr ""
 msgid "Choose color"
 msgstr ""
 
+msgid "Clay"
+msgstr ""
+
 msgid "Clean"
 msgstr ""
 
@@ -191,6 +206,9 @@ msgstr ""
 msgid "Clear the selected zone"
 msgstr ""
 
+msgid "Click on a well to place the top there; clicking again moves it. Right-click: more options."
+msgstr ""
+
 #, python-brace-format
 msgid "Close the well “{name}”?"
 msgstr ""
@@ -199,6 +217,9 @@ msgid "Close well"
 msgstr ""
 
 msgid "Color"
+msgstr ""
+
+msgid "Color by value"
 msgstr ""
 
 msgid "Color:"
@@ -253,6 +274,12 @@ msgstr ""
 
 #, python-brace-format
 msgid "Could not save: {error}"
+msgstr ""
+
+msgid "Country"
+msgstr ""
+
+msgid "County"
 msgstr ""
 
 msgid "Create curve"
@@ -413,6 +440,9 @@ msgstr ""
 msgid "Description:"
 msgstr ""
 
+msgid "Deviation survey"
+msgstr ""
+
 msgid "Deviation survey and elevation…"
 msgstr ""
 
@@ -473,6 +503,9 @@ msgstr ""
 msgid "Effective porosity"
 msgstr ""
 
+msgid "Elevation of the depth reference"
+msgstr ""
+
 msgid "Elevation:"
 msgstr ""
 
@@ -521,6 +554,9 @@ msgid "Feet"
 msgstr ""
 
 msgid "Field"
+msgstr ""
+
+msgid "File"
 msgstr ""
 
 msgid "Fills / shading"
@@ -594,6 +630,9 @@ msgstr ""
 msgid "Gamma ray"
 msgstr ""
 
+msgid "Gamma ray (yellow → brown)"
+msgstr ""
+
 msgid "Geothermal gradient"
 msgstr ""
 
@@ -601,8 +640,14 @@ msgstr ""
 msgid "Gradient ({unit}/100 {depth_unit} TVD):"
 msgstr ""
 
+msgid "Grayscale"
+msgstr ""
+
 #, python-brace-format
 msgid "Gross ({unit})"
+msgstr ""
+
+msgid "Hydrocarbon"
 msgstr ""
 
 msgid "Image saved."
@@ -636,6 +681,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "InnoPetrol — Well Viewer {version}"
+msgstr ""
+
+msgid "Interval"
 msgstr ""
 
 #, python-brace-format
@@ -677,6 +725,9 @@ msgstr ""
 msgid "Left edge"
 msgstr ""
 
+msgid "Licence"
+msgstr ""
+
 msgid "Limestone"
 msgstr ""
 
@@ -702,6 +753,12 @@ msgstr ""
 msgid "Log"
 msgstr ""
 
+msgid "Log date"
+msgstr ""
+
+msgid "Log heading with the well data (company, field, elevation, survey…)"
+msgstr ""
+
 msgid "Logarithmic"
 msgstr ""
 
@@ -715,6 +772,12 @@ msgid "Logarithmic scale"
 msgstr ""
 
 msgid "Main"
+msgstr ""
+
+msgid "Matrix"
+msgstr ""
+
+msgid "Matrix volume"
 msgstr ""
 
 #, python-brace-format
@@ -757,6 +820,10 @@ msgstr ""
 msgid "Move right"
 msgstr ""
 
+#, python-brace-format
+msgid "Move top {name}"
+msgstr ""
+
 msgid "Move track"
 msgstr ""
 
@@ -768,6 +835,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Name of the top at {depth}:"
+msgstr ""
+
+msgid "Name of the top:"
 msgstr ""
 
 msgid "Name:"
@@ -812,6 +882,12 @@ msgid "Neutron-density crossplot…"
 msgstr ""
 
 msgid "New top"
+msgstr ""
+
+msgid "New top here…"
+msgstr ""
+
+msgid "No (solid color)"
 msgstr ""
 
 msgid "No data in the interval"
@@ -951,13 +1027,23 @@ msgstr ""
 msgid "Pick on histogram…"
 msgstr ""
 
+msgid "Pick tops"
+msgstr ""
+
 msgid "Pickett (φ vs Rt)"
 msgstr ""
 
 msgid "Pickett plot…"
 msgstr ""
 
+#, python-brace-format
+msgid "Place “{name}” here"
+msgstr ""
+
 msgid "Porosity"
+msgstr ""
+
+msgid "Printed"
 msgstr ""
 
 #, python-brace-format
@@ -965,6 +1051,9 @@ msgid "Project saved to {path}"
 msgstr ""
 
 msgid "Quit"
+msgstr ""
+
+msgid "Rainbow"
 msgstr ""
 
 #, python-brace-format
@@ -997,6 +1086,14 @@ msgstr ""
 msgid "Remove the track “{title}” and its settings?"
 msgstr ""
 
+#, python-brace-format
+msgid "Remove top {name}"
+msgstr ""
+
+#, python-brace-format
+msgid "Remove top “{name}”"
+msgstr ""
+
 msgid "Remove track"
 msgstr ""
 
@@ -1017,6 +1114,9 @@ msgid "Reset default template (Triple Combo)"
 msgstr ""
 
 msgid "Resistivity"
+msgstr ""
+
+msgid "Resistivity (blue → red)"
 msgstr ""
 
 msgid "Resistivity Rt:"
@@ -1119,6 +1219,9 @@ msgstr ""
 msgid "Separation (shale)"
 msgstr ""
 
+msgid "Service company"
+msgstr ""
+
 msgid "Shale"
 msgstr ""
 
@@ -1162,6 +1265,9 @@ msgid "Sonic / PEF"
 msgstr ""
 
 msgid "Spontaneous potential"
+msgstr ""
+
+msgid "State / province"
 msgstr ""
 
 msgid "Statistics and histogram…"
@@ -1217,6 +1323,12 @@ msgstr ""
 msgid "The Pickett plot needs the resistivity and density curves."
 msgstr ""
 
+msgid "The fill takes the color of its curve's value at each depth, along the curve's scale."
+msgstr ""
+
+msgid "The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first."
+msgstr ""
+
 msgid "Tile"
 msgstr ""
 
@@ -1236,6 +1348,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Top {number}"
+msgstr ""
+
+msgid "Top:"
 msgstr ""
 
 msgid "Tops"
@@ -1315,6 +1430,9 @@ msgstr ""
 msgid "Values are used in the file's units, shown in brackets."
 msgstr ""
 
+msgid "Values beyond the scale are drawn again, dashed, shifted by one scale width (e.g. GR 150–300)."
+msgstr ""
+
 msgid "Vertical scale"
 msgstr ""
 
@@ -1328,11 +1446,20 @@ msgstr ""
 msgid "Visible"
 msgstr ""
 
+msgid "Volumes"
+msgstr ""
+
+msgid "Volumes track"
+msgstr ""
+
 #, python-brace-format
 msgid "Vsh - {method}"
 msgstr ""
 
 msgid "Vsh and porosity"
+msgstr ""
+
+msgid "Water"
 msgstr ""
 
 msgid "Water saturation"
@@ -1453,6 +1580,10 @@ msgstr[1] ""
 msgid "automatic Triple Combo"
 msgstr ""
 
+#, python-brace-format
+msgid "backup {left} – {right}"
+msgstr ""
+
 msgid "comparison not allowed"
 msgstr ""
 
@@ -1517,10 +1648,16 @@ msgstr ""
 msgid "meters (m)"
 msgstr ""
 
+msgid "name of the top"
+msgstr ""
+
 msgid "no data in the interval"
 msgstr ""
 
 msgid "no numeric survey stations were found"
+msgstr ""
+
+msgid "none (vertical well assumed)"
 msgstr ""
 
 msgid "number"
@@ -1589,11 +1726,17 @@ msgstr ""
 msgid "true vertical depth subsea (TVDSS)"
 msgstr ""
 
+msgid "type the name of the top first"
+msgstr ""
+
 #, python-brace-format
 msgid "unknown curve: {name}"
 msgstr ""
 
 msgid "usage: curve(\"NAME\")"
+msgstr ""
+
+msgid "volume fraction"
 msgstr ""
 
 msgid "whole well"
@@ -1621,6 +1764,10 @@ msgstr[1] ""
 
 #, python-brace-format
 msgid "{count} stations · maximum inclination {inc}° · TVD at total depth {tvd} {unit} (MD {md} {unit})"
+msgstr ""
+
+#, python-brace-format
+msgid "{count} stations, max. inclination {inc}°"
 msgstr ""
 
 #, python-brace-format
@@ -1662,6 +1809,10 @@ msgid "{row}: choose a curve"
 msgstr ""
 
 #, python-brace-format
+msgid "{row}: coloring by value needs a curve as one of the bounds"
+msgstr ""
+
+#, python-brace-format
 msgid "{row}: enter a number for the left bound"
 msgstr ""
 
@@ -1683,6 +1834,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "{track} add track · {tops} tops · {petro} petrophysics · {calc} calculator"
+msgstr ""
+
+#, python-brace-format
+msgid "{value} {unit} above sea level"
 msgstr ""
 
 #, python-brace-format

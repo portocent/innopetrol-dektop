@@ -14,6 +14,9 @@ Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python w
 - Recognizes about 125 mnemonics (17 curve families) from different service companies (GR/SGR/GRC, NPHI/TNPH, LLD/ILD/AT90…) and proposes scale, color and linear/log type.
 - True vertical scales (1:200, 1:500, 1:1000…) or fit to window.
 - Configurable tracks: curves, linear or logarithmic scale, color, width, style, fills between curves or against a fixed value with 10 patterns.
+- **Backup (wrap-around) scales**: values beyond the scale are drawn again, dashed, on the next scale width (GR 150–300).
+- **Fills colored by value** (gamma ray, resistivity, viridis, rainbow, grayscale color maps).
+- **Volumes track**: stacked shale / matrix / hydrocarbon / water from the petrophysics results.
 - Add, remove, move, rename and resize tracks (by dragging their border).
 - **Units on demand**: View ▸ Unit system (as in the file / oilfield / metric) or per curve from the well tree
   (g/cm³ ↔ kg/m³, µs/ft ↔ µs/m, fraction ↔ %, °F ↔ °C, psi ↔ kPa, in ↔ mm). Stored data is never changed and
@@ -39,11 +42,12 @@ Well log viewer (**LAS 2.0** files) for petroleum engineers, written in Python w
 - Statistics and histogram per curve and zone (P10/P50/P90).
 - Crossplots colored by a third curve: free, **neutron-density** with lithology lines and **Pickett** with Sw lines.
 - **Multi-well correlation** side by side, in depth or **flattened on a top**, with lines joining tops of the same name.
+  **Pick tops by clicking** on each well (same name and color across wells, right-click to add or remove, Ctrl+Z).
 
 **Files**
 - JSON templates (`.ipt.json`): they apply to other wells even when those use different mnemonics. Configurable default template.
 - Projects (`.ipproj`): wells, layouts, tops, parameters and computed curves (stored as formulas).
-- Export the log to **paginated PDF** or **PNG** at scale, **LAS** (including computed curves) and **CSV**.
+- Export the log to **paginated PDF** or **PNG** at scale, with a **log heading** (company, field, service company, depth reference, elevation, survey), **LAS** (including computed curves) and **CSV**.
 
 | Correlation flattened on a top | Neutron-density crossplot |
 |---|---|

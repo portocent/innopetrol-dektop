@@ -32,7 +32,8 @@ class Family:
 
 # Unit in which each family's default scale is written.
 _FAMILY_UNITS = {"caliper": "in", "bit_size": "in", "density": "g/cm3", "density_corr": "g/cm3", "neutron": "v/v",
-                 "sonic": "us/ft", "porosity_density": "v/v", "effective_porosity": "v/v", "vsh": "v/v", "sw": "v/v"}
+                 "sonic": "us/ft", "porosity_density": "v/v", "effective_porosity": "v/v", "vsh": "v/v", "sw": "v/v",
+                 "matrix_volume": "v/v", "bvw": "v/v", "bvh": "v/v"}
 
 
 FAMILIES: dict[str, Family] = {f.key: f for f in [
@@ -69,6 +70,10 @@ FAMILIES: dict[str, Family] = {f.key: f for f in [
            style="dash"),
     Family("permeability", N_("Permeability"), ("PERM", "K", "PERMCORE", "KCORE", "KINT", "KLOG"),
            0.01, 10000, log=True, color="#117864"),
+    # Separate families: a template must never take water volume for hydrocarbon volume.
+    Family("matrix_volume", N_("Matrix volume"), ("VMAT", "VMATRIX"), 0, 1, color="#b7950b"),
+    Family("bvw", N_("Bulk volume water"), ("BVW", "BVWE", "BVWT"), 0.5, 0, color="#2471a3"),
+    Family("bvh", N_("Bulk volume hydrocarbon"), ("BVH", "BVHC"), 0.5, 0, color="#1e8449"),
     Family("temperature", N_("Temperature"), ("TEMP", "BHT", "MTEM", "MTEMP", "TEMPC", "TMP", "HTEM", "TFORM"),
            color="#c0392b"),
 ]}
@@ -200,6 +205,11 @@ Titles and labels are created in the active interface language.
         track = TrackSpec(title=_(title), curves=curves, width=200 if len(curves) > 1 else 170)
         _add_standard_fills(track)
         tracks.append(track)
+        if fams[0] == "vsh":
+            volumes = build_volumes_track(well)
+            if volumes is not None:
+                tracks.append(volumes)
+                used.update(c.mnemonic for c in volumes.curves)
 
     others = [m for m, c in well.curves.items() if m not in used and c.has_data]
     for i in range(0, min(len(others), 8), 4):
@@ -209,6 +219,30 @@ Titles and labels are created in the active interface language.
     depth = TrackSpec(kind="depth", title=pgettext("track title", "Depth"), width=72)
     tracks.insert(1 if tracks else 0, depth)
     return LogLayout(tracks)
+
+
+# Components of the volumes track, left to right, with their usual colors.
+VOLUME_COMPONENTS = (("VSH", "#a1887f"), ("VMAT", "#f7dc6f"), ("BVH", "#27ae60"), ("BVW", "#5dade2"))
+# Names shown in the volumes track header.
+VOLUME_LABELS = {"VSH": N_("Shale"), "VCL": N_("Clay"), "VMAT": N_("Matrix"), "BVH": N_("Hydrocarbon"),
+                 "BVW": N_("Water"), "PHIE": N_("Porosity"), "PHIT": N_("Porosity")}
+
+
+def build_volumes_track(well) -> TrackSpec | None:
+    """Stacked shale / matrix / hydrocarbon / water track from the petrophysics results.
+
+    Without saturation the porosity is shown as one component. None if Vsh and porosity are missing.
+    """
+    names = [m for m, _color in VOLUME_COMPONENTS if m in well.curves]
+    if not {"VSH", "VMAT"} <= set(names):
+        return None
+    components = [(m, c) for m, c in VOLUME_COMPONENTS if m in names]
+    if "BVW" not in names and "PHIE" in well.curves:
+        components.append(("PHIE", "#aed6f1"))
+    curves = [CurveStyle(m, family=family_of(m), color=c, left=0, right=1,
+                         unit=units.normalize(well.curves[m].unit) or well.curves[m].unit)
+              for m, c in components]
+    return TrackSpec(kind="volumes", title=_("Volumes"), width=150, grid="none", curves=curves)
 
 
 def _add_standard_fills(track: TrackSpec) -> None:

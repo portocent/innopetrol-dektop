@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QPointF, Qt, QTimer
-from PySide6.QtGui import QColor, QPainter, QPen
-from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QListWidget,
-                               QListWidgetItem, QScrollArea, QScrollBar, QVBoxLayout, QWidget)
+import shiboken6
+from PySide6.QtCore import QEvent, QPointF, Qt, QTimer
+from PySide6.QtGui import QAction, QColor, QKeySequence, QPainter, QPen
+from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QInputDialog, QLabel, QListWidget,
+                               QListWidgetItem, QMenu, QPushButton, QScrollArea, QScrollBar, QVBoxLayout, QWidget)
 
 from innopetrol.i18n import _
 from innopetrol.model.scales import MM_PER_UNIT, SCALE_PRESETS
+from innopetrol.model.tops import PALETTE, Top
 from innopetrol.render.scene import total_width
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
@@ -18,6 +20,7 @@ from innopetrol.ui.log_canvas import LogCanvas
 
 DEPTH_DATUM = "__depth__"
 TITLE_H = 26
+TOP_GRAB_PX = 8  # how close to a top line a right-click must be to offer removing it
 
 
 class CorrelationSetup(QDialog):
@@ -125,6 +128,8 @@ class CorrelationWindow(QDialog):
         self.resize(1200, 760)
         self.datum = datum
         self._sync = False
+        self.sources = list(docs)  # the wells' own documents: picked tops are saved there (with undo)
+        self._picked: list[WellDocument] = []  # wells changed from this window, for its undo shortcut
         docs = [compact_doc(d, n_tracks, self, reference) for d in docs]
 
         root = QVBoxLayout(self)
@@ -142,7 +147,25 @@ class CorrelationWindow(QDialog):
         bar.addWidget(QLabel("   " + _("Datum: {datum}.   Wheel: scroll · {modifier}+wheel: zoom").format(
             datum=info, modifier="⌘" if sys.platform == "darwin" else "Ctrl")))
         bar.addStretch()
+        # Picking tops: choose (or type) a name, turn picking on and click on each well.
+        bar.addWidget(QLabel(_("Top:")))
+        self.top_name = QComboBox()
+        self.top_name.setEditable(True)
+        self.top_name.setMinimumWidth(160)
+        self.top_name.lineEdit().setPlaceholderText(_("name of the top"))
+        bar.addWidget(self.top_name)
+        self.pick = QPushButton(_("Pick tops"))
+        self.pick.setCheckable(True)
+        self.pick.setToolTip(_("Click on a well to place the top there; clicking again moves it. "
+                               "Right-click: more options."))
+        self.pick.toggled.connect(self._pick_toggled)
+        bar.addWidget(self.pick)
+        undo = QAction(self)
+        undo.setShortcut(QKeySequence.Undo)
+        undo.triggered.connect(self.undo_pick)
+        self.addAction(undo)
         root.addLayout(bar)
+        self._refresh_names()
 
         body = QHBoxLayout()
         self.area = QScrollArea()
@@ -171,9 +194,12 @@ class CorrelationWindow(QDialog):
         root.addLayout(body, 1)
 
         header = max(c.natural_header_h() for c in self.canvases)
-        for c in self.canvases:
+        for i, c in enumerate(self.canvases):
             c.min_header_h = header
             c.viewChanged.connect(lambda c=c: self._propagate(c))
+            c.installEventFilter(self)
+            c.contextRequested.connect(lambda _track, depth, pos, i=i: self._context_menu(i, depth, pos))
+            self.sources[i].topsChanged.connect(lambda i=i: self._tops_changed(i))
         self.vbar.valueChanged.connect(self._vbar_moved)
         self.scale.currentIndexChanged.connect(self._apply_scale)
 
@@ -256,3 +282,108 @@ class CorrelationWindow(QDialog):
         ref = self.canvases[0]
         ref.set_view(v / ref.ppu, ref.ppu)
         self._propagate(ref)
+
+    # ------------------------------------------------------------------ picking tops
+
+    def _known_names(self) -> list[str]:
+        return sorted({t.name for d in self.sources for t in d.well.tops}, key=str.lower)
+
+    def _refresh_names(self):
+        current = self.top_name.currentText()
+        self.top_name.blockSignals(True)
+        self.top_name.clear()
+        self.top_name.addItems(self._known_names())
+        self.top_name.setEditText(current)
+        self.top_name.blockSignals(False)
+
+    def _pick_toggled(self, on: bool):
+        for c in self.canvases:
+            c.setCursor(Qt.CrossCursor if on else Qt.ArrowCursor)
+        if on and not self.top_name.currentText().strip():
+            self.top_name.setFocus()
+
+    def eventFilter(self, obj, e):
+        if not shiboken6.isValid(self.pick):  # the window is being destroyed
+            return False
+        if (self.pick.isChecked() and e.type() == QEvent.MouseButtonPress and e.button() == Qt.LeftButton
+                and obj in self.canvases and e.position().y() > obj.header_h):
+            name = self.top_name.currentText().strip()
+            if not name:
+                self.top_name.setFocus()
+                self.top_name.lineEdit().setPlaceholderText(_("type the name of the top first"))
+                return True
+            self.place_top(self.canvases.index(obj), obj.depth_at(e.position().y()), name)
+            return True
+        return super().eventFilter(obj, e)
+
+    def place_top(self, index: int, depth: float, name: str) -> None:
+        """Places (or moves) the top `name` in a well at a depth of its column (display reference)."""
+        source, canvas = self.sources[index], self.canvases[index]
+        md = round(float(canvas.well.to_md(depth)), 2)
+        tops = list(source.well.tops)
+        existing = next((t for t in tops if t.name == name), None)
+        if existing is not None:
+            tops = [Top(t.name, md, t.color) if t is existing else t for t in tops]
+            text = _("Move top {name}").format(name=name)
+        else:
+            # The same name keeps the same color in every well, so the correlation lines read well.
+            color = next((t.color for d in self.sources for t in d.well.tops if t.name == name),
+                         PALETTE[len(self._known_names()) % len(PALETTE)])
+            tops.append(Top(name, md, color))
+            text = _("Add top {name}").format(name=name)
+        source.set_tops(tops, text)
+        self._picked.append(source)
+
+    def remove_top(self, index: int, name: str) -> None:
+        source = self.sources[index]
+        source.set_tops([t for t in source.well.tops if t.name != name], _("Remove top {name}").format(name=name))
+        self._picked.append(source)
+
+    def undo_pick(self):
+        """Undoes the last top change made from this window (each well keeps its own history)."""
+        while self._picked:
+            doc = self._picked.pop()
+            if doc.undo_stack.canUndo():
+                doc.undo_stack.undo()
+                return
+
+    def _near_top(self, index: int, depth: float) -> str | None:
+        canvas = self.canvases[index]
+        y = canvas.y_of(depth)
+        best = min(canvas.well.tops, key=lambda t: abs(canvas.y_of(t.depth) - y), default=None)
+        return best.name if best is not None and abs(canvas.y_of(best.depth) - y) <= TOP_GRAB_PX else None
+
+    def _context_menu(self, index: int, depth: float, global_pos):
+        if depth != depth:  # NaN: header area
+            return
+        menu = QMenu(self)
+        name = self.top_name.currentText().strip()
+        if name:
+            menu.addAction(_("Place “{name}” here").format(name=name)).triggered.connect(
+                lambda: self.place_top(index, depth, name))
+        menu.addAction(_("New top here…")).triggered.connect(lambda: self._new_top(index, depth))
+        near = self._near_top(index, depth)
+        if near:
+            menu.addSeparator()
+            menu.addAction(_("Remove top “{name}”").format(name=near)).triggered.connect(
+                lambda: self.remove_top(index, near))
+        menu.exec(global_pos)
+
+    def _new_top(self, index: int, depth: float):
+        name, ok = QInputDialog.getItem(self, _("New top"), _("Name of the top:"), self._known_names(), 0, True)
+        if ok and name.strip():
+            self.top_name.setEditText(name.strip())
+            self.place_top(index, depth, name.strip())
+
+    def _tops_changed(self, index: int):
+        """Tops edited here or in the well's window: names, flattening and connecting lines follow."""
+        self._refresh_names()
+        if self.datum != DEPTH_DATUM:
+            canvas = self.canvases[index]
+            shift = self._shift(canvas.doc)
+            if shift != canvas.depth_shift:
+                canvas.depth_shift = shift
+                canvas.invalidate()
+                self._propagate(self.canvases[0])
+        for conn in self.findChildren(TopConnector):
+            conn.update()

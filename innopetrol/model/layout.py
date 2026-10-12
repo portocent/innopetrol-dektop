@@ -31,6 +31,7 @@ class CurveStyle:
     log: bool = False
     visible: bool = True
     unit: str | None = None  # unit in which left/right are written (None = the curve's file unit)
+    wrap: bool = False  # values beyond the scale are drawn again shifted by one scale width (backup)
 
 
 @dataclass
@@ -50,11 +51,15 @@ class FillSpec:
     pattern: str = "solid"
     label: str = ""
     visible: bool = True
+    # Color by value: the fill takes, at each depth, the color of its curve's position on the scale
+    # (name from render.colormaps.COLORMAPS). None = the solid color/pattern above.
+    colormap: str | None = None
 
 
 @dataclass
 class TrackSpec:
-    kind: str = "curves"  # "curves" | "depth"
+    # "curves" | "depth" | "volumes" (the curves are fractions stacked left to right: Vsh, matrix…)
+    kind: str = "curves"
     title: str = ""
     width: int = 180
     grid: str = "auto"  # "auto" | "linear" | "log" | "none"
@@ -65,6 +70,10 @@ class TrackSpec:
     @property
     def is_depth(self) -> bool:
         return self.kind == "depth"
+
+    @property
+    def is_volumes(self) -> bool:
+        return self.kind == "volumes"
 
 
 @dataclass

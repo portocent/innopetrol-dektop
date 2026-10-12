@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
                                QMessageBox, QSpinBox)
 
 from innopetrol.i18n import _, ngettext
@@ -54,6 +54,9 @@ class ExportDialog(QDialog):
         form.addRow(_("To ({unit}):").format(unit=w.depth_unit), self.base)
         form.addRow(_("Paper (PDF):"), self.page)
         form.addRow(_("Resolution (PNG, dpi):"), self.dpi)
+        self.heading = QCheckBox(_("Log heading with the well data (company, field, elevation, survey…)"))
+        self.heading.setChecked(True)
+        form.addRow(self.heading)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText(_("Export…"))
         buttons.accepted.connect(self._export)
@@ -79,10 +82,12 @@ class ExportDialog(QDialog):
             return
         try:
             if kind == "pdf":
-                pages = export_pdf(path, self.doc.view, self.doc.layout, scale, top, base, page=self.page.currentData())
+                pages = export_pdf(path, self.doc.view, self.doc.layout, scale, top, base, page=self.page.currentData(),
+                                   heading=self.heading.isChecked())
                 msg = ngettext("PDF saved ({pages} page).", "PDF saved ({pages} pages).", pages).format(pages=pages)
             else:
-                export_png(path, self.doc.view, self.doc.layout, scale, top, base, dpi=self.dpi.value())
+                export_png(path, self.doc.view, self.doc.layout, scale, top, base, dpi=self.dpi.value(),
+                           heading=self.heading.isChecked())
                 msg = _("Image saved.")
         except (ExportError, OSError) as e:
             QMessageBox.warning(self, _("Export"), _("Could not export: {error}").format(error=e))

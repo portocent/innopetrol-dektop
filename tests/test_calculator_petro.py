@@ -44,7 +44,7 @@ def test_compute_matches_reference(testdata_well):
     p = petro.PetroParams(gr_curve="SGR", gr_clean=20, gr_shale=130, vsh_method="larionov_tertiary",
                           rhob_curve="RHOB", nphi_curve="TNPH", phi_method="nd_average", rt_curve="LLD")
     curves = {c.mnemonic: c for c in petro.compute(w, p)}
-    assert list(curves) == ["VSH", "PHID", "PHIT", "PHIE", "SW", "RES_FLAG", "PAY_FLAG"]
+    assert list(curves) == ["VSH", "PHID", "PHIT", "PHIE", "SW", "VMAT", "BVW", "BVH", "RES_FLAG", "PAY_FLAG"]
     igr = petro.gr_index(w.curves["SGR"].values, 20, 130)
     assert np.allclose(curves["VSH"].values, np.clip(petro.vsh_larionov_tertiary(igr), 0, 1), equal_nan=True)
     phit = np.clip((np.clip(petro.phi_density(w.curves["RHOB"].values), -0.15, 0.6) + w.curves["TNPH"].values) / 2, 0, 0.6)

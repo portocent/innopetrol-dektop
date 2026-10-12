@@ -9,7 +9,8 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QGridLayout, QInputDialog, QMenu, QMessageBox, QScrollBar, QWidget
 
 from innopetrol.i18n import _, pgettext
-from innopetrol.model.layout import TrackSpec
+from innopetrol.model.layout import LogLayout, TrackSpec
+from innopetrol.model.mnemonics import build_volumes_track
 from innopetrol.model.scales import SCALE_PRESETS
 from innopetrol.model.tops import PALETTE, Top
 from innopetrol.render.scene import total_width
@@ -103,11 +104,18 @@ class WellView(QWidget):
         index = (after + 1) if after is not None and after >= 0 else len(self.doc.layout.tracks)
         if kind == "depth":
             track = TrackSpec(kind="depth", title=pgettext("track title", "Depth"), width=72)
+        elif kind == "volumes":
+            track = build_volumes_track(self.doc.well)
+            if track is None:
+                QMessageBox.information(self, _("Volumes track"),
+                                        _("The volumes track needs VSH and VMAT: run Well ▸ Petrophysics first."))
+                return
+            self.doc.adopt_layout(LogLayout([track]))
         else:
             track = TrackSpec(title=_("Track {number}").format(number=index + 1))
         self.doc.insert_track(index, track)
         self.canvas.selected = index
-        if kind != "depth":
+        if kind == "curves":
             self.edit_track(index)
 
     def remove_track(self, index: int | None = None):
@@ -187,6 +195,8 @@ class WellView(QWidget):
             menu.addSeparator()
         menu.addAction(_("Add curve track")).triggered.connect(lambda: self.add_track("curves", index))
         menu.addAction(_("Add depth track")).triggered.connect(lambda: self.add_track("depth", index))
+        menu.addAction(_("Add volumes track (lithology / fluids)")).triggered.connect(
+            lambda: self.add_track("volumes", index))
         if not math.isnan(depth):
             menu.addSeparator()
             add_top = QAction(_("Add top at {depth}…").format(depth=f"{depth:.2f}"), menu)
