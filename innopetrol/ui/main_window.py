@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QMdiArea,
     QMessageBox,
     QToolBar,
+    QWidget,
 )
 
 from innopetrol import __version__, i18n
@@ -80,7 +81,7 @@ class MainWindow(QMainWindow):
         self.views: dict[WellDocument, WellView] = {}
         self.project_path: Path | None = None
         self.dirty = False
-        self._windows = []  # open non-modal windows (keeps them from being garbage collected)
+        self._windows: list[QWidget] = []  # open non-modal windows (keeps them from being garbage collected)
         # One undo history per well; the group follows the active well window.
         self.undo_group = QUndoGroup(self)
         self.recovery = Recovery(self.data_dir / "recovery")
@@ -545,13 +546,13 @@ class MainWindow(QMainWindow):
                 _("{well} has no deviation survey: it is drawn as a vertical well (TVD = MD).").format(well=doc.title),
                 6000,
             )
-        self._keeping_view(doc, lambda: doc.set_depth_display(reference=reference))
+        self._keeping_view(doc, lambda: doc.set_depth_reference(reference))
         self._refresh_depth_controls()
 
     def set_display_unit(self, unit: str | None):
         doc = self.active_doc()
         if doc:
-            self._keeping_view(doc, lambda: doc.set_depth_display(unit=unit))
+            self._keeping_view(doc, lambda: doc.set_display_unit(unit))
             self._refresh_depth_controls()
 
     def set_unit_system(self, system: str):
@@ -832,7 +833,7 @@ class MainWindow(QMainWindow):
         """At startup: offers to restore the work of a session that did not close properly."""
         if not self.recovery.pending():
             return
-        saved, project = self.recovery.info()
+        saved, _project = self.recovery.info()
         r = QMessageBox.question(
             self,
             _("Recover work"),
@@ -844,37 +845,44 @@ class MainWindow(QMainWindow):
             QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
         )
         if r == QMessageBox.Yes:
-            self.open_project(self.recovery.path, recovered_from=project)
+            self.restore_autosave()
         elif r == QMessageBox.No:
             self.recovery.discard()
 
-    def open_project(self, path, recovered_from: Path | bool | None = False):
-        """Opens a project. `recovered_from` (when restoring an autosave) is the project the autosave
-        belonged to: it becomes the current project, with its changes still unsaved."""
+    def open_project(self, path) -> None:
+        if self._load_project_file(path):
+            self.project_path = Path(path)
+            self.dirty = False
+            self._add_recent(path)
+            self._update_title()
+
+    def restore_autosave(self) -> None:
+        """Opens the autosaved work. It stays attached to the project it came from, still unsaved."""
+        _saved, project = self.recovery.info()
+        if self._load_project_file(self.recovery.path):
+            self.project_path = project
+            self.dirty = True
+            self._update_title()
+
+    def _load_project_file(self, path) -> bool:
+        """Replaces the open wells with those of a project file. False if nothing was opened."""
         if self.docs and not self._confirm_discard():
-            return
+            return False
         try:
             result = load_project(path)
         except ProjectError as e:
             QMessageBox.warning(self, _("Open project"), str(e))
-            return
+            return False
         self._close_all()
         for entry in result.entries:
             self.add_doc(
                 entry.well, entry.layout, entry.petro, entry.depth_reference, entry.display_unit, entry.curve_units
             )
-        if recovered_from is False:
-            self.project_path = Path(path)
-            self.dirty = False
-            self._add_recent(path)
-        else:
-            self.project_path = recovered_from
-            self.dirty = True  # recovered changes are not in any saved project yet
-        self._update_title()
         if result.errors:
             QMessageBox.warning(
                 self, _("Open project"), _("Some items could not be loaded:") + "\n\n" + "\n".join(result.errors)
             )
+        return True
 
     def save_project(self, ask: bool = False) -> bool:
         if not self.docs:

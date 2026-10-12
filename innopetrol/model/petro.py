@@ -271,7 +271,7 @@ def build_formulas(well, p: PetroParams) -> list[FormulaSpec]:
                 )
             )
             temperature = "TFORM"
-        elif p.temp_mode == "curve" and p.temp_curve in well.curves:
+        elif p.temp_mode == "curve" and p.temp_curve is not None and p.temp_curve in well.curves:
             temperature = input_ref(well, p.temp_curve, p.temp_unit)
         if temperature:
             k = _num(ARPS_K[p.temp_unit])

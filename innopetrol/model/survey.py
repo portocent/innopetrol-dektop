@@ -8,13 +8,13 @@ linearly.
 
 from __future__ import annotations
 
-import csv
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 
 from innopetrol.i18n import _
+from innopetrol.model.text_tables import find_column, is_number, parse_number, read_rows
 
 _MD_COLS = ("md", "measured depth", "depth", "dept", "prof", "profundidad", "md (m)", "md (ft)")
 _INC_COLS = ("inc", "incl", "inclination", "inclinacion", "inclinación", "dev", "devi", "deviation", "angle")
@@ -148,54 +148,28 @@ def load_survey_csv(path: str | Path) -> Survey:
     Headers are recognized in English and Spanish; without a header the first three numeric
     columns are taken as MD, inclination and azimuth.
     """
-    text = Path(path).read_text(encoding="utf-8-sig", errors="replace")
-    lines = [ln for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith("#")]
-    if not lines:
+    rows = read_rows(path, delimiters=",;\t ", skip_comments=True, drop_empty_cells=True)
+    if not rows:
         raise SurveyError(_("the file is empty"))
-    try:
-        dialect = csv.Sniffer().sniff("\n".join(lines[:20]), delimiters=",;\t ")
-    except csv.Error:
-        dialect = csv.excel
-    rows = [[c.strip() for c in r if c.strip()] for r in csv.reader(lines, dialect)]
-    head = [c.lower() for c in rows[0]]
-    if not _is_number(rows[0][0]):
-        md_i, inc_i, azi_i = (_find(head, _MD_COLS), _find(head, _INC_COLS), _find(head, _AZI_COLS))
-        if None in (md_i, inc_i, azi_i):
+    if is_number(rows[0][0]):
+        md_i, inc_i, azi_i = 0, 1, 2
+    else:
+        found = (find_column(rows[0], _MD_COLS), find_column(rows[0], _INC_COLS), find_column(rows[0], _AZI_COLS))
+        if None in found:
             raise SurveyError(
                 _("could not find MD, inclination and azimuth columns in the header: {header}").format(
                     header=", ".join(rows[0])
                 )
             )
+        md_i, inc_i, azi_i = (int(i) for i in found if i is not None)
         rows = rows[1:]
-    else:
-        md_i, inc_i, azi_i = 0, 1, 2
     data = []
     for r in rows:
         try:
-            data.append([_to_float(r[md_i]), _to_float(r[inc_i]), _to_float(r[azi_i])])
+            data.append([parse_number(r[md_i]), parse_number(r[inc_i]), parse_number(r[azi_i])])
         except (ValueError, IndexError):
             continue  # unit rows, comments, totals…
     if not data:
         raise SurveyError(_("no numeric survey stations were found"))
     arr = np.asarray(data)
     return Survey(arr[:, 0], arr[:, 1], arr[:, 2])
-
-
-def _find(head: list[str], names: tuple) -> int | None:
-    for i, h in enumerate(head):
-        base = h.split("(")[0].split("[")[0].strip()
-        if h in names or base in names:
-            return i
-    return None
-
-
-def _to_float(s: str) -> float:
-    return float(s.replace(",", ".")) if s.count(",") == 1 and "." not in s else float(s)
-
-
-def _is_number(s: str) -> bool:
-    try:
-        _to_float(s)
-        return True
-    except ValueError:
-        return False

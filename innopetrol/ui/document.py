@@ -19,7 +19,9 @@ from innopetrol.i18n import _
 from innopetrol.model import units
 from innopetrol.model.depth_view import DepthView, display_source_unit
 from innopetrol.model.layout import LogLayout, TrackSpec
+from innopetrol.model.location import Location
 from innopetrol.model.petro import PetroParams
+from innopetrol.model.survey import Survey
 from innopetrol.model.tops import Top
 from innopetrol.model.well import Curve, Well
 
@@ -33,9 +35,9 @@ class _State:
     tops: list
     curves: dict
     petro: dict | None
-    survey: object
+    survey: Survey | None
     elevation: float | None
-    location: object = None
+    location: Location | None = None
 
     def same_as(self, other: _State) -> bool:
         return (
@@ -172,12 +174,15 @@ class WellDocument(QObject):
             self._view = DepthView(self.well, self.depth_reference, self.display_unit, self.curve_units)
         return self._view
 
-    def set_depth_display(self, reference: str | None = None, unit: str | bool | None = False) -> None:
-        """Changes the drawing reference (MD/TVD/TVDSS) and/or unit (None = file unit)."""
-        if reference is not None:
-            self.depth_reference = reference
-        if unit is not False:
-            self.display_unit = unit
+    def set_depth_reference(self, reference: str) -> None:
+        """Draws the well against MD, TVD or TVDSS."""
+        self.depth_reference = reference
+        self._view = None
+        self.layoutChanged.emit()
+
+    def set_display_unit(self, unit: str | None) -> None:
+        """Depth unit of the display ("m", "ft"; None = the file's unit)."""
+        self.display_unit = unit
         self._view = None
         self.layoutChanged.emit()
 
@@ -230,9 +235,10 @@ class WellDocument(QObject):
     def _set_curve_unit(self, mnemonic: str, unit: str | None, notify: bool) -> None:
         curve = self.well.curves.get(mnemonic)
         current = self.curve_units.get(mnemonic)
-        if curve is None or (unit is None and current is None):
+        target = unit or current
+        if curve is None or target is None:
             return
-        source = display_source_unit(curve, unit or current)  # unit of the stored values
+        source = display_source_unit(curve, target)  # unit of the stored values
         old = current or source or curve.unit
         new = unit or source or curve.unit
         if old != new:

@@ -75,7 +75,7 @@ def apply_template(layout: LogLayout, well) -> tuple[LogLayout, list[str]]:
             renamed[c.mnemonic] = actual
             c.mnemonic = actual
             if c.left is None or c.right is None:
-                left, right, log = default_scale(well, actual, c.family)
+                left, right, _log = default_scale(well, actual, c.family)
                 c.left = left if c.left is None else c.left
                 c.right = right if c.right is None else c.right
             kept.append(c)

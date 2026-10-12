@@ -86,7 +86,8 @@ def test_gr_picker_lines_follow_the_mouse(qtbot):
     assert d.shale.value() == pytest.approx(130, abs=1.5)  # nearest line moved to the click
     assert d.clean.value() == 40
     d._percentiles()
-    assert d.result_values()[0] < 40 < 100 < d.result_values()[1]
+    low, high = d.result_values()
+    assert low < 40 and high > 100
 
 
 def test_pickett_fit_and_drag(qtbot):

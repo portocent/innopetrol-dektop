@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import sys
 
 import shiboken6
@@ -384,7 +385,7 @@ class CorrelationWindow(QDialog):
         return best.name if best is not None and abs(canvas.y_of(best.depth) - y) <= TOP_GRAB_PX else None
 
     def _context_menu(self, index: int, depth: float, global_pos):
-        if depth != depth:  # NaN: header area
+        if math.isnan(depth):  # header area
             return
         menu = QMenu(self)
         name = self.top_name.currentText().strip()

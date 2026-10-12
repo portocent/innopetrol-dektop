@@ -73,7 +73,7 @@ def test_top_added_on_tvd_view_is_stored_in_md(win, monkeypatch):
 
     doc = win.docs[0]
     doc.set_survey(slant_survey(), None)
-    doc.set_depth_display(reference="tvd")
+    doc.set_depth_reference("tvd")
     monkeypatch.setattr(well_view.QInputDialog, "getText", staticmethod(lambda *a, **k: ("T1", True)))
     win.views[doc].add_top_at(7500.0)  # picked at TVD 7500 (≈ MD 7999)
     md = doc.well.tops[0].depth
@@ -84,7 +84,8 @@ def test_top_added_on_tvd_view_is_stored_in_md(win, monkeypatch):
 def test_project_keeps_survey_and_reference(win, tmp_path):
     doc = win.docs[0]
     doc.set_survey(slant_survey(), 75.0)
-    doc.set_depth_display(reference="tvdss", unit="m")
+    doc.set_depth_reference("tvdss")
+    doc.set_display_unit("m")
     win.project_path = tmp_path / "p.ipproj"
     assert win.save_project()
     win.dirty = False

@@ -54,7 +54,7 @@ def paint_log(
     """Draws the tracks starting at (x0, y0). If draw_headers is False the body starts at y0."""
     body_y = y0 + (header_h if draw_headers else 0)
     first_curves = next((i for i, t in enumerate(layout.tracks) if not t.is_depth), None)
-    for i, ((x, w), track) in enumerate(zip(track_edges(layout, opts.k), layout.tracks)):
+    for i, ((x, w), track) in enumerate(zip(track_edges(layout, opts.k), layout.tracks, strict=True)):
         if draw_headers:
             draw_track_header(p, QRectF(x0 + x, y0, w, header_h), track, well, opts, selected == i)
         body = QRectF(x0 + x, body_y, w, body_h)
@@ -75,7 +75,7 @@ def paint_headers(
     opts: RenderOptions,
     selected: int | None = None,
 ) -> None:
-    for i, ((x, w), track) in enumerate(zip(track_edges(layout, opts.k), layout.tracks)):
+    for i, ((x, w), track) in enumerate(zip(track_edges(layout, opts.k), layout.tracks, strict=True)):
         draw_track_header(p, QRectF(x0 + x, y0, w, header_h), track, well, opts, selected == i)
 
 

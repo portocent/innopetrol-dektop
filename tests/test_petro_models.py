@@ -9,7 +9,7 @@ from innopetrol.model.project import WellEntry, load_project, save_project
 from innopetrol.model.survey import Survey
 from innopetrol.model.tops import Top, zones_from_tops
 
-BASE = dict(gr_curve="SGR", gr_clean=20, gr_shale=130, rhob_curve="RHOB", rt_curve="LLD")
+BASE = {"gr_curve": "SGR", "gr_clean": 20, "gr_shale": 130, "rhob_curve": "RHOB", "rt_curve": "LLD"}
 
 
 def computed(well, **kw):

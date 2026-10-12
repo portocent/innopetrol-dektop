@@ -111,7 +111,7 @@ def _eval(node, curves):
     if isinstance(node, ast.Compare):
         left = _eval(node.left, curves)
         out = None
-        for op, comp in zip(node.ops, node.comparators):
+        for op, comp in zip(node.ops, node.comparators, strict=True):
             if type(op) not in _COMPARE:
                 raise CalculatorError(_("comparison not allowed"))
             right = _eval(comp, curves)

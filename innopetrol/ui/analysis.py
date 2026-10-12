@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from itertools import pairwise
 
 import numpy as np
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPointF, QRectF, Qt
@@ -22,19 +23,10 @@ from PySide6.QtWidgets import (
 
 from innopetrol.i18n import _
 from innopetrol.model.scales import log_decades, nice_linear_range
-from innopetrol.model.tops import zones_from_tops
 from innopetrol.resources import app_icon
 from innopetrol.ui.document import WellDocument
 from innopetrol.ui.multiwell import checked_docs, color_of, values_as, well_list, zone_mask, zone_names
 from innopetrol.ui.plotting import Axis, draw_axes, plot_rect
-
-
-def zone_choices(well) -> list[tuple[str, float | None, float | None]]:
-    out = [(_("Whole well"), None, None)]
-    for z in zones_from_tops(well.tops, well.stop):
-        out.append((f"{z.name} ({z.top:g}–{z.base:g})", z.top, z.base))
-    return out
-
 
 # ============================================================================ histogram
 
@@ -110,7 +102,7 @@ class Histogram(QWidget):
         cum = np.cumsum(freq) / 100 * r.height()
         p.setPen(QPen(QColor("#c0392b"), 1.5))
         pts = [(xs[i + 1], r.bottom() - c) for i, c in enumerate(cum)]
-        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        for (x0, y0), (x1, y1) in pairwise(pts):
             p.drawLine(int(x0), int(y0), int(x1), int(y1))
         self.paint_overlay(p, r, xa)
         p.end()
@@ -126,7 +118,7 @@ class Histogram(QWidget):
         xs = r.left() + xa.map(edges, r.width())
         p.setRenderHint(QPainter.Antialiasing)
         fm = QFontMetricsF(self.font())
-        for i, ((_v, color, name), f) in enumerate(zip(self.series, freqs)):
+        for i, ((_v, color, name), f) in enumerate(zip(self.series, freqs, strict=True)):
             ys = r.bottom() - f / ymax * r.height()
             path = [QPointF(xs[0], r.bottom())]
             for k, y in enumerate(ys):

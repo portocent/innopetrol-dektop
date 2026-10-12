@@ -7,6 +7,7 @@ the well's window. Drag to pan, wheel to zoom.
 from __future__ import annotations
 
 import math
+from itertools import pairwise
 
 import numpy as np
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
@@ -57,7 +58,7 @@ class BaseMapWidget(QWidget):
     def _bounds(self) -> tuple[float, float, float, float]:
         xs = np.concatenate([i.xs for i in self.items]) * self.kx
         ys = np.concatenate([i.ys for i in self.items])
-        return float(xs.min()), float(xs.max()), float(ys.min()), float(ys.max())
+        return float(np.min(xs)), float(np.max(xs)), float(np.min(ys)), float(np.max(ys))
 
     def fit(self):
         if not self.items:
@@ -81,7 +82,8 @@ class BaseMapWidget(QWidget):
         return x / self.kx, y
 
     def item_at(self, p: QPointF) -> MapItem | None:
-        best, best_d = None, PICK_PX
+        best: MapItem | None = None
+        best_d = float(PICK_PX)
         for item in self.items:
             sx, sy = self.to_screen(item.location.x, item.location.y)
             d = math.hypot(float(sx) - p.x(), float(sy) - p.y())
@@ -112,7 +114,7 @@ class BaseMapWidget(QWidget):
         if len(self.selected) > 1:  # the correlation section
             pts = [self.to_screen(i.location.x, i.location.y) for i in self.selected]
             p.setPen(QPen(SELECTED, 2.2, Qt.DashLine))
-            for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+            for (ax, ay), (bx, by) in pairwise(pts):
                 p.drawLine(QPointF(ax, ay), QPointF(bx, by))
         bold = QFont(self.font())
         bold.setBold(True)

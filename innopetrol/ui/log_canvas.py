@@ -57,7 +57,7 @@ class LogCanvas(QWidget):
         self._version = 0  # increases with every layout change: invalidates the cache
         self._tiles = TileCache()
         self._header_pm: QPixmap | None = None
-        self._header_key = None
+        self._header_key: tuple | None = None
         self._prefetch = QTimer(self)
         self._prefetch.setSingleShot(True)
         self._prefetch.timeout.connect(self._prefetch_tiles)
@@ -338,6 +338,8 @@ class LogCanvas(QWidget):
         p.restore()
 
     def _paint_drag_guide(self, p: QPainter):
+        if self._drag_pending is None:
+            return
         i, width = self._drag_pending
         x = track_edges(self.doc.layout)[i][0] + width - self.x_offset
         p.setPen(QPen(QColor("#2e86c1"), 2, Qt.DashLine))

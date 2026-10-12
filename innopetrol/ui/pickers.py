@@ -8,6 +8,7 @@ then refined by typing.
 from __future__ import annotations
 
 import math
+from itertools import pairwise
 
 import numpy as np
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
@@ -80,12 +81,14 @@ class GrPickHistogram(Histogram):
         return r.left() + x if math.isfinite(x) else None
 
     def _value(self, x: float) -> float:
-        r = self.plot_area
-        return self.x_axis.value_at(min(max(x, r.left()), r.right()) - r.left(), r.width())
+        r, xa = self.plot_area, self.x_axis
+        if xa is None:
+            return 0.0
+        return xa.value_at(min(max(x, r.left()), r.right()) - r.left(), r.width())
 
     def _nearest(self, x: float) -> str | None:
         dist = {k: abs(px - x) for k in self.lines if (px := self._x(k)) is not None}
-        return min(dist, key=dist.get) if dist else None
+        return min(dist, key=lambda k: dist[k]) if dist else None
 
     def mousePressEvent(self, e):
         if e.button() != Qt.LeftButton or self.x_axis is None:
@@ -236,8 +239,8 @@ class PickettPicker(QWidget):
             if sw < 1:
                 pen.setStyle(Qt.DashLine)
             p.setPen(pen)
-            pts = [QPointF(x, y) for x, y in zip(xs, ys) if math.isfinite(x) and math.isfinite(y)]
-            for a, b in zip(pts, pts[1:]):
+            pts = [QPointF(x, y) for x, y in zip(xs, ys, strict=True) if math.isfinite(x) and math.isfinite(y)]
+            for a, b in pairwise(pts):
                 p.drawLine(a, b)
             inside = [q for q in pts if r.contains(q)]
             if inside:

@@ -94,8 +94,8 @@ class LogLayout:
     @classmethod
     def from_dict(cls, d: dict) -> LogLayout:
         tracks = []
-        for t in d.get("tracks", []):
-            t = dict(t)
+        for raw in d.get("tracks", []):
+            t = dict(raw)
             curves = [CurveStyle(**_known(CurveStyle, c)) for c in t.pop("curves", [])]
             fills = [FillSpec(**_known(FillSpec, f)) for f in t.pop("fills", [])]
             tracks.append(TrackSpec(**_known(TrackSpec, t), curves=curves, fills=fills))

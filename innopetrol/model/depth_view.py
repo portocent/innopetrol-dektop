@@ -7,12 +7,17 @@ always stay in measured depth (MD) in the file's unit.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from innopetrol.i18n import _
 from innopetrol.model import units
 from innopetrol.model.scales import MM_PER_UNIT
 from innopetrol.model.tops import Top
+
+if TYPE_CHECKING:
+    from innopetrol.model.well import Curve
 
 REFERENCES = ("md", "tvd", "tvdss")
 
@@ -21,7 +26,7 @@ class DepthView:
     def __init__(self, well, reference: str = "md", unit: str | None = None, curve_units: dict[str, str] | None = None):
         self.well = well
         self.curve_units = dict(curve_units or {})  # mnemonic -> display unit (canonical key)
-        self._curves = None
+        self._curves: dict[str, Curve] | None = None
         if reference == "tvdss" and well.elevation is None:
             reference = "tvd"
         self.reference = reference if reference in REFERENCES else "md"
@@ -44,7 +49,7 @@ class DepthView:
         if self._curves is None:
             from innopetrol.model.well import Curve
 
-            self._curves = {}
+            curves: dict[str, Curve] = {}
             for mnem, c in self.well.curves.items():
                 target = self.curve_units.get(mnem)
                 if target:
@@ -53,9 +58,10 @@ class DepthView:
                     except ValueError:
                         target, values = None, c.values
                 if target:
-                    self._curves[mnem] = Curve(mnem, units.label(target), c.description, values, c.formula)
+                    curves[mnem] = Curve(mnem, units.label(target), c.description, values, c.formula)
                 else:
-                    self._curves[mnem] = c
+                    curves[mnem] = c
+            self._curves = curves
         return self._curves
 
     def display_value(self, mnemonic: str, value: float) -> float:

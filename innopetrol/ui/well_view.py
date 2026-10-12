@@ -102,6 +102,7 @@ class WellView(QWidget):
     def add_track(self, kind: str = "curves", after: int | None = None):
         after = self.canvas.selected if after is None else after
         index = (after + 1) if after is not None and after >= 0 else len(self.doc.layout.tracks)
+        track: TrackSpec | None
         if kind == "depth":
             track = TrackSpec(kind="depth", title=pgettext("track title", "Depth"), width=72)
         elif kind == "volumes":

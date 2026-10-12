@@ -416,7 +416,7 @@ class PetroDialog(QDialog):
         vsh = curves["VSH"].values[mask] if "VSH" in curves else None
         dlg = PickettPickerDialog(rt[mask], phie[mask], rw, a, m, n, name, vsh, self)
         if dlg.exec():
-            values = dict(zip(("rw", "a", "m", "n"), dlg.result_values()))
+            values = dict(zip(("rw", "a", "m", "n"), dlg.result_values(), strict=True))
             if row is None:
                 for key, value in values.items():
                     getattr(self, key).setValue(value)
@@ -514,7 +514,7 @@ class PetroDialog(QDialog):
                 grid="none",
                 curves=[
                     CurveStyle(m, color=c, left=0, right=1, visible=False)
-                    for m, c in zip(flags, ("#27ae60", "#c0392b"))
+                    for m, c in zip(flags, ("#27ae60", "#c0392b")[: len(flags)], strict=True)
                 ],
             )
             colors = {"RES_FLAG": "#82e0aa", "PAY_FLAG": "#e74c3c"}
@@ -818,7 +818,7 @@ class ZoneSummaryDialog(QDialog):
         return [self.table.horizontalHeaderItem(i).text() for i in range(self.table.columnCount())]
 
     def _copy(self):
-        text = "\n".join("\t".join(r) for r in [self._headers()] + self._rows)
+        text = "\n".join("\t".join(r) for r in [self._headers(), *self._rows])
         QGuiApplication.clipboard().setText(text)
 
     def _save(self):
@@ -827,7 +827,7 @@ class ZoneSummaryDialog(QDialog):
         )
         if path:
             with open(path, "w", newline="", encoding="utf-8-sig") as f:  # BOM: Excel on Windows
-                csv.writer(f).writerows([self._headers()] + self._rows)
+                csv.writer(f).writerows([self._headers(), *self._rows])
 
 
 def _num(v: float) -> str:

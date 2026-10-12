@@ -9,6 +9,17 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint:
+    name: Lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run mypy
+
   test:
     name: Tests (${{ matrix.os }})
     strategy:
@@ -25,11 +36,11 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
       - run: uv sync
-      - run: uv run pytest -v
+      - run: uv run pytest -v --cov --cov-report=term-missing:skip-covered
 
   build:
     name: Executable (${{ matrix.os }})
-    needs: test
+    needs: [lint, test]
     strategy:
       fail-fast: false
       matrix:

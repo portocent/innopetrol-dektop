@@ -108,7 +108,7 @@ class Well:
 
         header = [HeaderItem(i.mnemonic, i.unit or "", str(i.value), i.descr or "") for i in las.well]
         name = _well_name(las)
-        curves = {}
+        curves: dict[str, Curve] = {}
         for c in las.curves[1:]:
             mnem = _unique(c.mnemonic.strip() or "CURVE", curves)
             curves[mnem] = Curve(mnem, (c.unit or "").strip(), (c.descr or "").strip(), np.asarray(c.data, dtype=float))
@@ -195,7 +195,7 @@ class Well:
 
     def to_csv(self, path: str | Path, mask: np.ndarray | None = None) -> None:
         sel = slice(None) if mask is None else mask
-        names = [self.depth_mnemonic] + list(self.curves)
+        names = [self.depth_mnemonic, *self.curves]
         columns = np.column_stack([self.depth[sel]] + [c.values[sel] for c in self.curves.values()])
         # utf-8-sig adds the BOM that Excel on Windows needs to show accented characters correctly.
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
@@ -213,7 +213,7 @@ _ELEVATION_FALLBACK = ("ELZ", "EREF", "EKB", "EDF", "KB", "DF", "ELEV", "EGL", "
 
 def elevation_from_header(header: list[HeaderItem], depth_unit: str) -> float | None:
     by_name = {h.mnemonic.strip().upper(): h for h in header}
-    keys = _ELEVATION_FALLBACK
+    keys: tuple[str, ...] = _ELEVATION_FALLBACK
     lmf = by_name.get("LMF") or by_name.get("DMF")
     if lmf:
         ref = str(lmf.value).strip().upper()

@@ -201,7 +201,9 @@ def _qpolygon(n: int) -> tuple[QPolygonF, np.ndarray]:
     if n == 0:  # no points, no memory to write into
         return poly, np.empty((0, 2))
     poly.resize(n)
-    view = np.frombuffer(shiboken6.VoidPtr(poly.data(), n * 16, True), dtype=np.float64).reshape(n, 2)
+    # The shiboken6 stub only declares VoidPtr(address); the size and writable arguments exist at runtime.
+    memory = shiboken6.VoidPtr(poly.data(), n * 16, True)  # type: ignore[call-arg]
+    view = np.frombuffer(memory, dtype=np.float64).reshape(n, 2)
     return poly, view
 
 
@@ -228,7 +230,7 @@ def _hlines(p: QPainter, ys: np.ndarray, x0, x1) -> None:
 def _runs(valid: np.ndarray) -> list[tuple[int, int]]:
     """Contiguous runs of True (used to break curves at data gaps)."""
     d = np.diff(np.concatenate(([0], valid.astype(np.int8), [0])))
-    return list(zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1)))
+    return list(zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1), strict=True))
 
 
 def _envelope(x: np.ndarray, y: np.ndarray, dpr: float):
@@ -283,7 +285,7 @@ def _stroke(p, style: CurveStyle, line_style: str, x, valid, y, opts):
             p.setRenderHint(QPainter.Antialiasing, True)
             p.setPen(Qt.NoPen)
             p.setBrush(color)
-            for xi, yi in zip(x[a:b], y[a:b]):
+            for xi, yi in zip(x[a:b], y[a:b], strict=True):
                 p.drawEllipse(QPointF(xi, yi), r, r)
             p.setBrush(Qt.NoBrush)
             continue
@@ -395,7 +397,7 @@ def _draw_colormap_fill(p, name: str, xl, xr, t, y, opts):
     p.save()
     p.setPen(Qt.NoPen)
     p.setRenderHint(QPainter.Antialiasing, False)
-    for i0, i1 in zip(starts, ends):
+    for i0, i1 in zip(starts, ends, strict=True):
         if level[i0] < 0:
             continue
         top, bottom = ys[i0:i1] - half, ys[i0:i1] + half
@@ -490,7 +492,7 @@ def draw_depth_body(p: QPainter, rect: QRectF, well, tf: DepthTransform, opts: R
     fm = QFontMetricsF(font)
     decimals = 1 if ticks.label_interval < 1 else 0
     big = ticks.label_interval * 5
-    for d, y in zip(ticks.labels, tf.y(ticks.labels)):
+    for d, y in zip(ticks.labels, tf.y(ticks.labels), strict=True):
         p.setFont(bold if abs(d / big - round(d / big)) < 1e-9 else font)
         p.setPen(BORDER)
         p.drawText(QRectF(0, y - fm.height() / 2, w, fm.height()), Qt.AlignCenter, f"{d:.{decimals}f}")

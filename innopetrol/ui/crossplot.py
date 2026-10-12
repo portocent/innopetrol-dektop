@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import numpy as np
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFontMetricsF, QImage, QPainter, QPen
@@ -153,7 +155,7 @@ class CrossplotWidget(QWidget):
                 for i in range(len(phi) - 1):
                     p.drawLine(QPointF(xs[i], ys[i]), QPointF(xs[i + 1], ys[i + 1]))
                 for f in (0.1, 0.2, 0.3):
-                    k = int(round(f * 100))
+                    k = round(f * 100)
                     p.setBrush(QColor(color))
                     p.drawEllipse(QPointF(xs[k], ys[k]), 3, 3)
                 inside = [i for i in range(len(phi)) if r.contains(QPointF(xs[i], ys[i]))]
@@ -175,8 +177,8 @@ class CrossplotWidget(QWidget):
                 ys = r.bottom() - self.ya.map(rt, r.height())
                 p.setPen(QPen(QColor(color), 1.8, Qt.DashLine))
                 valid = np.isfinite(xs) & np.isfinite(ys)
-                pts = [QPointF(a, b) for a, b, v in zip(xs, ys, valid) if v]
-                for a, b in zip(pts, pts[1:]):
+                pts = [QPointF(a, b) for a, b, v in zip(xs, ys, valid, strict=True) if v]
+                for a, b in pairwise(pts):
                     p.drawLine(a, b)
                 inside = [q for q in pts if r.contains(q)]
                 if inside:
@@ -213,7 +215,7 @@ class CrossplotWindow(QDialog):
     def __init__(self, doc: WellDocument, mode: str = "free", parent=None, docs: list | None = None):
         super().__init__(parent)
         self.doc = doc
-        self.docs = [d for d in (docs or [doc])]
+        self.docs = list(docs or [doc])
         if doc not in self.docs:
             self.docs.insert(0, doc)
         w = doc.well

@@ -59,7 +59,4 @@ class Recovery:
 
     def discard(self) -> None:
         for p in (self.path, self._info_path, self.folder / (AUTOSAVE_NAME + ".tmp")):
-            try:
-                p.unlink()
-            except FileNotFoundError:
-                pass
+            p.unlink(missing_ok=True)
